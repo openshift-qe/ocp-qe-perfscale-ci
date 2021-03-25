@@ -18,9 +18,11 @@ Max-Services TC: [OCP-41166](https://polarion.engineering.redhat.com/polarion/#/
 
 Pod-Density TC: [OCP-41155](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41155)
 
+Concurrent-Builds TC: [OCP-49623](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-49623)
+
 ## Parameters
 
-Cluster-density should run with ITERATIONS = 4 iterations * worker nodes
+Cluster-density should run with VARIABLE = 4 VARIABLE * worker nodes
 
 Node Density and Node Density Heavy: 
 ```
@@ -28,15 +30,21 @@ NODE_COUNT: number of worker nodes on your cluster
 PODS_PER_NODE: Work up to 250
 ```
 
+pod-density: Set VARIABLE to 200 * num_workers, work up to 250 * num_workers (Number of pods in 1 namespace)
 
-pod-density: Set ITERATIONS to 200 * num_workers, work up to 250 * num_workers (Number of pods in 1 namespace)
+cluster-density: Set VARIABLE to 4 * num_workers, 1 namespace per iteration
 
-cluster-density: Set ITERATIONS to 4 * num_workers, 1 namespace per iteration
+max-namespaces: Set VARIABLE to ~30 * num_workers, 1 namespace per iteration
 
-max-namespaces: Set ITERATIONS to ~30 * num_workers, 1 namespace per iteration
+max-services: Set VARIABLE to 200 * num_workers, work up to 250 * num_workers (1 namespace/service per iteration)
 
-max-services: Set ITERATIONS to 200 * num_workers, work up to 250 * num_workers (1 namespace/service per iteration)
+concurrent-builds: 
 
+```
+APP_LIST: space delimited list of applications to build, default and best to use "1 8 15 30 45 60 75"
+BUILD_LIST: space delimited list of concurrent builds to build, best to run one at a time because each can take a long
+ time 
+```
 
 ### Author
 Paige Rubendall <@paigerube14 on Github>
