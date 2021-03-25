@@ -61,7 +61,8 @@ pipeline {
         oc projects
         ls -ls ~/.kube/
         env
-        ./workloads/kube-burner/run_nodedensity_test_fromgit.sh
+        cd workloads/kube-burner
+        ./run_nodedensity_test_fromgit.sh
         '''
       }
         
