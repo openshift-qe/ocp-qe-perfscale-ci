@@ -10,6 +10,7 @@ pipeline {
   agent none
 
   parameters {
+        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'The number of namespaces created by Kube-burner is defined by this variable.')
         string(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
