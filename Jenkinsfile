@@ -13,7 +13,7 @@ pipeline {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload.')
         string(name: "PODS_PER_NODE", defaultValue: '150', description: 'Number of pods per node.')
-        string(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
                SOMEVAR1='env-test'<br>
