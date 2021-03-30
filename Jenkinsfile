@@ -12,7 +12,7 @@ pipeline {
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: 'NAMESPACE_COUNT', defaultValue: '1000', description: 'The number of namespaces created by Kube-burner is defined by this variable.')
-        string(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
                SOMEVAR1='env-test'<br>
