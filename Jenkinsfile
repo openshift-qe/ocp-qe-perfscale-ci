@@ -12,7 +12,7 @@ pipeline {
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: 'SERVICE_COUNT', defaultValue: '1000', description: 'Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace as defined by this environment variable.')
-        string(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
                SOMEVAR1='env-test'<br>
