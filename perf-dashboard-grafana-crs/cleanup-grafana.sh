@@ -1,13 +1,14 @@
 #!/bin/bash
 
-echo -e "Cleaning up dashboards \n"
+echo -e "\033[32mCleaning up dashboards \n\033[0m"
 oc delete -f dashboards/
 
-echo -e "Cleaning up datasources\n"
+
+echo -e "\033[32mCleaning up datasources\n\033[0m"
 
 oc delete -f datasources/
 
-echo -e "Cleaning up grafana instance\n"
+echo -e "\033[32mCleaning up grafana instance\n\033[0m"
 oc delete -f .
 
 oc delete clusterserviceversion -l operators.coreos.com/grafana-operator.default
