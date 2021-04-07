@@ -9,3 +9,5 @@ oc delete -f datasources/
 
 echo -e "Cleaning up grafana instance\n"
 oc delete -f .
+
+oc delete clusterserviceversion -l operators.coreos.com/grafana-operator.default
