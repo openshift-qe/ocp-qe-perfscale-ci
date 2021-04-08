@@ -75,8 +75,8 @@ pipeline {
         oc projects
         ls -ls ~/.kube/
         env
-        cd workloads/storage-perf
-        ./run_storage_tests_fromgit.sh
+        cd workloads/router-perf-v2
+        ./ingress-performance.sh
         '''
         }
       }
