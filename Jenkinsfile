@@ -23,7 +23,7 @@ pipeline {
     }
 
   stages {
-    stage('Run Max-Namespaces'){
+    stage('Run HostNetwork Tests'){
       agent { label 'oc45' }
       steps{
         deleteDir()
