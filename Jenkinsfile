@@ -23,7 +23,7 @@ pipeline {
     }
 
   stages {
-    stage('Run Max-Namespaces'){
+    stage('Run ServiceIP Network Perf Test'){
       agent { label 'oc45' }
       steps{
         deleteDir()
