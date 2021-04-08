@@ -7,7 +7,7 @@ export ES_SERVER=${ES_SERVER:-https://search-ocp-qe-perf-scale-test-elk-hcm7wtsq
 
 if [ -z "$ES_PASSWORD" ]
 then
-    echo "\033[32m\$ES_PASSWORD is empty, set password in an env variable and rerun the script.\033[0m"
+    echo -e "\033[32m\$ES_PASSWORD is empty, set password in an env variable and rerun the script.\033[0m"
     exit 1
 fi
 
