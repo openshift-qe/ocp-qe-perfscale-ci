@@ -60,8 +60,6 @@ pipeline {
         ls -ls ~/.kube/
         env
         cd workloads/network-perf
-        virtualenv venv
-        source venv/bin/active
         pip3 install -r requirements.txt
         ./run_hostnetwork_network_test_fromgit.sh
         '''
