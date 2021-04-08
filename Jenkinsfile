@@ -11,7 +11,6 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'PODS', defaultValue: '1000', description: 'Creates as many "sleep" pods as configured in this environment variable')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
