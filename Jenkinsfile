@@ -47,7 +47,7 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-
+      ansiColor('xterm') {
         sh label: '', script: '''
         # Get ENV VARS Supplied by the user to this job and store in .env_override
         echo "$ENV_VARS" > .env_override
@@ -62,6 +62,7 @@ pipeline {
         cd workloads/etcd-perf
         ./run_etcd_tests_fromgit.sh
         '''
+      }
       }
         
     }
