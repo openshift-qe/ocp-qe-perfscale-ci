@@ -24,7 +24,7 @@ pipeline {
     }
 
   stages {
-    stage('Run Node-Density'){
+    stage('Run Cluster-Density'){
       agent { label 'oc45' }
       steps{
         deleteDir()
