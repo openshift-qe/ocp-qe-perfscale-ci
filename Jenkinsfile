@@ -47,22 +47,23 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-
-        sh label: '', script: '''
-        # Get ENV VARS Supplied by the user to this job and store in .env_override
-        echo "$ENV_VARS" > .env_override
-        # Export those env vars so they could be used by CI Job
-        set -a && source .env_override && set +a
-        mkdir ~/.kube
-        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-        oc config view
-        oc projects
-        ls -ls ~/.kube/
-        env
-        cd workloads/network-perf
-        pip3 install -r requirements.txt
-        ./run_serviceip_network_test_fromgit.sh
-        '''
+        ansiColor('xterm') {
+          sh label: '', script: '''
+          # Get ENV VARS Supplied by the user to this job and store in .env_override
+          echo "$ENV_VARS" > .env_override
+          # Export those env vars so they could be used by CI Job
+          set -a && source .env_override && set +a
+          mkdir ~/.kube
+          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+          oc config view
+          oc projects
+          ls -ls ~/.kube/
+          env
+          cd workloads/network-perf
+          pip3 install -r requirements.txt
+          ./run_serviceip_network_test_fromgit.sh
+          '''
+        }
       }
         
     }
