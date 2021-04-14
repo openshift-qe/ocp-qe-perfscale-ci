@@ -1,4 +1,4 @@
-# E2E Benchmarking CI Repo - Cluster Density
+# OCP QE PerfScale CI Repo - Cluster Density
 
 
 ## Purpose
