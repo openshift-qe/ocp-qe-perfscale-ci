@@ -11,6 +11,17 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        '''
+        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
+ isn't stable<br>
+        4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+        3.11: ansible-2.6 <br/>
+        3.9~3.10: ansible-2.4 <br/>
+        3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+        '''
+        )
         string(name: 'ES_SERVER', defaultValue:'', description:'Make sure to include OCP-QE ES server, talk to Mike Fiedler or Kedar Kulkarni')
         string(name: 'ES_INDEX', defaultValue:'router-test-results', description:'Elasticsearch index name')
         string(name: 'RUNTIME', defaultValue: '60', description: 'Workload duration in seconds')
@@ -41,7 +52,7 @@ pipeline {
 
   stages {
     stage('Run Router perf tests'){
-      agent { label 'oc45' }
+      agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
         deleteDir()
         checkout([
@@ -70,7 +81,7 @@ pipeline {
         echo "$ENV_VARS" > .env_override
         # Export those env vars so they could be used by CI Job
         set -a && source .env_override && set +a
-        mkdir ~/.kube
+        mkdir -p ~/.kube
         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
         oc config view
         oc projects
@@ -78,6 +89,7 @@ pipeline {
         env
         cd workloads/router-perf-v2
         ./ingress-performance.sh
+        rm -rf ~/.kube
         '''
         }
       }
