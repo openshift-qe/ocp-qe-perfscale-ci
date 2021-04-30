@@ -11,6 +11,17 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        '''
+        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
+ isn't stable<br>
+        4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+        3.11: ansible-2.6 <br/>
+        3.9~3.10: ansible-2.4 <br/>
+        3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+        '''
+        )
         string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload.')
         string(name: "PODS_PER_NODE", defaultValue: '150', description: 'Number of pods per node.')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
@@ -26,7 +37,7 @@ pipeline {
 
   stages {
     stage('Run Node-Density'){
-      agent { label 'oc45' }
+      agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
         deleteDir()
         checkout([
@@ -55,7 +66,7 @@ pipeline {
         echo "$ENV_VARS" > .env_override
         # Export those env vars so they could be used by CI Job
         set -a && source .env_override && set +a
-        mkdir ~/.kube
+        mkdir -p ~/.kube
         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
         oc config view
         oc projects
@@ -63,6 +74,7 @@ pipeline {
         env
         cd workloads/kube-burner
         ./run_nodedensity_test_fromgit.sh
+        rm -rf ~/.kube
         '''
         }
       }
