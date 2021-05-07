@@ -31,18 +31,20 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
+        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
     }
 
   stages {
-    stage('Run ServiceIP Network Perf Test'){
+    stage('Run Network ServiceIP perf tests'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
         deleteDir()
         checkout([
           $class: 'GitSCM', 
-          branches: [[name: '*/master']], 
+          branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]], 
           doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking']
+          userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
           ]])
 
         copyArtifacts(
@@ -59,22 +61,21 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         ansiColor('xterm') {
-          sh label: '', script: '''
-          # Get ENV VARS Supplied by the user to this job and store in .env_override
-          echo "$ENV_VARS" > .env_override
-          # Export those env vars so they could be used by CI Job
-          set -a && source .env_override && set +a
-          mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
-          ls -ls ~/.kube/
-          env
-          cd workloads/network-perf
-          pip3 install -r requirements.txt
-          ./run_serviceip_network_test_fromgit.sh
-          rm -rf ~/.kube
-          '''
+        sh label: '', script: '''
+        # Get ENV VARS Supplied by the user to this job and store in .env_override
+        echo "$ENV_VARS" > .env_override
+        # Export those env vars so they could be used by CI Job
+        set -a && source .env_override && set +a
+        mkdir -p ~/.kube
+        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+        oc config view
+        oc projects
+        ls -ls ~/.kube/
+        env
+        cd workloads/network-perf
+        ./run_serviceip_network_policy_test_fromgit.sh
+        rm -rf ~/.kube
+        '''
         }
       }
         
