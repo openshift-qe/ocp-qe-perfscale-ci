@@ -48,6 +48,8 @@ pipeline {
                </p><br>
                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/router-perf-v2">Router perf readme</a> for more env vars you can set'''
             )
+        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
     }
 
   stages {
@@ -57,9 +59,9 @@ pipeline {
         deleteDir()
         checkout([
           $class: 'GitSCM', 
-          branches: [[name: '*/master']], 
+          branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
           doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking']
+          userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
           ]])
 
         copyArtifacts(
