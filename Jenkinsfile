@@ -37,6 +37,9 @@ pipeline {
   stages {
     stage('Run Pod Network Policy Network Perf Test'){
       agent { label params['JENKINS_AGENT_LABEL'] }
+      environment{
+          EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+      }
       steps{
         deleteDir()
         checkout([
@@ -60,22 +63,24 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         ansiColor('xterm') {
-          sh label: '', script: '''
-          # Get ENV VARS Supplied by the user to this job and store in .env_override
-          echo "$ENV_VARS" > .env_override
-          # Export those env vars so they could be used by CI Job
-          set -a && source .env_override && set +a
-          mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
-          ls -ls ~/.kube/
-          env
-          cd workloads/network-perf
-          pip3 install -r requirements.txt
-          ./run_serviceip_network_policy_test_fromgit.sh
-          rm -rf ~/.kube
-          '''
+          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+            sh label: '', script: '''
+            # Get ENV VARS Supplied by the user to this job and store in .env_override
+            echo "$ENV_VARS" > .env_override
+            # Export those env vars so they could be used by CI Job
+            set -a && source .env_override && set +a
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            oc config view
+            oc projects
+            ls -ls ~/.kube/
+            env
+            cd workloads/network-perf
+            pip3 install -r requirements.txt
+            ./run_serviceip_network_policy_test_fromgit.sh
+            rm -rf ~/.kube
+            '''
+          }
         }
       }
         
