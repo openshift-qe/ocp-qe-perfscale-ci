@@ -38,7 +38,11 @@ pipeline {
   stages {
     stage('Run HostNetwork Tests'){
       agent { label 'oc45' }
+      environment{
+          EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+      }
       steps{
+        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'), string(name: 'JENKINS_AGENT_LABEL', value: 'oc48')]
         deleteDir()
         checkout([
           $class: 'GitSCM', 
@@ -61,26 +65,33 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         ansiColor('xterm') {
-        sh label: '', script: '''
-        # Get ENV VARS Supplied by the user to this job and store in .env_override
-        echo "$ENV_VARS" > .env_override
-        # Export those env vars so they could be used by CI Job
-        set -a && source .env_override && set +a
-        mkdir -p ~/.kube
-        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-        oc config view
-        oc projects
-        ls -ls ~/.kube/
-        env
-        cd workloads/network-perf
-        pip3 install -r requirements.txt
-        ./run_hostnetwork_network_test_fromgit.sh
-        rm -rf ~/.kube
-        '''
+          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+            sh label: '', script: '''
+            # Get ENV VARS Supplied by the user to this job and store in .env_override
+            echo "$ENV_VARS" > .env_override
+            # Export those env vars so they could be used by CI Job
+            set -a && source .env_override && set +a
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            oc config view
+            oc projects
+            ls -ls ~/.kube/
+            env
+            cd workloads/network-perf
+            pip3 install -r requirements.txt
+            ./run_hostnetwork_network_test_fromgit.sh
+            rm -rf ~/.kube
+            '''
+          }
         }
-      }
-        
+      }  
     }
-}
+  }
+  post {
+    always {
+      build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'TEARDOWN'), string(name: 'JENKINS_AGENT_LABEL', value: 'oc48')]
+    }
+  }
+
 }
 
