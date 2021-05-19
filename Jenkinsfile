@@ -101,7 +101,7 @@ pipeline {
             # login to service account
             gcloud auth activate-service-account `cat $OCP_GCP | jq -r '.client_email'`  --key-file=$OCP_GCP --project=`cat $OCP_GCP | jq -r '.project_id'`
             gcloud auth list
-            gcloud config set account set `cat $OCP_GCP | jq -r '.client_email'`
+            gcloud config set account `cat $OCP_GCP | jq -r '.client_email'`
 
             export NETWORK_NAME=$(gcloud compute networks list  | grep $CLUSTER_NAME | awk '{print $1}')
 
