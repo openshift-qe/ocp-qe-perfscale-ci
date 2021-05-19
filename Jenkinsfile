@@ -74,7 +74,7 @@ pipeline {
               sleep 60
           done;
           log "All nodes seem to be ready"
-          oc get nodes -l node-role.kubernetes.io/worker | cat -n
+          oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
         }
 
         scaleMachineSets $WORKER_COUNT
