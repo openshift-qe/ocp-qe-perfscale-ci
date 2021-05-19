@@ -11,6 +11,11 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
+        string(name: 'SCALE_DOWN', defaultValue: '0', description:
+        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
+        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+        )
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
@@ -40,6 +45,11 @@ pipeline {
     stage('Run Cluster-Density'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
+        script{
+          if(params.SCALE_UP.toInteger() > 0) {
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: 'oc48')]
+          }
+        }
         deleteDir()
         checkout([
           $class: 'GitSCM', 
@@ -78,9 +88,16 @@ pipeline {
           rm -rf ~/.kube
           '''
         }
+
+        script{
+          // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
+          if(params.SCALE_DOWN.toInteger() > 0) {
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN), string(name: 'JENKINS_AGENT_LABEL', value: 'oc48')]
+        }
       }
         
+      }
     }
-}
+  }
 }
 
