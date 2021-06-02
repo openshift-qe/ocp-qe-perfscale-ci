@@ -42,7 +42,7 @@ pipeline {
 
   stages {
     stage('Run HostNetwork Tests'){
-      agent { label 'oc45' }
+      agent { label params['JENKINS_AGENT_LABEL'] }
       environment{
           EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
       }
