@@ -12,14 +12,14 @@ then
 fi
 
 echo -e "\033[32mInstalling Grafana Operator\n\n\033[0m"
-oc create -f grafana-operator-install.yaml
+oc -n default create -f grafana-operator-install.yaml
 
 
 echo -e "\033[32mWait for Grafana operator to be installed\033[0m"
 sleep 30
 
 echo -e "\033[32mGrafana instance\n\n"
-oc create -f grafana-instance.yaml
+oc -n default create -f grafana-instance.yaml
 
 echo -e "\033[32mWait for Grafana deployment to be created\033[0m"
 sleep 30
@@ -34,13 +34,13 @@ export PROMETHEUS_PASSWORD=$(oc get secrets -n openshift-monitoring grafana-data
 echo -e "\033[32mFound password for Prometheus: $PROMETHEUS_PASSWORD\n\n\033[0m"
 # substitute env vars into datasources, e.g. PROMETHEUS_PASSWORD from above
 for file in ./datasources/*.yaml; do
-    envsubst < $file | oc create -f -
+    envsubst < $file | oc -n default create -f -
 done
 
 echo -e "\033[32mCreating dashboards\n\n\033[0m"
-oc create -f dashboards/
+oc -n default create -f dashboards/
 
-echo -e "\033[32mAccess your grafana at: https://`oc get route grafana-route -o=jsonpath='{.status.ingress.*.host}{"\n\n"}'`\033[0m"
+echo -e "\033[32mAccess your grafana at: https://`oc -n default get route grafana-route -o=jsonpath='{.status.ingress.*.host}{"\n\n"}'`\033[0m"
 
 
 echo -e "\033[32mDefault login is set to admin/secret\n\n\033[0m"
