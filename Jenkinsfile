@@ -1,7 +1,7 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
+def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId ?: "kkulkarni"
 if (userId) {
   currentBuild.displayName = userId
 }
