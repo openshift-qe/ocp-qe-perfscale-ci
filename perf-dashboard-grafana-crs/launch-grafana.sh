@@ -16,13 +16,13 @@ oc -n default create -f grafana-operator-install.yaml
 
 
 echo -e "\033[32mWait for Grafana operator to be installed\033[0m"
-sleep 30
+sleep 60
 
 echo -e "\033[32mGrafana instance\n\n"
 oc -n default create -f grafana-instance.yaml
 
 echo -e "\033[32mWait for Grafana deployment to be created\033[0m"
-sleep 30
+sleep 60
 
 # echo -e "Patch grafana deployment with latest image, as currently operator in the OpenShift is running older version, that doesn't support reading baseImage attribute in Custom Resource"
 # oc set image deployment grafana-deployment grafana='quay.io/openshift/origin-grafana:latest'
