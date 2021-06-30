@@ -42,6 +42,24 @@ pipeline {
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
+          if(params.WORKER_COUNT.toInteger() > 50) {
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: '''
+OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
+OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
+              ''')]
+          }
         }
         ansiColor('xterm') {
         sh label: '', script: '''
