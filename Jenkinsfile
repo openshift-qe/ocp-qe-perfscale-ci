@@ -19,7 +19,7 @@ pipeline {
         <b>REMEMBER: If you use this job, do not forget to Teardown, else Flexy-destroy for your cluster will fail</b>
         '''
         )
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc48',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
  isn't stable<br>
@@ -247,12 +247,18 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
             export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster" )}}')
 
             envsubst < infra-node-machineset-aws.yaml | oc create -f -
-
+            local retries=0
+            local attempts=60
             while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
               oc get nodes -l 'node-role.kubernetes.io/infra='
               oc get machines -A
               oc get machinesets -A
               sleep 30
+              ((retries += 1))
+              if [[ "${retries}" -gt ${attempts} ]]; then
+                echo "error: infra nodes didn't become READY in time, failing"
+                exit 1
+              fi
             done
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             
