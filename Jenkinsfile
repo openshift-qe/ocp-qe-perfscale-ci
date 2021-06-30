@@ -250,7 +250,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
             local retries=0
             local attempts=60
             while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
-              oc get nodes -l 'node-role.kubernetes.io/infra='
+              oc get nodes
               oc get machines -A
               oc get machinesets -A
               sleep 30
@@ -260,6 +260,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
                 exit 1
               fi
             done
+            oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             
             envsubst < monitoring-config.yaml | oc create -f -
