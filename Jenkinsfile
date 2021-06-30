@@ -64,6 +64,8 @@ pipeline {
             oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%3))))
           fi
           set +x
+          local retries=0
+          local attempts=180
           while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
               log "Following nodes are currently present, waiting for desired count $1 to be met."
               log "Machinesets:"
@@ -72,6 +74,11 @@ pipeline {
               oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
               log "Sleeping for 60 seconds"
               sleep 60
+              ((retries += 1))
+              if [[ "${retries}" -gt ${attempts} ]]; then
+                echo "error: all $1 nodes didn't become READY in time, failing"
+                exit 1
+              fi
           done;
           log "All nodes seem to be ready"
           oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
