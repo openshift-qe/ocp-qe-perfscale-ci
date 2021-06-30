@@ -81,7 +81,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
                          file(credentialsId: 'eb22dcaa-555c-4ebe-bb39-5b25628cc6bb', variable: 'OCP_GCP'),
                          file(credentialsId: 'ocp-azure', variable: 'OCP_AZURE')]) {
           sh label: '', script: '''
-          if [[ $HOST_NETWORK_CONFIGS == "true"]]; then
+          if [[ $HOST_NETWORK_CONFIGS == "true" ]]; then
             mkdir -p ~/.kube
             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
 
