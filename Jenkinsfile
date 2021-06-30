@@ -247,8 +247,8 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
             export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster" )}}')
 
             envsubst < infra-node-machineset-aws.yaml | oc create -f -
-            local retries=0
-            local attempts=60
+            retries=0
+            attempts=60
             while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
               oc get nodes
               oc get machines -A
