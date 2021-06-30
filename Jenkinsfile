@@ -205,8 +205,6 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
     stage('Configure given Flexy Cluster for LargeScale Tests - Configure Infra node for Prometheus'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
-        deleteDir()
-
         copyArtifacts(
             filter: '', 
             fingerprintArtifacts: true, 
