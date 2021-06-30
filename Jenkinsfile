@@ -32,15 +32,15 @@ pipeline {
         )
         string(name:'INFRA_NODES', defaultValue:'true', description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
         text(name: 'ENV_VARS', defaultValue: '''
-              export OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
-              export OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
-              export OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64
-              export OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
-              export OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-              export OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
-              export OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi
-              export OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
-              export OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
+OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
+OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
               ''', description:'''<p>
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
                e.g.for AWS:<br>
