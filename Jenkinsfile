@@ -32,27 +32,41 @@ pipeline {
         )
         string(name:'INFRA_NODES', defaultValue:'true', description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
         text(name: 'ENV_VARS', defaultValue: '''
-OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
-OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
-OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64
+OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            
+OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
 OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi 
               ''', description:'''<p>
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
                e.g.for AWS:<br>
-               OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0<br>
-               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2<br>
-               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64<br>
+               OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
+               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          <br>
+               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          <br>
+               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      <br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge<br>
-               OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2  <br>
-               OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi<br>
-               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2<br>
-               OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi<br>
+               e.g. for Azure:<br>
+               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128                <br>
+               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS        <br>
+               OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3       <br>
+               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=Premium_LRS  <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=Premium_LRS<br>
+               e.g. for GCP:<br>
+               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
+               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
+               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
+               GCP_PROJECT=openshift-qe
+               GCP_REGION=us-west1
+               GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com
+               And Prometheus_AlertManager part looks like:<br>
+               OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
+               OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi <br>
                </p>'''
             )
     }
@@ -236,9 +250,6 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
             ls -ls ~/.kube/
             env
             set -x
-            export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
-            export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
-            
             if [[ $(oc get machineset -n openshift-machine-api $(oc get machinesets -A  -o custom-columns=:.metadata.name | shuf -n 1) -o=jsonpath='{.metadata.annotations}' | grep -c "machine.openshift.io") -ge 1 ]]; then
               export MACHINESET_METADATA_LABEL_PREFIX=machine.openshift.io
             else
@@ -246,7 +257,25 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
             fi
             export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster" )}}')
 
-            envsubst < infra-node-machineset-aws.yaml | oc create -f -
+            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep aws -c) > 0 ]]; then
+              export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
+              export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+              envsubst < infra-node-machineset-aws.yaml | oc create -f -
+            fi
+
+            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep azure -c) > 0 ]]; then
+              export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
+              export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
+              envsubst < infra-node-machineset-azure.yaml | oc create -f -
+            fi
+
+            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep gcp -c) > 0 ]]; then
+              export WORKER_NODE_MACHINESET=$(oc get machinesets --no-headers -n openshift-machine-api | awk {'print $1'} | awk 'NR==1{print $1}')
+              export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
+              oc create -f gcp-sc-pd-ssd.yaml
+              envsubst < infra-node-machineset-gcp.yaml | oc create -f -
+            fi
+
             retries=0
             attempts=60
             while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
