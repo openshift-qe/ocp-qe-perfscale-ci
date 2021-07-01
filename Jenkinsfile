@@ -260,20 +260,20 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep aws -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
-              envsubst < infra-node-machineset-aws.yaml | oc create -f -
+              envsubst < infra-node-machineset-aws.yaml | oc apply -f -
             fi
 
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep azure -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
-              envsubst < infra-node-machineset-azure.yaml | oc create -f -
+              envsubst < infra-node-machineset-azure.yaml | oc apply -f -
             fi
 
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep gcp -c) > 0 ]]; then
               export WORKER_NODE_MACHINESET=$(oc get machinesets --no-headers -n openshift-machine-api | awk {'print $1'} | awk 'NR==1{print $1}')
               export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
-              oc create -f gcp-sc-pd-ssd.yaml
-              envsubst < infra-node-machineset-gcp.yaml | oc create -f -
+              oc apply -f gcp-sc-pd-ssd.yaml
+              envsubst < infra-node-machineset-gcp.yaml | oc apply -f -
             fi
 
             retries=0
@@ -291,8 +291,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
             done
             oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
-            
-            envsubst < monitoring-config.yaml | oc create -f -
+            envsubst < monitoring-config.yaml | oc apply -f -
             set +x
             rm -rf ~/.kube ~/.aws
           fi
