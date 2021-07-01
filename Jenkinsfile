@@ -123,7 +123,7 @@ OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
 OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
 OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
-            }else if(${env.VARIABLES_LOCATION}.indexOf("gcp") != -1){
+            }else if(env.VARIABLES_LOCATION.indexOf("gcp") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
