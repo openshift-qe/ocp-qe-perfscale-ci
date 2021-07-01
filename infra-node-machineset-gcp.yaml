@@ -1,0 +1,193 @@
+apiVersion: v1
+items:
+- apiVersion: machine.openshift.io/v1beta1
+  kind: MachineSet
+  metadata:
+    generation: 1
+    labels:
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+    name: infra-a
+    namespace: openshift-machine-api
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-a
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-a
+      spec:
+        metadata:
+          creationTimestamp: null
+          labels:
+            node-role.kubernetes.io/infra: ""
+        providerSpec:
+          value:
+            apiVersion: gcpprovider.openshift.io/v1beta1
+            canIPForward: false
+            credentialsSecret:
+              name: gcp-cloud-credentials
+            deletionProtection: false
+            disks:
+            - autoDelete: false
+              boot: true
+              image: ${WORKER_MACHINESET_IMAGE}
+              labels: null
+              sizeGb: ${OPENSHIFT_INFRA_NODE_VOLUME_SIZE}
+              type: ${OPENSHIFT_INFRA_NODE_VOLUME_TYPE}
+            kind: GCPMachineProviderSpec
+            machineType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
+            metadata:
+              creationTimestamp: null
+            networkInterfaces:
+            - network: ${CLUSTER_NAME}-network
+              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            projectID: ${GCP_PROJECT}
+            region: ${GCP_REGION}
+            serviceAccounts:
+            - email: ${CLUSTER_NAME}-w@${GCP_SERVICE_ACCOUNT_EMAIL}
+              scopes:
+              - https://www.googleapis.com/auth/cloud-platform
+            tags:
+            - ${CLUSTER_NAME}-worker
+            userDataSecret:
+              name: worker-user-data
+            zone: ${GCP_REGION}-a
+  status:
+    replicas: 1
+- apiVersion: machine.openshift.io/v1beta1
+  kind: MachineSet
+  metadata:
+    generation: 1
+    labels:
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+    name: infra-b
+    namespace: openshift-machine-api
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-b
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-b
+      spec:
+        metadata:
+          creationTimestamp: null
+          labels:
+            node-role.kubernetes.io/infra: ""
+        providerSpec:
+          value:
+            apiVersion: gcpprovider.openshift.io/v1beta1
+            canIPForward: false
+            credentialsSecret:
+              name: gcp-cloud-credentials
+            deletionProtection: false
+            disks:
+            - autoDelete: false
+              boot: true
+              image: ${WORKER_MACHINESET_IMAGE}
+              labels: null
+              sizeGb: ${OPENSHIFT_INFRA_NODE_VOLUME_SIZE}
+              type: ${OPENSHIFT_INFRA_NODE_VOLUME_TYPE}
+            kind: GCPMachineProviderSpec
+            machineType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
+            metadata:
+              creationTimestamp: null
+            networkInterfaces:
+            - network: ${CLUSTER_NAME}-network
+              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            projectID: ${GCP_PROJECT}
+            region: ${GCP_REGION}
+            serviceAccounts:
+            - email: ${CLUSTER_NAME}-w@${GCP_SERVICE_ACCOUNT_EMAIL}
+              scopes:
+              - https://www.googleapis.com/auth/cloud-platform
+            tags:
+            - ${CLUSTER_NAME}-worker
+            userDataSecret:
+              name: worker-user-data
+            zone: ${GCP_REGION}-b
+  status:
+    replicas: 1
+- apiVersion: machine.openshift.io/v1beta1
+  kind: MachineSet
+  metadata:
+    generation: 1
+    labels:
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+    name: infra-c
+    namespace: openshift-machine-api
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-c
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-c
+      spec:
+        metadata:
+          creationTimestamp: null
+          labels:
+            node-role.kubernetes.io/infra: ""
+        providerSpec:
+          value:
+            apiVersion: gcpprovider.openshift.io/v1beta1
+            canIPForward: false
+            credentialsSecret:
+              name: gcp-cloud-credentials
+            deletionProtection: false
+            disks:
+            - autoDelete: false
+              boot: true
+              image: ${WORKER_MACHINESET_IMAGE}
+              labels: null
+              sizeGb: ${OPENSHIFT_INFRA_NODE_VOLUME_SIZE}
+              type: ${OPENSHIFT_INFRA_NODE_VOLUME_TYPE}
+            kind: GCPMachineProviderSpec
+            machineType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
+            metadata:
+              creationTimestamp: null
+            networkInterfaces:
+            - network: ${CLUSTER_NAME}-network
+              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            projectID: ${GCP_PROJECT}
+            region: ${GCP_REGION}
+            serviceAccounts:
+            - email: ${CLUSTER_NAME}-w@${GCP_SERVICE_ACCOUNT_EMAIL}
+              scopes:
+              - https://www.googleapis.com/auth/cloud-platform
+            tags:
+            - ${CLUSTER_NAME}-worker
+            userDataSecret:
+              name: worker-user-data
+            zone: ${GCP_REGION}-c
+  status:
+    replicas: 1
+kind: List
+metadata: {}
