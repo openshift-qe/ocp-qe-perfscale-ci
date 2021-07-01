@@ -90,8 +90,7 @@ pipeline {
         }
         script{
           if(params.WORKER_COUNT.toInteger() > 50) {
-            buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
-            if(buildinfo.VARIABLES_LOCATION.indexOf("aws") != -1){
+            if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
