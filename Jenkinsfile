@@ -42,6 +42,53 @@ pipeline {
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
+        }
+        ansiColor('xterm') {
+        sh label: '', script: '''
+        mkdir -p ~/.kube
+        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+        oc config view
+        oc projects
+        ls -ls ~/.kube/
+        env
+        log(){
+          echo -e "\033[1m$(date "+%d-%m-%YT%H:%M:%S") ${@}\033[0m"
+        }
+        function scaleMachineSets(){
+          scale_size=$(($1/3))
+          set -x
+          for machineset in $(oc get --no-headers machinesets -A | awk '{print $2}' | head -3); do
+              oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
+          done
+          if [[ $(($1%3)) != 0 ]]; then
+            oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%3))))
+          fi
+          set +x
+          local retries=0
+          local attempts=180
+          while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
+              log "Following nodes are currently present, waiting for desired count $1 to be met."
+              log "Machinesets:"
+              oc get machinesets -A
+              log "Nodes:"
+              oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
+              log "Sleeping for 60 seconds"
+              sleep 60
+              ((retries += 1))
+              if [[ "${retries}" -gt ${attempts} ]]; then
+                echo "error: all $1 nodes didn't become READY in time, failing"
+                exit 1
+              fi
+          done;
+          log "All nodes seem to be ready"
+          oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
+        }
+
+        scaleMachineSets $WORKER_COUNT
+        rm -rf ~/.kube
+        '''
+        }
+        script{
           if(params.WORKER_COUNT.toInteger() > 50) {
             if(buildinfo.VARIABLES_LOCATION.indexOf("aws") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
@@ -95,51 +142,6 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
             }
           }
-        }
-        ansiColor('xterm') {
-        sh label: '', script: '''
-        mkdir -p ~/.kube
-        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-        oc config view
-        oc projects
-        ls -ls ~/.kube/
-        env
-        log(){
-          echo -e "\033[1m$(date "+%d-%m-%YT%H:%M:%S") ${@}\033[0m"
-        }
-        function scaleMachineSets(){
-          scale_size=$(($1/3))
-          set -x
-          for machineset in $(oc get --no-headers machinesets -A | awk '{print $2}' | head -3); do
-              oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
-          done
-          if [[ $(($1%3)) != 0 ]]; then
-            oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%3))))
-          fi
-          set +x
-          local retries=0
-          local attempts=180
-          while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
-              log "Following nodes are currently present, waiting for desired count $1 to be met."
-              log "Machinesets:"
-              oc get machinesets -A
-              log "Nodes:"
-              oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
-              log "Sleeping for 60 seconds"
-              sleep 60
-              ((retries += 1))
-              if [[ "${retries}" -gt ${attempts} ]]; then
-                echo "error: all $1 nodes didn't become READY in time, failing"
-                exit 1
-              fi
-          done;
-          log "All nodes seem to be ready"
-          oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
-        }
-
-        scaleMachineSets $WORKER_COUNT
-        rm -rf ~/.kube
-        '''
         }
       }
         
