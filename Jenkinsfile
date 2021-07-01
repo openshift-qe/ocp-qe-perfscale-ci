@@ -43,7 +43,8 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
           if(params.WORKER_COUNT.toInteger() > 50) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+            if(buildinfo.VARIABLES_LOCATION.indexOf("aws") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
@@ -51,14 +52,48 @@ pipeline {
               text(name: 'ENV_VARS', value: '''
 OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
-OPENSHIFT_INFRA_NODE_VOLUME_SIZE=64
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
 OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=10Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=2Gi
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
+            }else if(buildinfo.VARIABLES_LOCATION.indexOf("azure") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: '''
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128
+OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS
+OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=Premium_LRS
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=Premium_LRS
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
+              ''')]
+            }else if(buildinfo.VARIABLES_LOCATION.indexOf("gcp") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: '''
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
+OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
+GCP_PROJECT=openshift-qe
+GCP_REGION=us-west1
+GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
+              ''')]
+            }
           }
         }
         ansiColor('xterm') {
