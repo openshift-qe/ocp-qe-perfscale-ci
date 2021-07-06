@@ -292,6 +292,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
             oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             envsubst < monitoring-config.yaml | oc apply -f -
+            oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
             set +x
             rm -rf ~/.kube ~/.aws
           fi
