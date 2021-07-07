@@ -62,7 +62,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
                GCP_PROJECT=openshift-qe
                GCP_REGION=us-west1
-               GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com
+               GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com <br>
                And Prometheus_AlertManager part looks like:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
                OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
