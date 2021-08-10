@@ -92,4 +92,13 @@ def flexy_install_type(flexy_url):
         print("Error getting flexy installtion")
         return "", "", ""
 
-flexy_install_type("https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/54597")
+def get_worker_num(scale):
+    return_code, worker_count = run("oc get nodes | grep worker | wc -l | xargs")
+    if return_code != 0:
+        worker_count = "ERROR"
+    print("scale " + str(scale))
+    if scale == "true":
+        worker_count = str(int(worker_count.strip()) - 1)
+    worker_count = worker_count.strip()
+    return worker_count
+#flexy_install_type("https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/54597")

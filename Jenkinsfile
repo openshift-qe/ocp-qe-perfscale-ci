@@ -18,14 +18,14 @@ pipeline {
                cluster-density
                ...
         ''')
-        string(name: 'UPGRADE_JOB_URL', defaultValue: '', description: 'Upgrade job url')
         string(name: 'JOB_TYPE', defaultValue: '', description: 'Scale-ci job type')
         string(name: 'CI_JOB_ID', defaultValue: '', description: 'Scale-ci job id')
         string(name: 'CI_JOB_URL', defaultValue: '', description: 'Upgrade job url')
-        string(name: 'LOADED_JOB_URL', defaultValue: '', description: 'Upgrade job url')
-        string(name: 'CI_STATUS', defaultValue: 'FAIL', description: 'Upgrade job ending status')
+        string(name: 'UPGRADE_JOB_URL', defaultValue: '', description: 'Upgrade job url')
         booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
         booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the ugprade')
+        string(name: 'LOADED_JOB_URL', defaultValue: '', description: 'Upgrade job url')
+        string(name: 'CI_STATUS', defaultValue: 'FAIL', description: 'Scale-ci job ending status')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable
@@ -91,9 +91,9 @@ pipeline {
             pip --version
             pip install --upgrade pip
             pip install -U gspread oauth2client datetime pytz pyyaml
-            if [ $JOB == "loaded-upgrade" ]; then
+            if [[ $JOB == "loaded-upgrade" ]]; then
                 python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
-            elif [ $JOB == 'upgrade' ]; then
+            elif [[ $JOB == "upgrade" ]]; then
                 python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
             else
                 python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB_TYPE}', '${params.CI_JOB_URL}', '${params.CI_STATUS}')"
@@ -101,7 +101,6 @@ pipeline {
             rm -rf ~/.kube
             """
           }
-
         }
       }
     }

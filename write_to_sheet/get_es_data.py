@@ -64,7 +64,7 @@ def execute_command(es_url, fileName):
 
     with open(fileName, "r") as f:
         data_json = f.read()
-    return_code, str_response = run(f"curl -X GET {es_url}/_search?pretty -H 'Content-Type: application/json' -d{data_json}")
+    return_code, str_response = run(f"curl -X GET {es_url}/_search?pretty -H 'Content-Type: application/json' -d'{data_json}'")
     if return_code == 0:
         data_info = []
         json_response = json.loads(str_response)
