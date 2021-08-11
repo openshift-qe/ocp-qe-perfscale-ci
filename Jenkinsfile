@@ -6,6 +6,8 @@ if (userId) {
   currentBuild.displayName = userId
 }
 
+def RETURNSTATUS = "default"
+
 pipeline {
   agent none
 
@@ -28,6 +30,7 @@ pipeline {
         '''
         )
         string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'This variable configures the number of cluster-density jobs iterations to perform (1 namespace per iteration). By default 1000.')
+        string(name: 'WRITE_TO_FILE', defaultValue: 'False', description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -71,8 +74,9 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        ansiColor('xterm') {
-          sh label: '', script: '''
+
+        script {
+          RETURNSTATUS = sh(returnStatus: true, script: '''
           # Get ENV VARS Supplied by the user to this job and store in .env_override
           echo "$ENV_VARS" > .env_override
           # Export those env vars so they could be used by CI Job
@@ -86,18 +90,29 @@ pipeline {
           cd workloads/kube-burner
           ./run_clusterdensity_test_fromgit.sh
           rm -rf ~/.kube
-          '''
+          ''')
+        }
+
+        script{
+          if(params.WRITE_TO_FILE == "True") {
+            def status = "FAIL"
+            if( RETURNSTATUS.toString() == "0") {
+                status = "PASS"
+            }
+
+            build job: 'scale-ci/paige-e2e-multibranch/write-to_sheet', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JOB_TYPE', value: "cluster-density"), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}")]
+           }
         }
 
         script{
           // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
           if(params.SCALE_DOWN.toInteger() > 0) {
             build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+          }
+
         }
-      }
-        
-      }
-    }
-  }
+       }
+     }
+   }
 }
 
