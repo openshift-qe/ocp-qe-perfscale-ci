@@ -51,8 +51,7 @@ pipeline {
           if(params.SCALE_UP.toInteger() > 0) {
             build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
           }
-        }
-        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+        }        
         deleteDir()
         checkout([
           $class: 'GitSCM', 
@@ -73,6 +72,13 @@ pipeline {
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
+          def fields = env.getEnvironment()
+          fields.each {
+            key, value -> println("${key} = ${value}");
+          }
+          // if(env.VARIABLES_LOCATION){
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+          // }
         }
         ansiColor('xterm') {
           withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
