@@ -78,7 +78,6 @@ pipeline {
             sh label: '', script: '''
             # Get ENV VARS Supplied by the user to this job and store in .env_override
             echo "$ENV_VARS" > .env_override
-            cat $GSHEET_KEY_LOCATION 
             cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
             export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
             # Export those env vars so they could be used by CI Job
