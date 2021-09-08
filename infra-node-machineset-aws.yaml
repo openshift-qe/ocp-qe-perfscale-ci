@@ -5,25 +5,25 @@ items:
   metadata:
     creationTimestamp: null
     labels:
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
     name: infra-${CLUSTER_REGION}a
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}a
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}a
     template:
       metadata:
         creationTimestamp: null
         labels:
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}a
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}a
       spec:
         metadata:
           creationTimestamp: null
@@ -43,7 +43,7 @@ items:
               name: aws-cloud-credentials
             deviceIndex: 0
             iamInstanceProfile:
-              id: $CLUSTER_NAME-worker-profile
+              id: ${CLUSTER_NAME}-worker-profile
             instanceType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
             kind: AWSMachineProviderConfig
             metadata:
@@ -56,14 +56,14 @@ items:
             - filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-worker-sg
+                - ${CLUSTER_NAME}-worker-sg
             subnet:
               filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-private-${CLUSTER_REGION}a
+                - ${CLUSTER_NAME}-private-${CLUSTER_REGION}a
             tags:
-            - name: kubernetes.io/cluster/$CLUSTER_NAME
+            - name: kubernetes.io/cluster/${CLUSTER_NAME}
               value: owned
             userDataSecret:
               name: worker-user-data
@@ -74,25 +74,25 @@ items:
   metadata:
     creationTimestamp: null
     labels:
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
     name: infra-${CLUSTER_REGION}b
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}b
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}b
     template:
       metadata:
         creationTimestamp: null
         labels:
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}b
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}b
       spec:
         metadata:
           creationTimestamp: null
@@ -112,7 +112,7 @@ items:
               name: aws-cloud-credentials
             deviceIndex: 0
             iamInstanceProfile:
-              id: $CLUSTER_NAME-worker-profile
+              id: ${CLUSTER_NAME}-worker-profile
             instanceType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
             kind: AWSMachineProviderConfig
             metadata:
@@ -125,14 +125,14 @@ items:
             - filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-worker-sg
+                - ${CLUSTER_NAME}-worker-sg
             subnet:
               filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-private-${CLUSTER_REGION}b
+                - ${CLUSTER_NAME}-private-${CLUSTER_REGION}b
             tags:
-            - name: kubernetes.io/cluster/$CLUSTER_NAME
+            - name: kubernetes.io/cluster/${CLUSTER_NAME}
               value: owned
             userDataSecret:
               name: worker-user-data
@@ -143,25 +143,25 @@ items:
   metadata:
     creationTimestamp: null
     labels:
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-      $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
     name: infra-${CLUSTER_REGION}c
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-        $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}c
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}c
     template:
       metadata:
         creationTimestamp: null
         labels:
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-cluster: $CLUSTER_NAME
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-role: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machine-type: infra
-          $MACHINESET_METADATA_LABEL_PREFIX/cluster-api-machineset: infra-${CLUSTER_REGION}c
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}c
       spec:
         metadata:
           creationTimestamp: null
@@ -181,7 +181,7 @@ items:
               name: aws-cloud-credentials
             deviceIndex: 0
             iamInstanceProfile:
-              id: $CLUSTER_NAME-worker-profile
+              id: ${CLUSTER_NAME}-worker-profile
             instanceType: ${OPENSHIFT_INFRA_NODE_INSTANCE_TYPE}
             kind: AWSMachineProviderConfig
             metadata:
@@ -194,14 +194,14 @@ items:
             - filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-worker-sg
+                - ${CLUSTER_NAME}-worker-sg
             subnet:
               filters:
               - name: tag:Name
                 values:
-                - $CLUSTER_NAME-private-${CLUSTER_REGION}c
+                - ${CLUSTER_NAME}-private-${CLUSTER_REGION}c
             tags:
-            - name: kubernetes.io/cluster/$CLUSTER_NAME
+            - name: kubernetes.io/cluster/${CLUSTER_NAME}
               value: owned
             userDataSecret:
               name: worker-user-data

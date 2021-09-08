@@ -31,17 +31,7 @@ pipeline {
         '''
         )
         string(name:'INFRA_NODES', defaultValue:'true', description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
-        text(name: 'ENV_VARS', defaultValue: '''
-OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            
-OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          
-OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          
-OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        
-OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi 
-              ''', description:'''<p>
+        text(name: 'ENV_VARS', defaultValue: '''PLEASE FILL ME''', description:'''<p>
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
                e.g.for AWS:<br>
                OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
@@ -72,7 +62,12 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
                OPENSHIFT_INFRA_NODE_CPU_COUNT=8<br>
                OPENSHIFT_INFRA_NODE_MEMORY_SIZE=32768<br>
                OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
-               OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment</p>'''
+               OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment<br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=120<br>
+               OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=8<br>
+               OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=32768<br>
+               OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
+               OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment<br></p>'''
             )
     }
 
@@ -266,12 +261,14 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
               envsubst < infra-node-machineset-aws.yaml | oc apply -f -
+              envsubst < workload-node-machineset-aws.yaml | oc apply -f -
             fi
 
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep azure -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
               envsubst < infra-node-machineset-azure.yaml | oc apply -f -
+              envsubst < workload-node-machineset-azure.yaml | oc apply -f -
             fi
 
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep gcp -c) > 0 ]]; then
@@ -279,6 +276,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
               oc apply -f gcp-sc-pd-ssd.yaml
               envsubst < infra-node-machineset-gcp.yaml | oc apply -f -
+              envsubst < workload-node-machineset-gcp.yaml | oc apply -f -
             fi
 
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep vsphere -c) > 0 ]]; then
@@ -291,6 +289,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               export RESOURCE_POOL=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.resourcePool}')
               export VSPHERE_SERVER=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.server}')
               envsubst < infra-node-machineset-vsphere.yaml | oc apply -f -
+              envsubst < workload-node-machineset-vsphere.yaml | oc apply -f -
             fi
 
             retries=0
@@ -308,6 +307,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
             done
             oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
+            oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
             if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep vsphere -c) > 0 ]]; then
               envsubst < monitoring-config-vsphere.yaml | oc apply -f -
             else
