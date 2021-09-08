@@ -67,7 +67,12 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
                OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi <br>
-               </p>'''
+               e.g. for vSphere:<br>
+               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120
+               OPENSHIFT_INFRA_NODE_CPU_COUNT=8
+               OPENSHIFT_INFRA_NODE_MEMORY_SIZE=32768
+               OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2
+               OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment</p>'''
             )
     }
 
@@ -276,6 +281,18 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               envsubst < infra-node-machineset-gcp.yaml | oc apply -f -
             fi
 
+            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep vsphere -c) > 0 ]]; then
+              export WORKER_NODE_MACHINESET=$(oc get machinesets --no-headers -n openshift-machine-api | awk {'print $1'} | awk 'NR==1{print $1}')
+              export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
+              export TEMPLATE_NAME=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.template}')
+              export DATACENTER=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.datacenter}')
+              export DATASTORE=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.datastore}')
+              export FOLDER=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.folder}')
+              export RESOURCE_POOL=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.resourcePool}')
+              export VSPHERE_SERVER=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.workspace.server}')
+              envsubst < infra-node-machineset-vsphere.yaml | oc apply -f -
+            fi
+
             retries=0
             attempts=60
             while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
@@ -293,6 +310,10 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             envsubst < monitoring-config.yaml | oc apply -f -
             oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
+            git clone --single-branch --depth 1 https://github.com/cloud-bulldozer/performance-dashboards.git
+            pushd performance-dashboards/dittybopper
+            ./deploy.sh
+            popd
             set +x
             rm -rf ~/.kube ~/.aws
           fi
