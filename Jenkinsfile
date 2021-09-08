@@ -24,6 +24,15 @@ pipeline {
         '''
         )
         string(name: 'WORKER_COUNT', defaultValue: '', description:'Total Worker count desired in the cluster')
+        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+               e.g.<br>
+               SOMEVAR1='env-test'<br>
+               SOMEVAR2='env2-test'<br>
+               ...<br>
+               SOMEVARn='envn-test'<br>
+               </p>'''
+            )
     }
 
   stages {
@@ -47,6 +56,10 @@ pipeline {
         ansiColor('xterm') {
         sh label: '', script: '''
         mkdir -p ~/.kube
+        # Get ENV VARS Supplied by the user to this job and store in .env_override
+        echo "$ENV_VARS" > .env_override
+        # Export those env vars so they could be used by CI Job
+        set -a && source .env_override && set +a
         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
         oc config view
         oc projects
