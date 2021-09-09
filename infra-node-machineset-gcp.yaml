@@ -6,7 +6,7 @@ items:
     generation: 1
     labels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-    name: infra-a
+    name: infra-${CLUSTER_NAME}a
     namespace: openshift-machine-api
   spec:
     replicas: 1
