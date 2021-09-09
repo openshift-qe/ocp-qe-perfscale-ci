@@ -74,7 +74,7 @@ pipeline {
                OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072<br>
                OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
                OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment<br>
-               <b>And ALWAYS INCLUDE this part, for Prometheus AlertManager, it may look like</b>:<br>
+               <b>And ALWAYS INCLUDE(except for vSphere provider) this part, for Prometheus AlertManager, it may look like</b>:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
                OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi <br></p>'''
