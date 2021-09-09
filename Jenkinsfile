@@ -37,21 +37,31 @@ pipeline {
                OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          <br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          <br>
+               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge<br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_IOPS=0         <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2       <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500       <br>
+               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge<br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      <br>
-               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge<br>
                e.g. for Azure:<br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128                <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS        <br>
                OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3       <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500             <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS     <br>
+               OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3    <br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=Premium_LRS  <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=Premium_LRS<br>
                e.g. for GCP:<br>
-               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
-               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
-               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
-               GCP_PROJECT=openshift-qe
-               GCP_REGION=us-west1
+               OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100    <br>
+               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd <br>
+               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64 <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500 <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd <br>
+               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32 <br>
+               GCP_PROJECT=openshift-qe <br>
+               GCP_REGION=us-west1 <br>
                GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com <br>
                And Prometheus_AlertManager part looks like:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
@@ -59,13 +69,13 @@ pipeline {
                OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi <br>
                e.g. for vSphere:<br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120<br>
-               OPENSHIFT_INFRA_NODE_CPU_COUNT=8<br>
-               OPENSHIFT_INFRA_NODE_MEMORY_SIZE=32768<br>
+               OPENSHIFT_INFRA_NODE_CPU_COUNT=24<br>
+               OPENSHIFT_INFRA_NODE_MEMORY_SIZE=196608<br>
                OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
                OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment<br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=120<br>
-               OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=8<br>
-               OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=32768<br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500<br>
+               OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=16<br>
+               OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072<br>
                OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
                OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment<br></p>'''
             )
