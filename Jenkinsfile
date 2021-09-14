@@ -315,6 +315,18 @@ pipeline {
                 exit 1
               fi
             done
+            retries=0
+            while [[ $(oc get nodes -l 'node-role.kubernetes.io/workload=' --no-headers| wc -l) -lt 1 ]]; do
+              oc get nodes
+              oc get machines -A
+              oc get machinesets -A
+              sleep 30
+              ((retries += 1))
+              if [[ "${retries}" -gt ${attempts} ]]; then
+                echo "error: workload nodes didn't become READY in time, failing"
+                exit 1
+              fi
+            done
             oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
