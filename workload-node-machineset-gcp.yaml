@@ -46,8 +46,8 @@ spec:
           metadata:
             creationTimestamp: null
           networkInterfaces:
-          - network: ${CLUSTER_NAME}-network
-            subnetwork: ${CLUSTER_NAME}-worker-subnet
+          - network: ${NETWORK_NAME}
+            subnetwork: ${SUBNET_NETWORK_NAME}
             publicIP: true
           projectID: ${GCP_PROJECT}
           region: ${GCP_REGION}
