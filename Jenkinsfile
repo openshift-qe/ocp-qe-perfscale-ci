@@ -93,7 +93,7 @@ pipeline {
         }
 
         script{
-          if(params.WRITE_TO_FILE == "true") {
+          if(params.WRITE_TO_FILE == true) {
             def status = "FAIL"
             if( RETURNSTATUS.toString() == "0") {
                 status = "PASS"
