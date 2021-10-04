@@ -30,7 +30,7 @@ pipeline {
         '''
         )
         string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'This variable configures the number of cluster-density jobs iterations to perform (1 namespace per iteration). By default 1000.')
-        string(name: 'WRITE_TO_FILE', defaultValue: 'False', description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
+        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -89,15 +89,16 @@ pipeline {
           env
           cd workloads/kube-burner
           ./run_clusterdensity_test_fromgit.sh
-          rm -rf ~/.kube
           ''')
         }
 
         script{
-          if(params.WRITE_TO_FILE == "True") {
+          if(params.WRITE_TO_FILE == "true") {
             def status = "FAIL"
             if( RETURNSTATUS.toString() == "0") {
                 status = "PASS"
+            }else {
+                currentBuild.result = "FAILURE"
             }
 
             build job: 'scale-ci/paige-e2e-multibranch/write-to_sheet', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JOB_TYPE', value: "cluster-density"), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}")]
