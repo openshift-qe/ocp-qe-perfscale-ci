@@ -7,7 +7,8 @@ if (userId) {
 }
 
 def RETURNSTATUS = "default"
-
+def location = ""
+def location2 = ""
 pipeline {
   agent none
 
@@ -90,6 +91,19 @@ pipeline {
           cd workloads/kube-burner
           ./run_clusterdensity_test_fromgit.sh
           ''')
+
+          location = sh(returnStatus: true, script: '''
+          ls
+          cat workloads/kube-burner/collected-metrics/cluster-density-podLatency.json
+          ''')
+
+          location2 = sh(returnStatus: true, script: '''
+          ls
+          cat workloads/kube-burner/collected-metrics/cluster-density-podLatency-summary.json
+          ''')
+
+          sh "echo location ${location}"
+          sh "echo ${location2}"
         }
 
         script{
