@@ -90,7 +90,7 @@ pipeline {
           echo "$OSTYPE"
           wget https://www.python.org/ftp/python/3.8.0/Python-3.8.0.tgz
           tar -xf Python-3.8.0.tgz
-          cd Python-3.8.0.tgz
+          cd Python-3.8.0
           ls
           ./configure --enable-optimizations
           make -j 4
