@@ -92,7 +92,7 @@ pipeline {
           tar -xf Python-3.8.0.tgz
           cd Python-3.8.0
           ./configure --enable-optimizations
-          make altinstall
+          sudo make altinstall
           cd workloads/kube-burner
           ./run_clusterdensity_test_fromgit.sh
           ''')
