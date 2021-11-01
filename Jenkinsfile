@@ -88,7 +88,11 @@ pipeline {
           ls -ls ~/.kube/
           env
           echo "$OSTYPE"
-          apt install python3.8
+          wget https://www.python.org/ftp/python/3.8.0/Python-3.8.0.tgz
+          tar -xf Python-3.8.0.tgz
+          ./configure --enable-optimizations
+          make -j 4
+          make altinstall
           cd workloads/kube-burner
           ./run_clusterdensity_test_fromgit.sh
           ''')
