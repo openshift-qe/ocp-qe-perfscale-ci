@@ -58,19 +58,19 @@ pipeline {
           userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
           ]])
 
-        copyArtifacts(
-            filter: '', 
-            fingerprintArtifacts: true, 
-            projectName: 'ocp-common/Flexy-install', 
-            selector: specific(params.BUILD_NUMBER),
-            target: 'flexy-artifacts'
-        )
-        script {
-          buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
-          currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
-          currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
-          buildinfo.params.each { env.setProperty(it.key, it.value) }
-        }
+        // copyArtifacts(
+        //     filter: '', 
+        //     fingerprintArtifacts: true, 
+        //     projectName: 'ocp-common/Flexy-install', 
+        //     selector: specific(params.BUILD_NUMBER),
+        //     target: 'flexy-artifacts'
+        // )
+        // script {
+        //   buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
+        //   currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
+        //   currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
+        //   buildinfo.params.each { env.setProperty(it.key, it.value) }
+        // }
         ansiColor('xterm') {
           sh label: '', script: '''
           # Get ENV VARS Supplied by the user to this job and store in .env_override
@@ -78,12 +78,24 @@ pipeline {
           # Export those env vars so they could be used by CI Job
           set -a && source .env_override && set +a
           mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
+          # cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+          # oc config view
+          # oc projects
           ls -ls ~/.kube/
           env
+          python --version
           cd workloads/kube-burner
+          mkdir ~/src
+          wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
+          tar -zxvf Python-3.8.12.tgz
+          cd Python-3.8.12
+          mkdir ~/.localpython
+          ./configure --prefix=$HOME/.localpython
+          make
+          make install
+          virtualenv -p $HOME/.localpython/bin/python3 .venv
+          source .venv/bin/activate
+          python --version
           ./run_clusterdensity_test_fromgit.sh
           rm -rf ~/.kube
           '''
