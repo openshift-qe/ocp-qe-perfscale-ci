@@ -82,9 +82,9 @@ pipeline {
           # Export those env vars so they could be used by CI Job
           set -a && source .env_override && set +a
           mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
+          # cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+          # oc config view
+          # oc projects
           ls -ls ~/.kube/
           env
           echo "$OSTYPE"
