@@ -93,9 +93,11 @@ pipeline {
           ./configure --prefix=$HOME/.localpython
           make
           make install
-          python -m virtualenv .venv -p $HOME/.localpython/bin/python3
-          source .venv/bin/activate
+          which python
+          which python3
           python --version
+          python3 --version
+          alias python="$HOME/.localpython/bin/python3"
           ./run_clusterdensity_test_fromgit.sh
           rm -rf ~/.kube
           '''
