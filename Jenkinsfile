@@ -98,6 +98,8 @@ pipeline {
           python --version
           python3 --version
           alias python="$HOME/.localpython/bin/python3"
+          python --version
+          python3 --version
           ./run_clusterdensity_test_fromgit.sh
           rm -rf ~/.kube
           '''
