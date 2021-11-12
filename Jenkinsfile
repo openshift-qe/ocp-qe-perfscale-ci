@@ -94,6 +94,24 @@ pipeline {
             ls -ls ~/.kube/
             env
             cd workloads/network-perf
+            wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
+            tar -zxvf Python-3.8.12.tgz
+            cd Python-3.8.12
+            newdirname=~/.localpython
+            if [ -d "$newdirname" ]; then
+              echo "Directory already exists"
+            else
+              mkdir -p $newdirname
+              ./configure --prefix=$HOME/.localpython
+              make
+              make install
+            fi
+            /home/jenkins/.localpython/bin/python3 --version
+            python3 -m pip install virtualenv
+            python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
+            source venv3/bin/activate
+            python --version
+            cd ..
             pip3 install -r requirements.txt
             ./run_hostnetwork_network_test_fromgit.sh
             rm -rf ~/.kube
