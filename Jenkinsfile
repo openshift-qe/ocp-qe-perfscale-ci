@@ -93,7 +93,7 @@ pipeline {
           ./configure --prefix=$HOME/.localpython
           make
           make install
-          virtualenv -p $HOME/.localpython/bin/python3 .venv
+          python -m virtualenv .venv -p $HOME/.localpython/bin/python3
           source .venv/bin/activate
           python --version
           ./run_clusterdensity_test_fromgit.sh
