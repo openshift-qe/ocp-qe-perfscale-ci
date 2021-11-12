@@ -6,11 +6,14 @@ if (userId) {
   currentBuild.displayName = userId
 }
 
+def RETURNSTATUS = "default"
+
 pipeline {
   agent none
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
@@ -72,7 +75,7 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         ansiColor('xterm') {
-        sh label: '', script: '''
+        RETURNSTATUS = sh(returnStatus: true, script: '''
         # Get ENV VARS Supplied by the user to this job and store in .env_override
         echo "$ENV_VARS" > .env_override
         # Export those env vars so they could be used by CI Job
@@ -104,7 +107,17 @@ pipeline {
         cd ..
         ./run_poddensity_test_fromgit.sh
         rm -rf ~/.kube
-        '''
+        ''')
+        }
+        script{
+            def status = "FAIL"
+            if( RETURNSTATUS.toString() == "0") {
+                status = "PASS"
+            }else {
+                currentBuild.result = "FAILURE"
+            }
+           if(params.WRITE_TO_FILE == true) {
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JOB_TYPE', value: "cluster-density"), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: "cluster-density")]
         }
         script{
           // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
