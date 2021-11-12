@@ -85,21 +85,23 @@ pipeline {
           env
           python --version
           cd workloads/kube-burner
-          mkdir ~/src
-          wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
-          tar -zxvf Python-3.8.12.tgz
-          cd Python-3.8.12
-          mkdir ~/.localpython
-          ./configure --prefix=$HOME/.localpython
-          make
-          make install
+          yum install -y centos-release-scl-rh
+          yum install -y rh-python38-python
+          # mkdir ~/src
+          # wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
+          # tar -zxvf Python-3.8.12.tgz
+          # cd Python-3.8.12
+          # mkdir ~/.localpython
+          # ./configure --prefix=$HOME/.localpython
+          # make
+          # make install
           which python
           which python3
           python --version
           python3 --version
-          alias python="$HOME/.localpython/bin/python3"
-          python --version
-          python3 --version
+          # alias python="$HOME/.localpython/bin/python3"
+          # python --version
+          # python3 --version
           ./run_clusterdensity_test_fromgit.sh
           rm -rf ~/.kube
           '''
