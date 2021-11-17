@@ -20,8 +20,7 @@ pipeline {
         )
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
+        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
             e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
         3.11: ansible-2.6 <br/>
@@ -50,7 +49,7 @@ pipeline {
       steps{
         script{
           if(params.SCALE_UP.toInteger() > 0) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
           }
         }
         deleteDir()
@@ -74,7 +73,6 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-
         script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
           # Get ENV VARS Supplied by the user to this job and store in .env_override
@@ -102,9 +100,16 @@ pipeline {
             make
             make install
           fi
-          /home/jenkins/.localpython/bin/python3 --version
-          python3 -m pip install virtualenv
-          python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
+          python_folder="bin/python3"
+          if [ -d "$newdirname/bin/python3" ]; then
+            echo "Directory python3 "
+          elif [ -d "$newdirname/bin/python3.8" ]; then
+            echo "Directory python3.8 "
+            python_folder="bin/python3.8"
+          fi
+          $HOME/.localpython/$python_folder --version
+          python3 -m pip install virtualenv --user
+          python3 -m virtualenv venv3 -p $HOME/.localpython/$python_folder
           source venv3/bin/activate
           python --version
           cd ..
