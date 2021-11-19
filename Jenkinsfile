@@ -208,7 +208,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                       def status = "PASS"
                       if(params.WRITE_TO_FILE == true) {
                          sh "echo write to file $loaded_ci "
-                          if (params.BUILD_NUMBER == "") {
+                          if ( install != null ) {
                             if( install.result.toString() != "SUCCESS" ) {
                                 status = "Install Failed"
                             }
