@@ -207,13 +207,20 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                     script{
                       def status = "PASS"
                       if(params.WRITE_TO_FILE == true) {
-                      sh "echo write to file $loaded_ci "
+                         sh "echo write to file $loaded_ci "
+                          if (params.BUILD_NUMBER == "") {
+                            if( install.result.toString() != "SUCCESS" ) {
+                                status = "Install Failed"
+                            }
+                          }
                          if( load_result == "SUCCESS" ) {
                             if ( upgrade_ci != null) {
                              if( upgrade_ci.result.toString()  != "SUCCESS") {
-                               status = "FAIL"
+                               status = "Upgrade Failed"
                               }
                             }
+                         } else {
+                            status = "Load Failed"
                          }
                         if(loaded_ci != null ) {
                             loaded_url = loaded_ci.absoluteUrl
