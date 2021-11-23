@@ -64,8 +64,6 @@ pipeline{
             )
         string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
         string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-        string(name: 'UPGRADE_REPO', defaultValue:'https://github.com/paigerube14/svt.git', description:'You can change this to point to your fork if needed.')
-        string(name: 'UPGRADE_BRANCH', defaultValue:'upgrade', description:'You can change this to point to a branch on your fork if needed.')
     }
 
 
@@ -90,7 +88,7 @@ pipeline{
                                 }
                             }
                             if (params.CLOUD_TYPE == "azure") {
-                                worker_type = "vm_type_workers: 'Standard_D8S_v3', num_workers: 3, "
+                                worker_type = "vm_type_workers: 'Standard_D8s_v3', num_workers: 3, region: centralus, "
                             }
                             if (params.CLOUD_TYPE == "gcp") {
                                 worker_type = "vm_type_workers: 'n1-standard-4', num_workers: 3, "
@@ -209,13 +207,20 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                     script{
                       def status = "PASS"
                       if(params.WRITE_TO_FILE == true) {
-                      sh "echo write to file $loaded_ci "
+                         sh "echo write to file $loaded_ci "
+                          if ( install != null ) {
+                            if( install.result.toString() != "SUCCESS" ) {
+                                status = "Install Failed"
+                            }
+                          }
                          if( load_result == "SUCCESS" ) {
                             if ( upgrade_ci != null) {
                              if( upgrade_ci.result.toString()  != "SUCCESS") {
-                               status = "FAIL"
+                               status = "Upgrade Failed"
                               }
                             }
+                         } else {
+                            status = "Load Failed"
                          }
                         if(loaded_ci != null ) {
                             loaded_url = loaded_ci.absoluteUrl
