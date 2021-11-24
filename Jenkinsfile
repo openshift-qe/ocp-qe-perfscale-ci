@@ -96,11 +96,16 @@ pipeline {
           make
           make install
         fi
-        /home/jenkins/.localpython/bin/python3 --version
-        python3 -m pip install virtualenv
-        python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
-        source venv3/bin/activate
-        python --version
+        python_folder="bin/python3"
+        if [ -d "$newdirname/bin/python3" ]; then
+          echo "Directory python3 "
+        elif [ -d "$newdirname/bin/python3.8" ]; then
+          echo "Directory python3.8 "
+          python_folder="bin/python3.8"
+        fi
+        $HOME/.localpython/$python_folder --version
+        python3 -m pip install virtualenv --user
+        python3 -m virtualenv venv3 -p $HOME/.localpython/$python_folder
         cd ..
         ./run_maxnamespaces_test_fromgit.sh
         rm -rf ~/.kube
