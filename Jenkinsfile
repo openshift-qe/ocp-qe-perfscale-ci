@@ -37,8 +37,6 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name: 'UPGRADE_REPO', defaultValue:'https://github.com/paigerube14/svt.git', description:'You can change this to point to your fork if needed.')
-        string(name: 'UPGRADE_BRANCH', defaultValue:'upgrade', description:'You can change this to point to a branch on your fork if needed.')
     }
 
   stages {
@@ -48,9 +46,9 @@ pipeline {
         deleteDir()
         checkout([
           $class: 'GitSCM',
-          branches: [[name: params.UPGRADE_BRANCH ]],
+          branches: [[name: GIT_BRANCH ]],
           doGenerateSubmoduleConfigurations: false,
-          userRemoteConfigs: [[url: params.UPGRADE_REPO ]
+          userRemoteConfigs: [[url: GIT_URL ]
           ]])
 
         copyArtifacts(
@@ -68,41 +66,46 @@ pipeline {
         }
         script {
 
-              RETURNSTATUS = sh(returnStatus: true, script: '''
-              # Get ENV VARS Supplied by the user to this job and store in .env_override
-              echo "$ENV_VARS" > .env_override
-              # Export those env vars so they could be used by CI Job
-              set -a && source .env_override && set +a
-              mkdir -p ~/.kube
-              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-              oc config view
-              oc projects
-              ls -ls ~/.kube/
-              env
-              cd upgrade
-              ls
-              python3 --version
-              python3 -m venv venv3
-              source venv3/bin/activate
-              pip --version
-              pip install --upgrade pip
-              pip install -U datetime pyyaml
-              ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE
-              ''' )
+          RETURNSTATUS = sh(returnStatus: true, script: '''
+          # Get ENV VARS Supplied by the user to this job and store in .env_override
+          echo "$ENV_VARS" > .env_override
+          # Export those env vars so they could be used by CI Job
+          set -a && source .env_override && set +a
+          mkdir -p ~/.kube
+          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+          oc config view
+          oc projects
+          ls -ls ~/.kube/
+          env
+          cd upgrade_scripts
+          ls
+          python3 --version
+          python3 -m venv venv3
+          source venv3/bin/activate
+          pip --version
+          pip install --upgrade pip
+          pip install -U datetime pyyaml
+          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE
+          ''' )
            }
            script {
-                def status = "FAIL"
-                if( RETURNSTATUS.toString() == "0") {
-                    status = "PASS"
-                } else {
-                    currentBuild.result = "FAILURE"
-                }
+           def status = "FAIL"
+            if( RETURNSTATUS.toString() == "0") {
+                status = "PASS"
+            } else {
+                currentBuild.result = "FAILURE"
+                archiveArtifacts artifacts: 'upgrade_scripts/must-gather.tar.gz', fingerprint: false
+            }
+           }
+           script {
                 if(params.WRITE_TO_FILE == true) {
-                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_VERSION', value: UPGRADE_VERSION),
+                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'CI_STATUS', value: "${status}"),
                    booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE), booleanParam(name: 'SCALE', value: SCALE), string(name: 'UPGRADE_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "upgrade")]
                }
             }
-          }
+
+            }
         }
-      }
+     }
+
 }
