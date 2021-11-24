@@ -16,14 +16,12 @@ def invoke(command):
     return 0, output
 
 
-def set_max_unavailable(max_unavailable):
+def set_max_unavailable(maxUnavailable):
 
-    merge_json = '{"spec":{"maxUnavailable": %s }}' % str(max_unavailable)
-    return_code, output = invoke("oc patch machineconfigpool/worker --type='merge' -p='%s'" % (merge_json))
+    merge_json = '{"spec":{"maxUnavailable": %d }}' % maxUnavailable
+    return_code, output = invoke(f"oc patch machineconfigpool/worker --type='merge' -p='{merge_json}'")
     if return_code != 0:
-        print("Error occured trying to set maxUnavialble nodes")
-
-
+        print("Error occurred trying to set maxUnavialble nodes")
 
 def check_cluster_version():
 
@@ -34,22 +32,22 @@ def check_cluster_version():
 
         for condition in output['items'][0]['status']['conditions']:
             if condition['type'] == "Progressing":
-                print("Progressing status {}".format(condition['message']))
+                print(f"Progressing status {condition['message']}")
                 break
         for status_history in output['items'][0]['status']['history']:
             if status_history['state'] == "Completed":
-                print("actual version {}".format(status_history['version']))
+                print(f"Actual version {status_history['version']}")
                 return status_history['version']
             else:
-                print("State of version: {} {}".format(status_history['state'], status_history['version']))
+                print(f"State of version: {status_history['state']} {status_history['version']}")
         return output
     else:
-        print()
+        print("Error getting clusterversion")
     return ""
 
 # Main function
 def check_upgrade(expected_cluster_version, wait_num=240):
-    print("Starting upgrade check to {}".format(expected_cluster_version))
+    print(f"Starting upgrade check to {expected_cluster_version}")
     upgrade_version = check_cluster_version()
     j = 0
     # Will wait for up to 2 hours.. might need to increase
@@ -82,7 +80,7 @@ def wait_for_nodes_ready(wait_num=60):
         return_code, count_not_ready = invoke("oc get nodes | grep 'NotReady\|SchedulingDisabled' | wc -l | xargs")
         if return_code == 0:
             count_str = str(count_not_ready).strip()
-            print('count not ready {}'.format(count_str))
+            print(f'count not ready {count_str}')
             if count_str == "0":
                 return
         print("Waiting 30 seconds for nodes to become ready and scheduling enabled")
@@ -92,10 +90,10 @@ def wait_for_nodes_ready(wait_num=60):
 
 def wait_for_replicas(machine_replicas, machine_name, wait_num=60):
     counter = 0
-    return_code, replicas = invoke("oc get machineset {} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}".format(machine_name))
+    return_code, replicas = invoke(f"oc get machineset {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
     while replicas != machine_replicas:
         time.sleep(5)
-        return_code, replicas = invoke("oc get machineset {} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}".format(machine_name))
+        return_code, replicas = invoke(f"oc get machineset {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
         print("Replicas didn't match, waiting 5 seconds")
         counter += 1
         if counter >= wait_num:
