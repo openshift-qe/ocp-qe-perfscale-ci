@@ -6,33 +6,26 @@ from pytz import timezone
 
 def run(command):
     try:
-        output = subprocess.check_output(command, shell=True,
-                                         universal_newlines=True)
-    except Exception as e:
-        print("Failed to run %s" % (command))
-        print("Error %s" % (str(e)))
-        return ""
-    return output
+        output = subprocess.check_output(command, shell=True, universal_newlines=True)
+    except subprocess.CalledProcessError as exc:
+        print("Status : FAIL", exc.returncode, exc.output)
+        return exc.returncode, exc.output
+    return 0, output
 
 
 def find_key_to_overwrite(json_file, find_key, new_value):
     counter = 0
     for filters_list in json_file['query']['bool']['filter']:
         for filters, values in filters_list.items():
-            print('filter ' + str(filters) + "---" + str(values))
             for k, v in values.items():
                 print('v ' + str(v))
                 if k == find_key:
-                    print('key to replace' + str(json_file['query']['bool']['filter'][counter][filters][k]))
                     json_file['query']['bool']['filter'][counter][filters][k] = new_value
-                    print(json_file)
                     return json_file
                 if type(v) is dict:
-                    print('is dict')
                     for k2, v2 in v.items():
                         if k2 == find_key:
                             json_file['query']['bool']['filter'][counter][filters][k][k2] = new_value
-                            print(json_file)
                             return json_file
         counter += 1
 
@@ -48,8 +41,8 @@ def print_new_json(new_value, find_key, fileName):
 
 def get_benchmark_data():
 
-    benchmark_str = run("oc get benchmark -n benchmark-operator -o yaml")
-    if benchmark_str != "":
+    return_code, benchmark_str = run("oc get benchmark -n benchmark-operator -o yaml")
+    if return_code == 0:
         benchmark_yaml_all = yaml.safe_load(benchmark_str)
         benchmark_yaml = benchmark_yaml_all['items'][0]
         es_url = benchmark_yaml['spec']['elasticsearch']['url']
@@ -71,13 +64,16 @@ def execute_command(es_url, fileName):
 
     with open(fileName, "r") as f:
         data_json = f.read()
-    str_response = run('curl -X GET '+ es_url +"/_search?pretty -H 'Content-Type: application/json' -d'" + data_json + "'")
-    data_info = []
-    json_response = json.loads(str_response)
-    for hits in json_response['hits']['hits']:
-        data_info.append(get_data_from_json(hits['_source']))
-    sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
-    return sorted_data
+    return_code, str_response = run(f"curl -X GET {es_url}/_search?pretty -H 'Content-Type: application/json' -d{data_json}")
+    if return_code == 0:
+        data_info = []
+        json_response = json.loads(str_response)
+        for hits in json_response['hits']['hits']:
+            data_info.append(get_data_from_json(hits['_source']))
+        sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
+        return sorted_data
+    else:
+        return []
 
 
 def get_data_from_json(json_data):

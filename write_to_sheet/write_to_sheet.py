@@ -16,12 +16,12 @@ def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force
 
     index = 2
     flexy_url ="https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/{}".format(str(flexy_id))
-    flexy_cell = '=HYPERLINK("{}","{}")'.format(flexy_url, str(flexy_id))
+    flexy_cell = f'=HYPERLINK("{flexy_url}","{flexy_id}")'
 
     cloud_type, install_type, network_type = write_helper.flexy_install_type(flexy_url)
 
     duration, all_versions = write_helper.get_upgrade_duration()
-    ci_cell = '=HYPERLINK("' + str(job_url) + '","' + str(all_versions[1:]) + '")'
+    ci_cell = f'=HYPERLINK("{job_url}","{all_versions[1:]}")'
     tz = timezone('EST')
     return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
     if return_code != 0:
@@ -33,9 +33,6 @@ def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force
     if worker_master == "1":
         sno = "yes"
 
-    last_version = all_versions[-1].split(".")
-    print('last version ' + str(last_version))
-    print('last version ' + str(last_version))
     row = [flexy_cell, all_versions[0], ci_cell, worker_count, status, duration, scale, force, cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
 
     ws = sheet.worksheet("Upgrade Output")

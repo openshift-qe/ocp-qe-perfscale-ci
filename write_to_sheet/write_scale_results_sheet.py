@@ -26,10 +26,8 @@ def get_benchmark_uuid():
             if "Dog8code!@search-ocp-qe-perf-scale-test" in item['spec']['elasticsearch']['url']:
                 data_source = "SVTQE-kube-burner"
             grafana_url = "http://grafana.rdu2.scalelab.redhat.com:3000/d/hIBqKNvMz/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=openshift-sdn&var-sdn=openshift-ovn-kubernetes&var-job=All&var-uuid={}&var-namespace=All&var-verb=All&var-resource=All&var-flowschema=All&var-priority_level=All".format(str(from_time), str(to_time), data_source, uuid)
-            grafana_cell = '=HYPERLINK("' + str(grafana_url) + '","' + str(uuid) + '")'
-            print('grafana url ' + str(grafana_url))
+            grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
             workload_args = json.dumps(item['spec']['workload']['args'])
-            print('Workload type: {}'.format(str(type(workload_args))))
             return grafana_cell, workload_args
     return "", ""
 
@@ -65,7 +63,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     flexy_cell='=HYPERLINK("https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/'+str(flexy_id)+'","'+str(flexy_id)+'")'
     grafana_cell, workload_args = get_benchmark_uuid()
-    ci_cell = '=HYPERLINK("{}","{}")'.format(job_url, ci_job)
+    ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
     tz = timezone('EST')
 
@@ -76,4 +74,3 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
 
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 50396, 126, 'cluster-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/cluster-density/126/", "PASS")
-get_benchmark_uuid()

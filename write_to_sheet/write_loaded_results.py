@@ -18,23 +18,23 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     ws = sheet.worksheet("Loaded Proj Result")
 
     index = 2
-    flexy_url ="https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/" + str(flexy_id)
+    flexy_url = f"https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/{flexy_id}"
     cloud_type, install_type, network_type = write_helper.flexy_install_type(flexy_url)
     duration, versions = write_helper.get_upgrade_duration()
 
-    flexy_cell = '=HYPERLINK("' + str(flexy_url) + '","' + str(flexy_id) + '")'
+    flexy_cell = f'=HYPERLINK("{flexy_url}","{flexy_id}")'
     job_type = ""
     if scale_ci_job != "":
         job_type = scale_ci_job.split('/')[-3]
         if job_type == "job":
             job_type = scale_ci_job.split('/')[-2]
-    ci_cell = '=HYPERLINK("'+str(scale_ci_job) + '","' + str(job_type) + '")'
+    ci_cell = f'=HYPERLINK("{scale_ci_job}","{job_type}")'
 
     if len(versions) > 1:
-        upgrade_path_cell = '=HYPERLINK("'+str(upgrade_job_url) + '","' + str(versions[1:]) + '")'
+        upgrade_path_cell = f'=HYPERLINK("{upgrade_job_url}","{versions[1:]}")'
     else:
-        upgrade_path_cell = '=HYPERLINK("' + str(upgrade_job_url) + '","' + str(versions) + '")'
-    status_cell = '=HYPERLINK("' + str(loaded_upgrade_url) + '","' + str(status) + '")'
+        upgrade_path_cell = f'=HYPERLINK("{upgrade_job_url}","{versions}")'
+    status_cell = f'=HYPERLINK("{loaded_upgrade_url}","{status}")'
     tz = timezone('EST')
 
     return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
