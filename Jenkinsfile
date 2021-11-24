@@ -46,8 +46,6 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name: 'UPGRADE_REPO', defaultValue:'https://github.com/paigerube14/svt.git', description:'You can change this to point to your fork if needed.')
-        string(name: 'UPGRADE_BRANCH', defaultValue:'upgrade', description:'You can change this to point to a branch on your fork if needed.')
    }
 
   stages {
@@ -57,11 +55,10 @@ pipeline {
         deleteDir()
         checkout([
           $class: 'GitSCM',
-          branches: [[name: params.UPGRADE_BRANCH ]],
+          branches: [[name: GIT_BRANCH ]],
           doGenerateSubmoduleConfigurations: false,
-          userRemoteConfigs: [[url: params.UPGRADE_REPO ]
+          userRemoteConfigs: [[url: GIT_URL ]
           ]])
-
         copyArtifacts(
             filter: '',
             fingerprintArtifacts: true,
@@ -86,21 +83,17 @@ pipeline {
             set -a && source .env_override && set +a
             mkdir -p ~/.kube
             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-            oc config view
-            oc projects
-            ls -ls ~/.kube/
-            env
-            cd upgrade
             ls
+            cd write_to_sheet
             python3 --version
             python3 -m venv venv3
             source venv3/bin/activate
             pip --version
             pip install --upgrade pip
             pip install -U gspread oauth2client datetime pytz pyyaml
-            if [ $JOB == "loaded-upgrade"]; then
+            if [ $JOB == "loaded-upgrade" ]; then
                 python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
-            elif [ $JOB == 'upgrade']; then
+            elif [ $JOB == 'upgrade' ]; then
                 python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
             else
                 python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB_TYPE}', '${params.CI_JOB_URL}', '${params.CI_STATUS}')"
