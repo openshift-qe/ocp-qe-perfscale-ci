@@ -12,9 +12,8 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     ]
     credentials = ServiceAccountCredentials.from_json_keyfile_name(google_sheet_account, scopes) #access the json key you downloaded earlier
     file = gspread.authorize(credentials) # authenticate the JSON key with gspread
-    #sheet = file.open("Test") #.Outputs
+
     sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1uiKGYQyZ7jxchZRU77lsINpa23HhrFWjphsqGjTD-u4/edit?usp=sharing")
-    #open sheet
 
     ws = sheet.worksheet("Loaded Proj Result")
 
@@ -22,7 +21,7 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     flexy_url ="https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/" + str(flexy_id)
     cloud_type, install_type, network_type = write_helper.flexy_install_type(flexy_url)
     duration, versions = write_helper.get_upgrade_duration()
-    print('version ' + str(versions))
+
     flexy_cell = '=HYPERLINK("' + str(flexy_url) + '","' + str(flexy_id) + '")'
     job_type = ""
     if scale_ci_job != "":
@@ -38,18 +37,20 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     status_cell = '=HYPERLINK("' + str(loaded_upgrade_url) + '","' + str(status) + '")'
     tz = timezone('EST')
 
-    worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
+    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
+    if return_code != 0:
+        worker_count = "ERROR"
     row = [flexy_cell, versions[0], worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz))]
     ws.insert_row(row, index, "USER_ENTERED")
 
-    worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    if return_code != 0:
+        worker_master = "ERROR"
     sno = "no"
     if worker_master == "1":
         sno = "yes"
 
     last_version = versions[-1].split(".")
-    print('last version ' + str(last_version))
-    print('last version ' + str(last_version))
     row = [flexy_cell, versions[0], upgrade_path_cell, ci_cell, worker_count, status_cell, duration,scale, force,
            cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
     row.extend(write_helper.get_pod_latencies())

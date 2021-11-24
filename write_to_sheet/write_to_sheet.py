@@ -15,17 +15,20 @@ def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force
     #open sheet
 
     index = 2
-    flexy_url ="https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/" + str(flexy_id)
-    flexy_cell = '=HYPERLINK("' + str(flexy_url) + '","' + str(flexy_id) + '")'
+    flexy_url ="https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/{}".format(str(flexy_id))
+    flexy_cell = '=HYPERLINK("{}","{}")'.format(flexy_url, str(flexy_id))
 
     cloud_type, install_type, network_type = write_helper.flexy_install_type(flexy_url)
 
     duration, all_versions = write_helper.get_upgrade_duration()
     ci_cell = '=HYPERLINK("' + str(job_url) + '","' + str(all_versions[1:]) + '")'
     tz = timezone('EST')
-    worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
-
-    worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
+    if return_code != 0:
+        worker_count = "ERROR"
+    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    if return_code != 0:
+        worker_master = "ERROR"
     sno = "no"
     if worker_master == "1":
         sno = "yes"
