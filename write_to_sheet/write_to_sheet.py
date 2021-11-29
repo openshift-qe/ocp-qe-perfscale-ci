@@ -23,12 +23,14 @@ def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force
     duration, all_versions = write_helper.get_upgrade_duration()
     ci_cell = f'=HYPERLINK("{job_url}","{all_versions[1:]}")'
     tz = timezone('EST')
-    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
+    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs")
     if return_code != 0:
         worker_count = "ERROR"
-    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    worker_count = worker_count.strip()
+    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs")
     if return_code != 0:
         worker_master = "ERROR"
+    worker_master = worker_master.strip()
     sno = "no"
     if worker_master == "1":
         sno = "yes"

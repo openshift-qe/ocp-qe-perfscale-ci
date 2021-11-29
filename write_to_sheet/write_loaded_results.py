@@ -37,13 +37,15 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     status_cell = f'=HYPERLINK("{loaded_upgrade_url}","{status}")'
     tz = timezone('EST')
 
-    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs").strip()
+    return_code, worker_count = write_helper.run("oc get nodes | grep worker | wc -l | xargs")
     if return_code != 0:
         worker_count = "ERROR"
+    worker_count = worker_count.strip()
     row = [flexy_cell, versions[0], worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz))]
     ws.insert_row(row, index, "USER_ENTERED")
 
-    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs").strip()
+    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs")
+    worker_master = worker_master.strip()
     if return_code != 0:
         worker_master = "ERROR"
     sno = "no"
