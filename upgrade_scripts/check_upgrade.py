@@ -74,26 +74,45 @@ def wait_for_co_ready(wait_num=30):
         counter += 1
     print("ERROR: Co were still available and not progressing after 5 minutes")
 
-def wait_for_nodes_ready(wait_num=60):
+
+def get_not_ready_node(wait_num=30):
+    # could be a couple seconds inbetween nodes upgdating/going not ready
     counter = 0
+    # Will wait up to 5 minutes to find a NotReady/SchedulingDisabled Node
     while counter < wait_num:
-        return_code, count_not_ready = invoke("oc get nodes | grep 'NotReady\|SchedulingDisabled' | wc -l | xargs")
-        if return_code == 0:
-            count_str = str(count_not_ready).strip()
-            print(f'count not ready {count_str}')
-            if count_str == "0":
-                return
+        return_code, count_not_ready = invoke("oc get nodes | grep 'NotReady\|SchedulingDisabled'| head -n 1")
+        str_count = str(count_not_ready).strip()
+        if return_code == 0 and str_count != "":
+            return str_count
+        print("Waiting 10 seconds to see if new node starts updating")
+        time.sleep(10)
+        counter += 1
+    return "DONE"
+
+
+def wait_for_nodes_ready(wait_num=30):
+
+    counter = 0
+    last_not_ready_node = get_not_ready_node()
+    while counter < wait_num:
+        cur_not_ready_node = get_not_ready_node()
+        if cur_not_ready_node == "DONE":
+            print("No new node has been updating in the last 5 minutes")
+            return
         print("Waiting 30 seconds for nodes to become ready and scheduling enabled")
         time.sleep(30)
         counter += 1
+        if cur_not_ready_node != last_not_ready_node:
+            last_not_ready_node = cur_not_ready_node
+            counter = 0
     print("ERROR: Nodes were still not ready and scheduling enabled after 30 minutes")
 
 def wait_for_replicas(machine_replicas, machine_name, wait_num=60):
     counter = 0
-    return_code, replicas = invoke(f"oc get machineset {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
+    return_code, replicas = invoke(f"oc get {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
     while replicas != machine_replicas:
         time.sleep(5)
-        return_code, replicas = invoke(f"oc get machineset {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
+        return_code, replicas = invoke(f"oc get {machine_name} -n openshift-machine-api -o jsonpath={{.status.availableReplicas}}")
         print("Replicas didn't match, waiting 5 seconds")
         counter += 1
         if counter >= wait_num:
