@@ -31,7 +31,7 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     ci_cell = f'=HYPERLINK("{scale_ci_job}","{job_type}")'
 
     if len(versions) > 1:
-        upgrade_path_cell = f'=HYPERLINK("{upgrade_job_url}","{versions[1:]}")'
+        upgrade_path_cell = f'=HYPERLINK("{upgrade_job_url}","{versions[:-1]}")'
     else:
         upgrade_path_cell = f'=HYPERLINK("{upgrade_job_url}","{versions}")'
     status_cell = f'=HYPERLINK("{loaded_upgrade_url}","{status}")'
@@ -41,7 +41,7 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     if return_code != 0:
         worker_count = "ERROR"
     worker_count = worker_count.strip()
-    row = [flexy_cell, versions[0], worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz))]
+    row = [flexy_cell, versions[-1], worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz))]
     ws.insert_row(row, index, "USER_ENTERED")
 
     return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs")
@@ -53,7 +53,7 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
         sno = "yes"
 
     last_version = versions[-1].split(".")
-    row = [flexy_cell, versions[0], upgrade_path_cell, ci_cell, worker_count, status_cell, duration,scale, force,
+    row = [flexy_cell, versions[-1], upgrade_path_cell, ci_cell, worker_count, status_cell, duration,scale, force,
            cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
     row.extend(write_helper.get_pod_latencies())
     upgrade_sheet = file.open_by_url(
