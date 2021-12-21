@@ -46,7 +46,8 @@ def get_upgrade_duration():
 
         print("Time elapsed {}".format(str(time_elapsed)))
         print('All versions in upgrade {}'.format(str(all_versions)))
-        return str(time_elapsed), sorted(all_versions)
+        all_versions.reverse()
+        return str(time_elapsed), all_versions
     return get_oc_version(), ""
 
 def get_pod_latencies():
