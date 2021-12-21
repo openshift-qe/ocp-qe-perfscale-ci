@@ -1,0 +1,54 @@
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  generation: 1
+  labels:
+    ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+  name: infra-machines-${CLUSTER_NAME}
+  namespace: openshift-machine-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-machines-${CLUSTER_NAME}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-machines-${CLUSTER_NAME}
+    spec:
+      metadata:
+        creationTimestamp: null
+        labels:
+          node-role.kubernetes.io/infra: ""
+      providerSpec:
+        value:
+          apiVersion: vsphereprovider.openshift.io/v1beta1
+          credentialsSecret:
+            name: vsphere-cloud-credentials
+          diskGiB: ${OPENSHIFT_INFRA_NODE_VOLUME_SIZE}
+          kind: VSphereMachineProviderSpec
+          memoryMiB: ${OPENSHIFT_INFRA_NODE_MEMORY_SIZE}
+          metadata:
+            creationTimestamp: null
+          network:
+            devices:
+            - networkName: ${OPENSHIFT_INFRA_NODE_NETWORK_NAME}
+          numCPUs: ${OPENSHIFT_INFRA_NODE_CPU_COUNT}
+          numCoresPerSocket: ${OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT}
+          snapshot: ""
+          userDataSecret:
+            name: worker-user-data
+          template: ${TEMPLATE_NAME}
+          workspace:
+            datacenter: ${DATACENTER}
+            datastore: ${DATASTORE}
+            folder: ${FOLDER}
+            resourcePool: ${RESOURCE_POOL}
+            server: ${VSPHERE_SERVER}
