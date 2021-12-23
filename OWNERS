@@ -1,10 +1,9 @@
 approvers:
 - mffiedler
-- qiliRedHat
+- paigerube14
+- skordas
 reviewers:
-- qiliRedHat
 - mffiedler
 - paigerube14
 - rpattath
 - skordas
-- memodi
