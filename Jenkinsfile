@@ -119,7 +119,7 @@ pipeline {
                 currentBuild.result = "FAILURE"
             }
            if(params.WRITE_TO_FILE == true) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JOB_TYPE', value: "cluster-density"), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: "pod-density")]
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: "pod-density")]
            }
         }
         script{
