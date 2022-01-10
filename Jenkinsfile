@@ -61,8 +61,7 @@ pipeline {
                OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd <br>
                OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32 <br>
                GCP_PROJECT=openshift-qe <br>
-               GCP_REGION=us-west1 <br>
-               GCP_SERVICE_ACCOUNT_EMAIL=aos-qe-serviceaccount@openshift-qe.iam.gserviceaccount.com <br>
+               GCP_SERVICE_ACCOUNT_EMAIL=openshift-qe.iam.gserviceaccount.com <br>
                e.g. <b>for vSphere:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120<br>
                OPENSHIFT_INFRA_NODE_CPU_COUNT=48<br>
@@ -115,7 +114,7 @@ pipeline {
             env
             set -x
             export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster" )}}')
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep azure -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
 
               # create azure profile
               az login --service-principal -u `cat $OCP_AZURE | jq -r '.clientId'` -p "`cat $OCP_AZURE | jq -r '.clientSecret'`" --tenant `cat $OCP_AZURE | jq -r '.tenantId'`
@@ -146,7 +145,7 @@ pipeline {
               fi
 
             fi
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep gcp -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep gcp -c) > 0 ]]; then
 
               # login to service account
               gcloud auth activate-service-account `cat $OCP_GCP | jq -r '.client_email'`  --key-file=$OCP_GCP --project=`cat $OCP_GCP | jq -r '.project_id'`
@@ -155,6 +154,12 @@ pipeline {
 
               export NETWORK_NAME=$(gcloud compute networks list  | grep $CLUSTER_NAME | awk '{print $1}')
 
+              if [[ $NETWORK_NAME == "" ]]; then
+                sub_cluster_name=$(echo ${CLUSTER_NAME%-*})
+                 export NETWORK_NAME=$(gcloud compute networks list  | grep $sub_cluster_name | awk '{print $1}')
+
+              fi
+              echo $NETWORK_NAME
               if [[ $PROVISION_OR_TEARDOWN == "PROVISION" ]]; then
                 echo "Add Firewall Rules"
                 gcloud compute firewall-rules create $CLUSTER_NAME-scale-ci-icmp --network $NETWORK_NAME --priority 101 --description "scale-ci allow icmp" --allow icmp
@@ -176,7 +181,7 @@ pipeline {
               fi
             fi
 
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/| grep aws -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep aws -c) > 0 ]]; then
 
               # create aws credentials and config
               mkdir ~/.aws
@@ -267,29 +272,48 @@ pipeline {
             fi
             export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels "machine.openshift.io/cluster-api-cluster" )}}')
 
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep aws -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep aws -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
               envsubst < infra-node-machineset-aws.yaml | oc apply -f -
               envsubst < workload-node-machineset-aws.yaml | oc apply -f -
             fi
 
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep azure -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
               envsubst < infra-node-machineset-azure.yaml | oc apply -f -
               envsubst < workload-node-machineset-azure.yaml | oc apply -f -
             fi
 
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep gcp -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep gcp -c) > 0 ]]; then
+
+              echo $NETWORK_NAME
+              # login to service account
+              gcloud auth activate-service-account `cat $OCP_GCP | jq -r '.client_email'`  --key-file=$OCP_GCP --project=`cat $OCP_GCP | jq -r '.project_id'`
+              gcloud auth list
+              gcloud config set account `cat $OCP_GCP | jq -r '.client_email'`
+              export NETWORK_NAME=$(gcloud compute networks list  | grep $CLUSTER_NAME | awk '{print $1}')
+              if [[ $NETWORK_NAME == "" ]]; then
+                sub_cluster_name=$(echo ${CLUSTER_NAME%-*})
+                 export NETWORK_NAME=$(gcloud compute networks list | grep $sub_cluster_name | awk '{print $1}')
+              fi
+              echo $NETWORK_NAME
+              export SUBNET_NETWORK_NAME=$(gcloud compute networks subnets list --network=$NETWORK_NAME | grep worker | awk '{print $1}')
+
               export WORKER_NODE_MACHINESET=$(oc get machinesets --no-headers -n openshift-machine-api | awk {'print $1'} | awk 'NR==1{print $1}')
               export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
+              first_worker_node=$(oc get nodes -l 'node-role.kubernetes.io/worker=' --no-headers -o name | head -n 1)
+
+
+              export GCP_REGION=$(oc get ${first_worker_node} -o=jsonpath='{.metadata.labels}' |  jq '."topology.kubernetes.io/region"' | sed 's/"//g' )
+
               oc apply -f gcp-sc-pd-ssd.yaml
               envsubst < infra-node-machineset-gcp.yaml | oc apply -f -
               envsubst < workload-node-machineset-gcp.yaml | oc apply -f -
             fi
 
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep vsphere -c) > 0 ]]; then
+            if [[ $(echo $VARIABLES_LOCATION | grep vsphere -c) > 0 ]]; then
               export WORKER_NODE_MACHINESET=$(oc get machinesets --no-headers -n openshift-machine-api | awk {'print $1'} | awk 'NR==1{print $1}')
               export WORKER_MACHINESET_IMAGE=$(oc get machineset ${WORKER_NODE_MACHINESET} -n openshift-machine-api -o jsonpath='{.spec.template.spec.providerSpec.value.disks[0].image}')
               export TEMPLATE_NAME=$(oc get machineset -n openshift-machine-api $(oc get machinesets --no-headers -A -o custom-columns=:.metadata.name | head -1) -o=jsonpath='{.spec.template.spec.providerSpec.value.template}')

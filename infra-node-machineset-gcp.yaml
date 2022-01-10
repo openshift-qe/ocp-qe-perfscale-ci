@@ -48,8 +48,8 @@ items:
             metadata:
               creationTimestamp: null
             networkInterfaces:
-            - network: ${CLUSTER_NAME}-network
-              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            - network: ${NETWORK_NAME}
+              subnetwork: ${SUBNET_NETWORK_NAME}
             projectID: ${GCP_PROJECT}
             region: ${GCP_REGION}
             serviceAccounts:
@@ -69,7 +69,7 @@ items:
     generation: 1
     labels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-    name: infra-b
+    name: infra-${CLUSTER_NAME}b
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -111,8 +111,8 @@ items:
             metadata:
               creationTimestamp: null
             networkInterfaces:
-            - network: ${CLUSTER_NAME}-network
-              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            - network: ${NETWORK_NAME}
+              subnetwork: ${SUBNET_NETWORK_NAME}
             projectID: ${GCP_PROJECT}
             region: ${GCP_REGION}
             serviceAccounts:
@@ -132,7 +132,7 @@ items:
     generation: 1
     labels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-    name: infra-c
+    name: infra-${CLUSTER_NAME}c
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -174,8 +174,8 @@ items:
             metadata:
               creationTimestamp: null
             networkInterfaces:
-            - network: ${CLUSTER_NAME}-network
-              subnetwork: ${CLUSTER_NAME}-worker-subnet
+            - network: ${NETWORK_NAME}
+              subnetwork: ${SUBNET_NETWORK_NAME}
             projectID: ${GCP_PROJECT}
             region: ${GCP_REGION}
             serviceAccounts:
