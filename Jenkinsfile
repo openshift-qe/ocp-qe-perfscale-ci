@@ -18,7 +18,6 @@ pipeline {
                cluster-density
                ...
         ''')
-        string(name: 'JOB_TYPE', defaultValue: '', description: 'Scale-ci job type')
         string(name: 'CI_JOB_ID', defaultValue: '', description: 'Scale-ci job id')
         string(name: 'CI_JOB_URL', defaultValue: '', description: 'Upgrade job url')
         string(name: 'UPGRADE_JOB_URL', defaultValue: '', description: 'Upgrade job url')
@@ -96,7 +95,7 @@ pipeline {
             elif [[ $JOB == "upgrade" ]]; then
                 python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
             else
-                python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB_TYPE}', '${params.CI_JOB_URL}', '${params.CI_STATUS}')"
+                python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}')"
             fi
             rm -rf ~/.kube
             """
