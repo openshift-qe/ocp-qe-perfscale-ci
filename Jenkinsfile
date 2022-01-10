@@ -112,7 +112,6 @@ pipeline {
             source venv3/bin/activate
             python --version
             cd ..
-            pip3 install -r requirements.txt
             ./run_hostnetwork_network_test_fromgit.sh
             rm -rf ~/.kube
             '''
