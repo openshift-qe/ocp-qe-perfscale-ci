@@ -105,7 +105,7 @@ pipeline {
             source venv3/bin/activate
             python --version
             cd ..
-            ./run_serviceip_network_policy_test_fromgit.sh
+            ./run_serviceip_network_test_fromgit.sh
             rm -rf ~/.kube
             '''
           }
