@@ -133,7 +133,7 @@ pipeline {
             source venv3/bin/activate
             python --version
             cd ..
-            ./run_netobserv_perf_comparison_tests.sh ${params.NETWORKING_VARIANT}
+            ./run_netobserv_perf_comparison_tests.sh $NETWORKING_VARIANT
             rm -rf ~/.kube
             '''
           }
