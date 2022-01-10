@@ -6,6 +6,8 @@ if (userId) {
   currentBuild.displayName = userId
 }
 
+def RETURNSTATUS = "default"
+
 pipeline {
   agent none
 
@@ -16,6 +18,7 @@ pipeline {
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
         if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
         )
+        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
@@ -71,46 +74,61 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-      ansiColor('xterm') {
-        sh label: '', script: '''
-        # Get ENV VARS Supplied by the user to this job and store in .env_override
-        echo "$ENV_VARS" > .env_override
-        # Export those env vars so they could be used by CI Job
-        set -a && source .env_override && set +a
-        mkdir -p ~/.kube
-        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-        oc config view
-        oc projects
-        ls -ls ~/.kube/
-        env
-        cd workloads/kube-burner
-        wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
-        tar -zxvf Python-3.8.12.tgz
-        cd Python-3.8.12
-        newdirname=~/.localpython
-        if [ -d "$newdirname" ]; then
-          echo "Directory already exists"
-        else
-          mkdir -p $newdirname
-          ./configure --prefix=$HOME/.localpython
-          make
-          make install
-        fi
-        python_folder="bin/python3"
-        if [ -d "$newdirname/bin/python3" ]; then
-          echo "Directory python3 "
-        elif [ -d "$newdirname/bin/python3.8" ]; then
-          echo "Directory python3.8 "
-          python_folder="bin/python3.8"
-        fi
-        $HOME/.localpython/$python_folder --version
-        python3 -m pip install virtualenv --user
-        python3 -m virtualenv venv3 -p $HOME/.localpython/$python_folder
-        cd ..
-        ./run_maxnamespaces_test_fromgit.sh
-        rm -rf ~/.kube
-        '''
+      script{
+          ansiColor('xterm') {
+          RETURNSTATUS = sh(returnStatus: true, script: '''
+            # Get ENV VARS Supplied by the user to this job and store in .env_override
+            echo "$ENV_VARS" > .env_override
+            # Export those env vars so they could be used by CI Job
+            set -a && source .env_override && set +a
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            oc config view
+            oc projects
+            ls -ls ~/.kube/
+            env
+            cd workloads/kube-burner
+            wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
+            tar -zxvf Python-3.8.12.tgz
+            cd Python-3.8.12
+            newdirname=~/.localpython
+            if [ -d "$newdirname" ]; then
+              echo "Directory already exists"
+            else
+              mkdir -p $newdirname
+              ./configure --prefix=$HOME/.localpython
+              make
+              make install
+            fi
+            python_folder="bin/python3"
+            if [ -d "$newdirname/bin/python3" ]; then
+              echo "Directory python3 "
+            elif [ -d "$newdirname/bin/python3.8" ]; then
+              echo "Directory python3.8 "
+              python_folder="bin/python3.8"
+            fi
+            $HOME/.localpython/$python_folder --version
+            python3 -m pip install virtualenv --user
+            python3 -m virtualenv venv3 -p $HOME/.localpython/$python_folder
+            source venv3/bin/activate
+            python --version
+            cd ..
+            ./run_maxnamespaces_test_fromgit.sh
+            rm -rf ~/.kube
+            ''')
+        }
       }
+      script{
+            def status = "FAIL"
+            if( RETURNSTATUS.toString() == "0") {
+                status = "PASS"
+            }else {
+                currentBuild.result = "FAILURE"
+            }
+           if(params.WRITE_TO_FILE == true) {
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JOB_TYPE', value: "cluster-density"), string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: "max-namespaces")]
+           }
+        }
       script{
           // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
           if(params.SCALE_DOWN.toInteger() > 0) {
