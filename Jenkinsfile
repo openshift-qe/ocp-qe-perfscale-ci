@@ -46,13 +46,13 @@ pipeline {
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      <br>
                e.g. <b>for Azure:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128                <br>
-               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=managed-premium        <br>
+               OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS        <br>
                OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3       <br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500             <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=managed-premium     <br>
+               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS     <br>
                OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3    <br>
-               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=managed-premium  <br>
-               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=managed-premium<br>
+               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=Premium_LRS  <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=Premium_LRS<br>
                e.g.<b>for GCP:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100    <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd <br>
