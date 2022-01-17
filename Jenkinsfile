@@ -27,6 +27,9 @@ pipeline{
         choice(choices: ['','ovn', 'sdn'], name: 'NETWORK_TYPE', description: 'Network type, will be ignored if BUILD_NUMBER is set')
         choice(choices: ['','ipi', 'upi', 'sno'], name: 'INSTALL_TYPE', description: '''Type of installation (set to SNO for sno cluster type),  <br/>
         will be ignored if BUILD_NUMBER is set''')
+        string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of master nodes in your cluster to create.')
+        string(name: "WORKER_COUNT", defaultValue: '3', description: 'Number of worker nodes in your cluster to create.')
+
         choice(choices: ["","cluster-density","pod-density","node-density","etcd-perf","max-namespaces","max-services","router-perf","storage-perf"], name: 'CI_TYPE', description: '''Type of scale-ci job to run. Can be left blank to not run ci job''')
         booleanParam(name: 'DESTROY_WHEN_DONE', defaultValue: 'False', description: 'If you want to destroy the cluster created at the end of your run ')
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
@@ -84,20 +87,20 @@ pipeline{
                                     worker_type = "master_worker_AllInOne: 'true', num_masters: 1, num_workers: 0, vm_type: 'm5.4xlarge', "
                                     install_type_custom = "ipi"
                                 } else {
-                                worker_type = "vm_type_workers: 'm5.xlarge', num_workers: 3, "
+                                worker_type = "vm_type_workers: 'm5.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                                 }
                             }
                             if (params.CLOUD_TYPE == "azure") {
-                                worker_type = "vm_type_workers: 'Standard_D8s_v3', num_workers: 3, region: centralus, "
+                                worker_type = "vm_type_workers: 'Standard_D8s_v3', region: centralus, num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                             }
                             if (params.CLOUD_TYPE == "gcp") {
-                                worker_type = "vm_type_workers: 'n1-standard-4', num_workers: 3, "
+                                worker_type = "vm_type_workers: 'n1-standard-4', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                                 if (params.NETWORK_TYPE != "sdn") {
                                  network_ending = network_ending + "-ci"
                                 }
                             }
                             if (params.CLOUD_TYPE == "osp") {
-                                worker_type = "vm_type_workers: 'ci.m1.xlarge', num_workers: 3, "
+                                worker_type = "vm_type_workers: 'ci.m1.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                             }
 
                             def version = params.OCP_VERSION
