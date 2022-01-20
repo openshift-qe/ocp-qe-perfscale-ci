@@ -76,10 +76,11 @@ pipeline {
           fields.each {
             key, value -> println("${key} = ${value}");
           }
-          if(! env.VARIABLES_LOCATION.contains("vsphere")){
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
-          }
-        }
+// Remove post-config for now for hostnetworking
+//          if(! env.VARIABLES_LOCATION.contains("vsphere")){
+//            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+//          }
+//        }
         ansiColor('xterm') {
           withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
             sh label: '', script: '''
@@ -130,9 +131,10 @@ pipeline {
     always {
       script {
         def fields = env.getEnvironment()
-        if(! env.VARIABLES_LOCATION.contains("vsphere")){
-          build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'TEARDOWN'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
-        }
+// Remove post-config for now for hostnetworking
+//        if(! env.VARIABLES_LOCATION.contains("vsphere")){
+//          build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'PROVISION_OR_TEARDOWN', value: 'TEARDOWN'), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+//        }
       }
     }
   }
