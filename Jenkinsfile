@@ -51,10 +51,10 @@ pipeline{
         string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'This variable configures the number of cluster-density jobs iterations to perform (1 namespace per iteration). By default 1000.')
         string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload.')
         string(name: "PODS_PER_NODE", defaultValue: '150', description: 'Number of pods per node.')
-        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
+        booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
         string(name: 'UPGRADE_VERSION', description: 'This variable sets the version number you want to upgrade your OpenShift cluster to (can list multiple by separating with comma, no spaces).')
         booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
-        booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the ugprade')
+        booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the upgrade')
         string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
