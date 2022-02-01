@@ -19,6 +19,7 @@ Types:
 * "etcd-perf"
 * "max-namespaces"
 * "max-services"
+* "pod-network-policy-test"
 * "router-perf"
 * "storage-perf"
 
