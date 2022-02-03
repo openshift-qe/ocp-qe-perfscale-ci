@@ -61,19 +61,14 @@ def rewrite_data(start_time, uuid, file_name):
     print_new_json(end_time, "lte", file_name)
 
 def execute_command(es_url, fileName):
-
     with open(fileName, "r") as f:
         data_json = f.read()
     return_code, str_response = run(f"curl -X GET {es_url}/_search?pretty -H 'Content-Type: application/json' -d'{data_json}'")
     if return_code == 0:
-        data_info = []
         json_response = json.loads(str_response)
-        for hits in json_response['hits']['hits']:
-            data_info.append(get_data_from_json(hits['_source']))
-        sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
-        return sorted_data
+        return json_response
     else:
-        return []
+        return {}
 
 
 def get_data_from_json(json_data):
@@ -85,5 +80,32 @@ def get_pod_latency_data():
     es_url, uuid, creation_time = get_benchmark_data()
     if es_url != "":
         rewrite_data(creation_time, uuid, file_name)
-        return execute_command(es_url, file_name)
-    return []
+        json_response = execute_command(es_url, file_name)
+        data_info = []
+        for hits in json_response['hits']['hits']:
+            data_info.append(get_data_from_json(hits['_source']))
+        sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
+        return sorted_data
+    else:
+        return []
+
+def get_uuid_uperf(cluster_name):
+    file_name = "uperf_find_uuid.json"
+
+    return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
+
+    #start time to be when benchmark-operator was created
+    print_new_json(start_time, "gte", file_name)
+    print_new_json(cluster_name, "cluster_name", file_name)
+    # rewrite lte with current date
+    tz = timezone('UTC')
+    end_time = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    print_new_json(end_time, "lte", file_name)
+    es_url = "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443"
+    json_response = execute_command(es_url, file_name)
+    # want to find most recent, list should already be ordered
+    for hits in json_response['hits']['hits']:
+        if "_source" not in hits and "uuid" not in hits['_source']:
+            return ""
+        return hits['_source']['uuid']
+    return ""
