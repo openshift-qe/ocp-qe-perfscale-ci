@@ -79,7 +79,11 @@ pipeline{
                      if(params.BUILD_NUMBER == "") {
                          def network_ending = ""
                             if (params.NETWORK_TYPE != "sdn") {
+                            if (params.CLOUD_TYPE == "alicloud") {
+                                network_ending = "-fips-${params.NETWORK_TYPE}-ci"
+                            } else {
                                 network_ending = "-${params.NETWORK_TYPE}"
+                            }
                             }
                             def worker_type = ""
                             if (params.CLOUD_TYPE == "aws") {
@@ -103,6 +107,7 @@ pipeline{
                                 worker_type = "vm_type_workers: 'ci.m1.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                             }
                             if (params.CLOUD_TYPE == "alicloud") {
+
                                 worker_type = "vm_type_workers: 'ecs.g6.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
                             }
                             if (params.CLOUD_TYPE == "ibmcloud") {
