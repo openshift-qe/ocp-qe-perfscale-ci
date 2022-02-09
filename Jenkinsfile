@@ -164,6 +164,26 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32
               ''')]
+            }else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
+OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120
+OPENSHIFT_INFRA_NODE_CPU_COUNT=48
+OPENSHIFT_INFRA_NODE_MEMORY_SIZE=196608
+OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2
+OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment
+OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
+OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=32
+OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072
+OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2
+OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment
+              ''')]
+            } else {
+            echo "Cloud type is not set up yet"
             }
           }
         }
