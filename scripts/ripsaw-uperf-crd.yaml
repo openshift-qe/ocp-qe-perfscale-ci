@@ -1,0 +1,43 @@
+---
+
+apiVersion: ripsaw.cloudbulldozer.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: uperf-${WORKLOAD}-${PAIRS}
+  namespace: benchmark-operator
+spec:
+  uuid: ${UUID}
+  clustername: ${CLUSTER_NAME}
+  elasticsearch:
+    url: ${ES_SERVER}
+  metadata:
+    collection: ${METADATA_COLLECTION}
+    serviceaccount: backpack-view
+    privileged: true
+    targeted: ${METADATA_TARGETED}
+  workload:
+    name: uperf
+    args:
+      run_id: "$RUN_ID"
+      hostnetwork: false
+      serviceip: false
+      metallb:
+        addresspool: "${ADDRESSPOOL}"
+        service_etp: "${SERVICE_ETP}" 
+      networkpolicy: false
+      pin: true
+      pin_server: "$server"
+      pin_client: "$client"
+      multus:
+        enabled: false
+      samples: 3
+      pair: ${PAIRS}
+      nthrs:
+        - 1
+      protos:
+        - ${PROTOCOL}
+      test_types:
+        - ${TRAFFIC_TYPE}
+      sizes:
+        - ${PACKET_SIZE}
+      runtime: ${RUNTIME}
