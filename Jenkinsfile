@@ -34,8 +34,8 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/memodi/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'netobserv-per-test', description:'You can change this to point to a branch on your fork if needed.')
         choice(name: 'NETWORKING_VARIANT', choices: ['POD_NETWORK', 'SERVICEIP_NETWORK', 'MULTUS_NETWORK'], description: 'Specify which networking variant')
         string(name: 'UPERF_RUNTIME', defaultValue:'60', description:'Specify uperf workload runtime')
     }
