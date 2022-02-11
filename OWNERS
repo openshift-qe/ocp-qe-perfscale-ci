@@ -1,9 +1,10 @@
 approvers:
-- kedark3
 - mffiedler
+- qiliRedHat
 reviewers:
-- kedark3
+- qiliRedHat
 - mffiedler
 - paigerube14
 - rpattath
 - skordas
+- memodi
