@@ -256,8 +256,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                 script{
                     if(install != null && (install.result.toString() != "SUCCESS" || params.DESTROY_WHEN_DONE == true)) {
                         destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [string(name: "BUILD_NUMBER", value: install.number.toString()),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)]
-                    }
-                    if(install == null && params.DESTROY_WHEN_DONE == true) {
+                    } else if(install == null && params.DESTROY_WHEN_DONE == true) {
                         destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [string(name: "BUILD_NUMBER", value: build_string),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)]
                     }
                 }
