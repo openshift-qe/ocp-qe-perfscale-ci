@@ -1,7 +1,9 @@
 approvers:
 - mffiedler
 - qiliRedHat
+- memodi
 reviewers:
+- jechen0648
 - qiliRedHat
 - mffiedler
 - paigerube14
