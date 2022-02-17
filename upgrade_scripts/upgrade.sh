@@ -14,6 +14,7 @@ taget_build_arr=(${1//,/ })  #target_build maybe a list "4.1.22,4.1.0-0.nightly-
 
 enable_force=true
 scale=false
+eus=false
 maxUnavail=1
 #optional parameters
 while [[ $# -gt 1 ]]
@@ -32,6 +33,11 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -e|--eus)
+    eus=$2
+    shift # past argument
+    shift # past value
+    ;;
     -u|--maxunavil)
     maxUnavail=$2
     shift # past argument
@@ -47,6 +53,7 @@ done
 echo "force $enable_force"
 echo "scale $scale"
 echo "target version $taget_build_arr"
+echo "eus $eus"
 
 # It will take about 15 mins If Kube-apiserver rolling out occurs after upgrade was fnished
 kas_rollingout_wait(){
@@ -143,6 +150,7 @@ function abnormal_co() {
              echo -e "must-gather file creation fails!!!"
           fi
       fi
+      python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('false')"
       exit 127 # upgrade itself succ and post-check fail
   fi
 
@@ -212,18 +220,47 @@ do
   then
       echo "target version nightly "
       target_version_prefix=${target_build}   #night build:4.2.0-0.nightly-2020-02-03-234322
-      if [ "X$enable_force" == "Xtrue" ];then
-        upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/ocp/release:$target_version_prefix --force --allow-explicit-upgrade"
+      if [[ "X$eus" == "Xtrue" ]]; then
+        python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('true')"
+        target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://amd64.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
+        if [[ $target_sha == "" ]]; then
+          echo "Could not find target version in 'https://amd64.ocp.releases.ci.openshift.org/graph'"
+          exit 1
+        fi
+        if [ "X$enable_force" == "Xtrue" ];then
+          upgrade_line="oc adm upgrade --to-image $target_sha --force --allow-explicit-upgrade"
+        else
+          upgrade_line="oc adm upgrade --to-image $target_sha --allow-explicit-upgrade"
+        fi
       else
-        upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/ocp/release:$target_version_prefix --allow-explicit-upgrade"
+        if [ "X$enable_force" == "Xtrue" ];then
+          upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/ocp/release:$target_version_prefix --force --allow-explicit-upgrade"
+        else
+          upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/ocp/release:$target_version_prefix --allow-explicit-upgrade"
+        fi
       fi
   else
     echo "target version quay "
     target_version_prefix=$(echo ${target_build}) #4.3.0-x86_64 ==> we got "Cluster version is 4.3.0"
-    if [ "X$enable_force" == "Xtrue" ];then
-      upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:$target_version_prefix-x86_64 --force --allow-explicit-upgrade"
+    if [[ "X$eus" == "Xtrue" ]]; then
+        python3 -c "import check_upgrade; check_upgrade.set_upstream_channel('$target_version_prefix')"
+        python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('true')"
+        found_version=$(python3 -c "import check_upgrade; check_upgrade.verify_version_in_channel_list('$target_version_prefix')")
+        if [[ "X$found_version" == "XERROR" ]]; then
+          echo "Could not find target version $target_version_prefix in 'oc adm upgrade' recommended paths"
+          exit 1
+        fi
+        if [ "X$enable_force" == "Xtrue" ];then
+          upgrade_line="oc adm upgrade --to $target_version_prefix --force"
+        else
+          upgrade_line="oc adm upgrade --to $target_version_prefix"
+        fi
     else
-      upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:$target_version_prefix-x86_64 --allow-explicit-upgrade"
+      if [ "X$enable_force" == "Xtrue" ];then
+        upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:$target_version_prefix-x86_64 --force --allow-explicit-upgrade"
+      else
+        upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:$target_version_prefix-x86_64 --allow-explicit-upgrade"
+      fi
     fi
   fi
 
@@ -242,6 +279,12 @@ do
   sleep 1
 done
 
+if [[ "X$eus" == "Xtrue" ]]; then
+python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('false')"
+sleep 10
+python3 -c "import check_upgrade; check_upgrade.wait_for_mcp_upgrade()"
+
+fi
 
 if [ "X$scale" == "Xtrue" ]; then
   #add machinesets

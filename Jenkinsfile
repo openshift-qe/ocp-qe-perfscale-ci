@@ -8,6 +8,7 @@ if (userId) {
 
 def overall_status = "FAIL"
 def RETURNSTATUS = "default"
+
 pipeline {
   agent none
 
@@ -27,6 +28,9 @@ pipeline {
         string(name: 'UPGRADE_VERSION', description: 'This variable sets the version number you want to upgrade your OpenShift cluster to.')
         booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
         booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the ugprade')
+        booleanParam(name: 'EUS_UPGRADE', defaultValue: false, description: '''This variable will perform an EUS type upgrade <br>
+        See "https://docs.google.com/document/d/1396VAUFLmhj8ePt9NfJl0mfHD7pUT7ii30AO7jhDp0g/edit#heading=h.bv3v69eaalsw" for how to run
+        ''')
         string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet ')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
@@ -65,8 +69,8 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        script {
 
+        script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
           # Get ENV VARS Supplied by the user to this job and store in .env_override
           echo "$ENV_VARS" > .env_override
@@ -86,7 +90,7 @@ pipeline {
           pip --version
           pip install --upgrade pip
           pip install -U datetime pyyaml
-          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE
+          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE -e $EUS_UPGRADE
           ''' )
            }
            script {
@@ -107,5 +111,5 @@ pipeline {
             }
         }
      }
-
 }
+
