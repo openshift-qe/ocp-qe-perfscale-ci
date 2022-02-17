@@ -24,7 +24,8 @@ pipeline {
         '''
         )
         string(name: 'WORKER_COUNT', defaultValue: '', description:'Total Worker count desired in the cluster')
-        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes')
+	text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
                SOMEVAR1='env-test'<br>
@@ -113,7 +114,7 @@ pipeline {
         '''
         }
         script{
-          if(params.WORKER_COUNT.toInteger() > 50) {
+	  if(params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
             if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
