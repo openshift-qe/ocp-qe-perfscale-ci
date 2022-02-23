@@ -103,7 +103,7 @@ pipeline {
            }
            script {
                 if(params.WRITE_TO_FILE == true) {
-                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'CI_STATUS', value: "${overall_status}"),
+                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS),string(name: 'CI_STATUS', value: "${overall_status}"),
                    booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE), booleanParam(name: 'SCALE', value: SCALE), string(name: 'UPGRADE_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "upgrade")]
                }
             }
