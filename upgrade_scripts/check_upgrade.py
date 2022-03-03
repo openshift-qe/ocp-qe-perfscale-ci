@@ -31,13 +31,13 @@ def get_sha_url(url,version):
             return
     print("")
 
-def set_upstream_channel(version):
+def set_upstream_channel(channel, version):
 
     small_version = ".".join(version.split('.', 2)[:2])
     print('small v ' + str(small_version))
     if small_version == "4.9":
         patch_48_to_49()
-    merge_json = '{"spec":{"channel": "fast-%s" }}' % small_version
+    merge_json = '{"spec":{"channel": "%s-%s" }}' % (channel, small_version)
     return_code, output = invoke(f"oc patch clusterversion/version --type='merge' -p='{merge_json}'")
     if return_code != 0:
         print("Error occurred trying to patch channel version")
