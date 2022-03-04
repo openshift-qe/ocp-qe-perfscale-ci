@@ -19,10 +19,21 @@ pipeline{
     agent any
 
     parameters {
+        separator(name: "PRE_BUILT_FLEXY_ENV", sectionHeader: "Pre Built Flexy", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+
+        separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
         string(name: 'OCP_PREFIX', defaultValue: '', description: 'Name of ocp cluster you want to build')
         string(name: 'OCP_VERSION', defaultValue: '', description: 'Build version to install the cluster.')
-        choice(choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere'], name: 'CLOUD_TYPE', description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
+        choice(choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere', 'ash'], name: 'CLOUD_TYPE', description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
         Will be ignored if BUILD_NUMBER is set''')
         choice(choices: ['','ovn', 'sdn'], name: 'NETWORK_TYPE', description: 'Network type, will be ignored if BUILD_NUMBER is set')
         choice(choices: ['','ipi', 'upi', 'sno'], name: 'INSTALL_TYPE', description: '''Type of installation (set to SNO for sno cluster type),  <br/>
@@ -30,17 +41,43 @@ pipeline{
         string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of master nodes in your cluster to create.')
         string(name: "WORKER_COUNT", defaultValue: '3', description: 'Number of worker nodes in your cluster to create.')
 
+        separator(name: "SCALE_CI_JOB_INFO", sectionHeader: "Scale-CI Job Options", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
         choice(choices: ["","cluster-density","pod-density","node-density","etcd-perf","max-namespaces","max-services","pod-network-policy-test","router-perf","storage-perf"], name: 'CI_TYPE', description: '''Type of scale-ci job to run. Can be left blank to not run ci job''')
-        booleanParam(name: 'DESTROY_WHEN_DONE', defaultValue: 'False', description: 'If you want to destroy the cluster created at the end of your run ')
+        string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'This variable configures the number of cluster-density jobs iterations to perform (1 namespace per iteration). By default 1000.')
+        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload.')
+        string(name: "PODS_PER_NODE", defaultValue: '150', description: 'Number of pods per node.')
+
+
+        separator(name: "UPGRADE_INFO", sectionHeader: "Upgrade Options", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
+        string(name: 'UPGRADE_VERSION', description: 'This variable sets the version number you want to upgrade your OpenShift cluster to (can list multiple by separating with comma, no spaces).')
+        booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
+        booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the upgrade')
+        string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
+
+
+        separator(name: "GENERAL_BUILD_INFO", sectionHeader: "General Options", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
         if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
         )
+        booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
+        booleanParam(name: 'DESTROY_WHEN_DONE', defaultValue: 'False', description: 'If you want to destroy the cluster created at the end of your run ')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
+        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
             e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
         3.11: ansible-2.6 <br/>
@@ -48,14 +85,6 @@ pipeline{
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
         )
-        string(name: 'JOB_ITERATIONS', defaultValue: '1000', description: 'This variable configures the number of cluster-density jobs iterations to perform (1 namespace per iteration). By default 1000.')
-        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload.')
-        string(name: "PODS_PER_NODE", defaultValue: '150', description: 'Number of pods per node.')
-        booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
-        string(name: 'UPGRADE_VERSION', description: 'This variable sets the version number you want to upgrade your OpenShift cluster to (can list multiple by separating with comma, no spaces).')
-        booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
-        booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the upgrade')
-        string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -76,6 +105,8 @@ pipeline{
            steps {
                 script{
                     def install_type_custom = params.INSTALL_TYPE
+                    def custom_cloud_type = params.CLOUD_TYPE
+                    def custom_jenkins_label = JENKINS_AGENT_LABEL
                      if(params.BUILD_NUMBER == "") {
                          def network_ending = ""
                           if (params.CLOUD_TYPE == "vsphere") {
@@ -84,7 +115,7 @@ pipeline{
                            if (params.NETWORK_TYPE != "sdn") {
                             if (params.CLOUD_TYPE == "alicloud") {
                                 network_ending = "-fips-${params.NETWORK_TYPE}-ci"
-                            }else {
+                            } else if (params.CLOUD_TYPE != "ash" ) {
                                 network_ending += "-${params.NETWORK_TYPE}"
                             }
                            }
@@ -118,7 +149,16 @@ pipeline{
                             }
                             else if (params.CLOUD_TYPE == "vsphere") {
                                 worker_type = " num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                            } else if (params.CLOUD_TYPE == "ash") {
+                                custom_cloud_type = "azure"
+                                worker_type = " num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                if (params.NETWORK_TYPE != "sdn") {
+                                worker_type += 'networkType: "OVNKubernetes", '
+                                }
+                                network_ending = "-ash_wwt"
+                                custom_jenkins_label = "fedora-installer-wwt"
                             }
+
                             def version = params.OCP_VERSION
                             sh "echo ${version}"
                             def version_list = version.tokenize(".")
@@ -126,9 +166,9 @@ pipeline{
                             def major_v = version_list[0]
                             def minor_v = version_list[1]
                             sh "echo minor ${minor_v} major ${major_v}"
-                            def var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${params.CLOUD_TYPE}/versioned-installer${network_ending}"
+                            def var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
                             sh "echo var ${var_loc}"
-                            install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),text(name: "LAUNCHER_VARS",
+                            install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
                             value: "{ ${worker_type} installer_payload_image: 'registry.ci.openshift.org/ocp/release:${params.OCP_VERSION}'}"),text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
