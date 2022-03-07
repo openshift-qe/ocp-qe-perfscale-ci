@@ -31,6 +31,7 @@ pipeline {
         booleanParam(name: 'EUS_UPGRADE', defaultValue: false, description: '''This variable will perform an EUS type upgrade <br>
         See "https://docs.google.com/document/d/1396VAUFLmhj8ePt9NfJl0mfHD7pUT7ii30AO7jhDp0g/edit#heading=h.bv3v69eaalsw" for how to run
         ''')
+        choice(choices: ['fast', 'eus', 'candidate', 'stable'], name: 'EUS_CHANNEL', description: 'EUS Channel type, will be ignored if EUS_UPGRADE is not set to true')
         string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet ')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
@@ -90,7 +91,7 @@ pipeline {
           pip --version
           pip install --upgrade pip
           pip install -U datetime pyyaml
-          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE -e $EUS_UPGRADE
+          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE -e $EUS_UPGRADE -c $EUS_CHANNEL
           ''' )
            }
            script {
@@ -103,7 +104,7 @@ pipeline {
            }
            script {
                 if(params.WRITE_TO_FILE == true) {
-                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'CI_STATUS', value: "${overall_status}"),
+                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS),string(name: 'CI_STATUS', value: "${overall_status}"),
                    booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE), booleanParam(name: 'SCALE', value: SCALE), string(name: 'UPGRADE_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "upgrade")]
                }
             }

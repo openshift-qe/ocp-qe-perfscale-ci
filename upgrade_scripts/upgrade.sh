@@ -11,10 +11,10 @@ fi
 
 taget_build_arr=(${1//,/ })  #target_build maybe a list "4.1.22,4.1.0-0.nightly-2019-11-04-224442,4.2.2"
 
-
 enable_force=true
 scale=false
 eus=false
+eus_channel="fast"
 maxUnavail=1
 #optional parameters
 while [[ $# -gt 1 ]]
@@ -35,6 +35,11 @@ case $key in
     ;;
     -e|--eus)
     eus=$2
+    shift # past argument
+    shift # past value
+    ;;
+   -c|--chn)
+    eus_channel=$2
     shift # past argument
     shift # past value
     ;;
@@ -243,7 +248,7 @@ do
     echo "target version quay "
     target_version_prefix=$(echo ${target_build}) #4.3.0-x86_64 ==> we got "Cluster version is 4.3.0"
     if [[ "X$eus" == "Xtrue" ]]; then
-        python3 -c "import check_upgrade; check_upgrade.set_upstream_channel('$target_version_prefix')"
+        python3 -c "import check_upgrade; check_upgrade.set_upstream_channel('$eus_channel','$target_version_prefix')"
         python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('true')"
         found_version=$(python3 -c "import check_upgrade; check_upgrade.verify_version_in_channel_list('$target_version_prefix')")
         if [[ "X$found_version" == "XERROR" ]]; then
