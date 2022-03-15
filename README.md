@@ -1,24 +1,42 @@
-# ocp-qe-perfscale-ci
-
+# E2E Benchmarking CI Repo - Kube Burner
 
 ## Purpose
+Run specific workloads on a given OpenShift cluster. OpenShift cluster `kubeconfig` is fetched from given flexy job id.
+Can read more at e2e-benchmark [kube-burner](https://github.com/cloud-bulldozer/benchmark-operator/blob/master/docs/kube-burner.md)
 
-This repo would contain `Jenkinsfile` and any other pertaining contents that would be used by a multi-branch pipeline in our Jenkins.
 
-## Structure
+## Polarion Test Case
+Node Density TC: [OCP-41163](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41163)
 
-There are multiple orphan branches present in this repos, each of them are supposed to house one kind of workload for [E2E-benchmarking](https://github.com/cloud-bulldozer/e2e-benchmarking/). Each branch should contain one `Jenkinsfile`
+Node Density Heavy TC: [OCP-49146](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-49146)
 
-You can create a new orphan branch simply by `git checkout --orphan BRANCHNAME` for new workload.
+Cluster Density TC: [OCP-41162](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41162)
 
-Jenkins multi-branch pipeline job will look at the `Jenkinsfile` on each of these branches and create a new workload job for you to execute in your Jenkins.
+Max-Namespace TC: [OCP-41165](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41165)
 
-This repository also hosting the `perf-dashboard-grafana-crs` directory, that includes all the Custom Resources and relevant files that you need to deploy a fully functional perf-scale dashboard.
-This deployment uses grafana operator to enable grafana operator on your cluster, create an instance, create required datasources(in this case Prometheus and ElasticSearch) and dashboards.
+Max-Services TC: [OCP-41166](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41166)
 
-See `launch-grafana.sh` for env variables we need. And, `cleanup-grafana.sh` could be used to cleanup everything created by the `launch-grafana.sh` script.
+Pod-Density TC: [OCP-41155](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-41155)
 
-**PREREQUISITE:** is to have `KUBECONFIG` env variable configured that can access your OpenShift cluster. 
+## Parameters
+
+Cluster-density should run with ITERATIONS = 4 iterations * worker nodes
+
+Node Density and Node Density Heavy: 
+```
+NODE_COUNT: number of worker nodes on your cluster  
+PODS_PER_NODE: Work up to 250
+```
+
+
+pod-density: Set ITERATIONS to 200 * num_workers, work up to 250 * num_workers (Number of pods in 1 namespace)
+
+cluster-density: Set ITERATIONS to 4 * num_workers, 1 namespace per iteration
+
+max-namespaces: Set ITERATIONS to ~30 * num_workers, 1 namespace per iteration
+
+max-services: Set ITERATIONS to 200 * num_workers, work up to 250 * num_workers (1 namespace/service per iteration)
+
 
 ### Author
-Kedar Kulkarni <@kedark3 on Github>
+Paige Rubendall <@paigerube14 on Github>
