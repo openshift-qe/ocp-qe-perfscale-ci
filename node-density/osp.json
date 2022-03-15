@@ -1,1 +1,72 @@
-{"4.9": {"3": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "20": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "50": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}}, "4.10": {"3": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "20": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "50": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}}, "4.11": {"3": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "20": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "50": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}}, "4.12": {"3": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "20": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "50": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}}, "4.13": {"3": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "20": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}, "50": {"OVN": {"amd64": "", "arm64": ""}, "SDN": {"amd64": "", "arm64": ""}}}}
+{
+    "4.9": {
+        "3": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "20": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "50": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        }
+    },
+    "4.10": {
+        "3": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "20": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "50": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        }
+    },
+    "4.11": {
+        "3": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "20": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "50": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        }
+    },
+    "4.12": {
+        "3": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "20": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "50": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        }
+    },
+    "4.13": {
+        "3": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "20": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        },
+        "50": {
+            "IPI-on-OSP16-OVN.install.yaml": "",
+            "IPI-on-OSP16.install.yaml": ""
+        }
+    }
+}

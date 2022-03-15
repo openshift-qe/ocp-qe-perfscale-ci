@@ -1,162 +1,54 @@
 {
     "4.9": {
-        "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "10": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        }
+        "3": {},
+        "10": {},
+        "20": {}
     },
     "4.10": {
-        "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "10": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        }
+        "3": {},
+        "10": {},
+        "20": {}
     },
     "4.11": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "10": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         }
     },
     "4.12": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "10": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         }
     },
     "4.13": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "10": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-Nutanix-OVN.install.yaml": "",
+            "IPI-on-Nutanix.install.yaml": ""
         }
     }
 }

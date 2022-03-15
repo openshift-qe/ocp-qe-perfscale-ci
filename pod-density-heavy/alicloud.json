@@ -1,212 +1,80 @@
 {
     "4.9": {
-        "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "50": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "120": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        }
+        "3": {},
+        "20": {},
+        "50": {},
+        "120": {}
     },
     "4.10": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "50": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "120": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         }
     },
     "4.11": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "50": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "120": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         }
     },
     "4.12": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "50": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "120": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         }
     },
     "4.13": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "50": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         },
         "120": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI-on-AlibabacloudOVN.install.yaml": "",
+            "IPI-on-Alibabacloud.install.yaml": ""
         }
     }
 }
