@@ -1,0 +1,22 @@
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDataSource
+metadata:
+  name: elastic-ripsaw-uperf-results
+spec:
+  datasources:
+  - access: proxy
+    basicAuth: true
+    basicAuthPassword: $ES_PASSWORD
+    basicAuthUser: $ES_USER
+    database: ripsaw-uperf-results
+    editable: true
+    isDefault: false
+    jsonData:
+      esVersion: 70
+      timeField: uperf_ts
+      timeInterval: 5s
+    name: Elastic-ripsaw-uperf-results
+    type: elasticsearch
+    url: $ES_SERVER
+    version: 1
+  name: elastic-uperf-results.yaml
