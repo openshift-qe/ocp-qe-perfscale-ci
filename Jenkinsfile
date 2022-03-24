@@ -274,7 +274,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
             script{
              if( build_string != "DEFAULT" && status == "PASS") {
               if(params.SCALE_UP.toInteger() > 0) {
-                scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+                scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: "${build_string}"), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
 
                 if( scale_up != null && scale_up.result.toString() != "SUCCESS") {
                    status = "Scale Up Failed"
