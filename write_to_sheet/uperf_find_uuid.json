@@ -1,0 +1,73 @@
+{
+    "version": true,
+    "size": 500,
+    "sort": [
+        {
+            "uperf_ts": {
+                "order": "desc",
+                "unmapped_type": "boolean"
+            }
+        }
+    ],
+    "aggs": {
+        "2": {
+            "date_histogram": {
+                "field": "uperf_ts",
+                "fixed_interval": "30m",
+                "time_zone": "America/New_York",
+                "min_doc_count": 1
+            }
+        }
+    },
+    "stored_fields": [
+        "*"
+    ],
+    "script_fields": {},
+    "docvalue_fields": [
+        {
+            "field": "uperf_ts",
+            "format": "date_time"
+        }
+    ],
+    "_source": {
+        "excludes": []
+    },
+    "query": {
+        "bool": {
+            "must": [],
+            "filter": [
+                {
+                    "match_all": {}
+                },
+                {
+                    "match_phrase": {
+                        "cluster_name": "qe-pr-10899-kdl2n-oa"
+                    }
+                },
+                {
+                    "range": {
+                        "uperf_ts": {
+                            "gte": "2022-03-18T14:13:57Z",
+                            "lte": "2022-03-18T15:22:09.424Z",
+                            "format": "strict_date_optional_time"
+                        }
+                    }
+                }
+            ],
+            "should": [],
+            "must_not": []
+        }
+    },
+    "highlight": {
+        "pre_tags": [
+            "@kibana-highlighted-field@"
+        ],
+        "post_tags": [
+            "@/kibana-highlighted-field@"
+        ],
+        "fields": {
+            "*": {}
+        },
+        "fragment_size": 2147483647
+    }
+}

@@ -63,6 +63,20 @@ def get_pod_latencies():
         return avg_list
     return ["", "", "", ""]
 
+
+def get_uperf_uuid():
+    # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
+    pod_latencies_list = get_es_data.get_pod_latency_data()
+    if len(pod_latencies_list) != 0:
+        print("Pod latency list {}".format(str(pod_latencies_list)))
+        avg_list = []
+        p99_list = []
+        for pod_info in pod_latencies_list:
+            avg_list.append(pod_info[1])
+            p99_list.append(pod_info[2])
+        return avg_list
+    return ["", "", "", ""]
+
 def get_oc_version():
     return_code, cluster_version_str = run("oc get clusterversion -o json")
     if return_code == 0:
