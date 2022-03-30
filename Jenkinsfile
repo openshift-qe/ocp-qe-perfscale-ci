@@ -7,6 +7,7 @@ if (userId) {
 }
 
 def RETURNSTATUS = "default"
+def output = ""
 
 pipeline {
   agent none
@@ -27,7 +28,6 @@ pipeline {
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
         )
-
         string(name: 'VARIABLE', defaultValue: '1000', description: '''This variable configures parameter needed for each type of workload. By default 1000. <br>
             pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
             cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration). <br>
@@ -54,7 +54,6 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        
         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
@@ -66,6 +65,7 @@ pipeline {
     }
 
   stages {
+
     stage('Run Kube-Burner Test'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
@@ -96,6 +96,7 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
+
         script{
           ansiColor('xterm') {
           RETURNSTATUS = sh(returnStatus: true, script: '''
@@ -139,9 +140,9 @@ pipeline {
           elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
             export PODS_PER_NODE=$VARIABLE
           fi
-          ./run.sh
-
+          ./run.sh | tee "kube-burner.out"
           ''')
+          output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
           }
         }
         script{
@@ -152,7 +153,12 @@ pipeline {
                 currentBuild.result = "FAILURE"
             }
            if(params.WRITE_TO_FILE == true) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: WORKLOAD)]
+
+            def parameter_to_pass = VARIABLE
+            if (params.WORKLOAD == "node-density" || params.WORKLOAD == "node-density-heavy" ) {
+                parameter_to_pass += "," + NODE_COUNT
+            }
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ), text(name: "JOB_OUTPUT", value: "${output}")]
            }
        }
        script{
@@ -160,7 +166,6 @@ pipeline {
           if(params.SCALE_DOWN.toInteger() > 0) {
             build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
           }
-
         }
       }
 
