@@ -41,6 +41,18 @@ def get_grafana_url(uuid, start_time, end_time):
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
+def get_metadata_uuid(job_output):
+    start_time = get_es_data.get_project_creation_time()
+    end_time = n_time = datetime.utcnow()
+    to_time = calendar.timegm(n_time.timetuple()) * 1000
+
+    with open(job_output, encoding='utf-8', mode="r") as f:
+        job_output_string = f.read()
+    metadata = job_output_string.split("Run Metadata:")[-1].split("}")[0]
+    uuid, md_json = get_uuid_from_json(metadata)
+    if uuid == "":
+        return ""
+    return get_grafana_url(uuid, start_time, to_time)
 
 def find_uperf_uuid_url(cluster_name):
     uuid = get_es_data.get_uuid_uperf(cluster_name)
@@ -80,7 +92,6 @@ def parse_output_for_sheet(job_output):
     with open(job_output, encoding='utf8', mode="r") as f:
         job_output_string = f.read()
 
-
     split_output = job_output_string.split('Google Spreadsheet link')
 
     #need to get not first one
@@ -90,15 +101,11 @@ def parse_output_for_sheet(job_output):
         return get_url_out(split_output[-1])
 
 
-def get_router_perf_uuid(job_output):
-    with open(job_output, encoding='utf-8', mode="r") as f:
-        job_output_string = f.read()
-    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")[0]
-
+def get_uuid_from_json(metadata):
     md_json = {}
     for md in metadata.split("\n"):
-        md2 = md.replace('"', '').replace(',','')
-        #print('md2 ' + str(''))
+        md2 = md.replace('"', '').replace(',', '')
+        # print('md2 ' + str(''))
         md_split = md2.split(':')
         print('len' + str(len(md_split)))
         if len(md_split) >= 2:
@@ -106,6 +113,14 @@ def get_router_perf_uuid(job_output):
     print("md josn " + str(md_json))
 
     return md_json['uuid'], md_json
+
+
+def get_router_perf_uuid(job_output):
+    with open(job_output, encoding='utf-8', mode="r") as f:
+        job_output_string = f.read()
+    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")[0]
+    return get_uuid_from_json(metadata)
+
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output):
     scopes = [
@@ -138,6 +153,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             grafana_cell = ""
     else:
         grafana_cell = get_benchmark_uuid()
+        if not grafana_cell:
+            grafana_cell = get_metadata_uuid(job_output)
 
     ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
@@ -169,5 +186,4 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     ws.insert_row(row, index, "USER_ENTERED")
 
 
-#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 89225, 9, 'router-perf', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/router-perf/9/", "PASS","", "network_perf.out")
-#parse_output_for_sheet("network_perf.out")
+#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 92023, 4, 'concurrent-builds', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/concurrent-builds/4/", "PASS","cakephp,1 2", "network_perf.out")

@@ -44,11 +44,12 @@ def get_benchmark_data():
     return_code, benchmark_str = run("oc get benchmark -n benchmark-operator -o yaml")
     if return_code == 0:
         benchmark_yaml_all = yaml.safe_load(benchmark_str)
-        benchmark_yaml = benchmark_yaml_all['items'][0]
-        es_url = benchmark_yaml['spec']['elasticsearch']['url']
-        uuid = benchmark_yaml['spec']['uuid']
-        creation_time = benchmark_yaml['metadata']['creationTimestamp'][:-1] + ".000Z"
-        return es_url, uuid, creation_time
+        if len(benchmark_yaml_all['items']) > 0:
+            benchmark_yaml = benchmark_yaml_all['items'][0]
+            es_url = benchmark_yaml['spec']['elasticsearch']['url']
+            uuid = benchmark_yaml['spec']['uuid']
+            creation_time = benchmark_yaml['metadata']['creationTimestamp'][:-1] + ".000Z"
+            return es_url, uuid, creation_time
     return "", "", ""
 
 def rewrite_data(start_time, uuid, file_name):
@@ -90,10 +91,16 @@ def get_pod_latency_data():
                 return sorted_data
     return []
 
+def get_project_creation_time():
+    return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
+    if return_code == 0:
+        return start_time
+    return ""
+
 def get_uuid_uperf(cluster_name):
     file_name = "uperf_find_uuid.json"
 
-    return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
+    start_time = get_project_creation_time()
 
     #start time to be when benchmark-operator was created
     print_new_json(start_time, "gte", file_name)
