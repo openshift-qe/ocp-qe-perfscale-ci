@@ -38,7 +38,7 @@ pipeline {
         choice(name: 'FLOW_SAMPLING', choices: ['1', '100', '400'], description: 'Specify flow sampling rate')
 
         // uperf-only params
-        separator(name: "UPERF_WORKLOAD", sectionHeader: "Node Density Job Options", separatorStyle: "border-width: 0",
+        separator(name: "UPERF_WORKLOAD", sectionHeader: "UPERF Job Options", separatorStyle: "border-width: 0",
         sectionHeaderStyle: """
 				font-size: 20px;
 				font-weight: bold;
@@ -117,6 +117,7 @@ pipeline {
           userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
           ]])
 
+        // TODO: change this to openshift/ocp-qe-perfscale-ci
         checkout([
           $class: 'GitSCM', 
           branches: [[name: "netobserv-perf-tests" ]],
@@ -152,6 +153,7 @@ pipeline {
             oc projects
             ls -ls ~/.kube/
             env
+            ls -al
             cd workloads/netobserv
             wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
             tar -zxvf Python-3.8.12.tgz
