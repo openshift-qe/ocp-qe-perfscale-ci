@@ -109,11 +109,19 @@ pipeline {
           }
         }
         deleteDir()
+        
         checkout([
           $class: 'GitSCM', 
           branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
           doGenerateSubmoduleConfigurations: false, 
           userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
+          ]])
+
+        checkout([
+          $class: 'GitSCM', 
+          branches: [[name: "netobserv-perf-tests" ]],
+          doGenerateSubmoduleConfigurations: false, 
+          userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]
           ]])
 
         copyArtifacts(
@@ -176,11 +184,11 @@ pipeline {
         }
 
       }
-    }    
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
     }
+    post {
+      always {
+        archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
+      }
+    }  
   }
 }
