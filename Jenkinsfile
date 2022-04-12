@@ -187,10 +187,12 @@ pipeline {
 
       }
     }
-    post {
-      always {
-        archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
+    stage {
+      post {
+        always {
+          archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
+          }
       }
-    }  
-  }
+      }
+  }  
 }
