@@ -11,11 +11,7 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
-        string(name: 'SCALE_DOWN', defaultValue: '0', description:
-        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
-        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
-        )
+
         string(name:'JENKINS_AGENT', defaultValue:'goc48',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
@@ -34,14 +30,49 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/memodi/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'netobserv-per-test', description:'You can change this to point to a branch on your fork if needed.')
-        choice(name: 'NETWORKING_VARIANT', choices: ['POD_NETWORK', 'SERVICEIP_NETWORK', 'MULTUS_NETWORK'], description: 'Specify which networking variant')
-        string(name: 'UPERF_RUNTIME', defaultValue:'60', description:'Specify uperf workload runtime')
+        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+
+
+        // netobserv params
+        choice(name: 'FLOW_SAMPLING', choices: ['1', '100', '400'], description: 'Specify flow sampling rate')
+
+
+        // uperf-only params
+        separator(name: "UPERF_WORKLOAD", sectionHeader: "Node Density Job Options", separatorStyle: "border-width: 0",
+        sectionHeaderStyle: """
+				font-size: 20px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;""")
+
+        choice(name: 'TRAFFIC_TYPE', choices: ['stream', 'rr'], description: 'Specify type of traffic streaming or request response (uperf-only)')
+        choice(name: 'PROTOCOL', choices: ['tcp', 'udp'], description: 'protocol for traffic type; tcp or udp (uperf-only)')
+        choice(name: 'PACKET_SIZE', choices: ['1', '1024', '16384'], description: 'specify packet sizes (uperf-only)')
+        string(name: 'RUNTIME', defaultValue:'300', description:'Specify workload runtime duration')
+
+        // kube-burner params
+        separator(name: "NODE_DENSITY", sectionHeader: "Node Density Job Options", separatorStyle: "border-width: 0",
+        sectionHeaderStyle: """
+				font-size: 20px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;""")
+        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload. Should be the number of worker nodes on your cluster')
+        string(name: 'VARIABLE', defaultValue: '100', description: 'This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2
+Read here for detail of each variable')
+
+        // TBA: http router params
+
+        
+        // cluster scale up and scale down
+        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
+        string(name: 'SCALE_DOWN', defaultValue: '0', description:
+        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
+        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+        )
     }
 
   stages {
-    stage('Run Network Pod Perf Tests'){
+    stage('Run Perf tests'){
       // agent { label params['JENKINS_AGENT'] }
       agent {
         kubernetes {
@@ -134,7 +165,7 @@ pipeline {
             source venv3/bin/activate
             python --version
             cd ..
-            ./run_netobserv_perf_comparison_tests.sh $NETWORKING_VARIANT
+            ./run_workloads.sh
             rm -rf ~/.kube
             '''
           }
@@ -147,7 +178,11 @@ pipeline {
         }
 
       }
-        
+    }    
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
     }
-}
+  }
 }
