@@ -292,7 +292,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
             steps{
                 script {
                     if( build_string != "DEFAULT" && status == "PASS") {
-                   if( ["cluster-density","pod-density","node-density","node-density-heavy", "max-namespaces","max-services","pod-density-heavy"].contains(params.CI_TYPE) ) {
+                      if( ["cluster-density","pod-density","node-density","node-density-heavy", "max-namespaces","max-services","pod-density-heavy"].contains(params.CI_TYPE) ) {
                         loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)]
                        } else if (params.CI_TYPE == "etcd-perf") {
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)]
@@ -305,9 +305,8 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                        }
 
                         if( loaded_ci != null ) {
-                          load_result = loaded_ci.result.toString()
-                          if( scale_up.result.toString() != "SUCCESS") {
-                               status = "Scale Up Failed"
+                          if( loaded_ci.result.toString() != "SUCCESS") {
+                               status = "Scale CI Job Failed"
                                currentBuild.result = "FAILURE"
                             }
                         }
