@@ -77,12 +77,12 @@ def get_url_out(url_sub_string):
 
 def parse_output_for_sheet(job_output):
 
-    with open(job_output, encoding='utf-8', mode="r") as f:
+    with open(job_output, encoding='utf8', mode="r") as f:
         job_output_string = f.read()
 
 
     split_output = job_output_string.split('Google Spreadsheet link')
-    print("job output " + str(split_output[-1]))
+
     #need to get not first one
     if job_output_string == split_output[-1]:
         print('didnt find google sheet link ')
@@ -170,3 +170,4 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
 
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 89225, 9, 'router-perf', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/router-perf/9/", "PASS","", "network_perf.out")
+#parse_output_for_sheet("network_perf.out")
