@@ -118,12 +118,12 @@ pipeline {
           ]])
 
         // TODO: change this to openshift/ocp-qe-perfscale-ci
-        checkout([
-          $class: 'GitSCM', 
-          branches: [[name: "netobserv-perf-tests" ]],
-          doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]
-          ]])
+        // checkout([
+        //   $class: 'GitSCM', 
+        //   branches: [[name: "netobserv-perf-tests" ]],
+        //   doGenerateSubmoduleConfigurations: false, 
+        //   userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]
+        //   ]])
 
         copyArtifacts(
             filter: '', 
@@ -154,7 +154,7 @@ pipeline {
             ls -ls ~/.kube/
             env
             ls -al
-            cd workloads/netobserv
+            cd scripts
             wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
             tar -zxvf Python-3.8.12.tgz
             cd Python-3.8.12

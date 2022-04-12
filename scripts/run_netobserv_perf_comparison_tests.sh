@@ -1,13 +1,12 @@
-
-source ../e2e-benchmarking/utils/common.sh
-source ./netobserv_common.sh
+source ../utils/common.sh
+source ./common.sh
 
 NETWORK_VARIANT=$1
 
 if [[ -z $NETWORK_VARIANT ]]; then
     echo "must pass networking variant as argument"
     exit 1
-fi 
+fi
 
 log "running performance test for $NETWORK_VARIANT"
 RIPSAW_UPERF_PATH=$PWD/ripsaw-uperf-crd.yaml
