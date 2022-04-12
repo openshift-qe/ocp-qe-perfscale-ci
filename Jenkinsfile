@@ -115,15 +115,15 @@ pipeline {
           branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
           doGenerateSubmoduleConfigurations: false, 
           userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
-          ]])
+        ]])
 
         // TODO: change this to openshift/ocp-qe-perfscale-ci
-        // checkout([
-        //   $class: 'GitSCM', 
-        //   branches: [[name: "netobserv-perf-tests" ]],
-        //   doGenerateSubmoduleConfigurations: false, 
-        //   userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]
-        //   ]])
+        checkout([
+          $class: 'GitSCM', 
+          branches: [[name: "netobserv-perf-tests" ]],
+          doGenerateSubmoduleConfigurations: false, 
+          userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]
+        ]])
 
         copyArtifacts(
             filter: '', 
