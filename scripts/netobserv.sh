@@ -1,4 +1,4 @@
-deploy_netobserv_operator() {
+deploy_flowcollector() {
   log "deploying network-observability operator and flowcollector CR"
   git clone https://github.com/netobserv/network-observability-operator.git
   export NETOBSERV_DIR=${PWD}/network-observability-operator
@@ -6,18 +6,16 @@ deploy_netobserv_operator() {
   log $(go version)
   log $PATH
   cd ${NETOBSERV_DIR} && make deploy && cd -
-  log "deploying flowcollector as service"
-  envsubst <workloads/flows_v1alpha1_flowcollector.yaml >workloads/flows.yaml
-  oc apply -f workloads/flows.yaml
-  sleep 15
-  export GF_IP=$(oc get svc goflow-kube -n network-observability -ojsonpath='{.spec.clusterIP}')
-  log "goflow collector IP: ${GF_IP}"
+  log "deploying flowcollector"
+  envsubst <ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector.yaml >ocp-qe-perfscale/scripts/flows.yaml
+  oc apply -f ocp-qe-perfscale/scripts/flows.yaml
   log "waiting 120 seconds before checking IPFIX collector IP in OVS"
   sleep 120
   get_ipfix_collector_ip
 
-  # operate_loki "add" && \
-  # operate_netobserv_console_plugin "add"
+  # since deploy-loki could return exit status 1
+  make deploy-loki || true
+  operate_netobserv_console_plugin "add"
 }
 
 delete_flowcollector() {
@@ -53,14 +51,6 @@ operate_netobserv_console_plugin() {
 add_go_path() {
   log "adding go bin to PATH"
   export PATH=$PATH:/usr/local/go/bin
-}
-
-run_perf_test_w_netobserv() {
-  deploy_netobserv_operator
-}
-
-run_perf_test_wo_netobserv() {
-  delete_flowcollector
 }
 
 get_ipfix_collector_ip() {

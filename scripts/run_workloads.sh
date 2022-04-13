@@ -2,7 +2,9 @@ source ../../e2e-benchmarking/utils/common.sh
 source ./common.sh
 source ./netobserv.sh
 
-case ${WORKLOAD} in
+deploy_flowcollector
+
+case ${WORKLOAD_TYPE} in
 uperf)
     export NETWORK_PERF_DIR='../../e2e-benchmarking/workloads/network-perf'
     prep_uperf_workload
@@ -11,7 +13,7 @@ uperf)
 node-density-heavy)
     export KUBE_BURNER_DIR='../../e2e-benchmarking/workloads/kube-burner'
     #TODO: update
-    cd $KUBE_BURNER_DIR && ./run.sh && cd -
+    cd $KUBE_BURNER_DIR && WORKLOAD="node-density-heavy" ./run.sh && cd -
     ;;
 
 esac

@@ -28,7 +28,7 @@ spec:
       multus:
         enabled: false
       samples: 3
-      pair: 4
+      pair: ${PAIRS}
       nthrs:
         - 1
       protos:

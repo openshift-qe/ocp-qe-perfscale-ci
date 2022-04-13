@@ -32,7 +32,7 @@ pipeline {
             )
         string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
         string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-        choice(name: 'WORKLOAD', choices: ['uperf', 'node-density-heavy'], description: 'Specify workload type')
+        choice(name: 'WORKLOAD_TYPE', choices: ['uperf', 'node-density-heavy'], description: 'Specify workload type')
 
         // netobserv params
         choice(name: 'FLOW_SAMPLING', choices: ['1', '100', '400'], description: 'Specify flow sampling rate')
