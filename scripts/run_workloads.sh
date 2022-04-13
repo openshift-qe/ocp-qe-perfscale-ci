@@ -7,6 +7,7 @@ deploy_flowcollector
 case ${WORKLOAD_TYPE} in
 uperf)
     export NETWORK_PERF_DIR='../../e2e-benchmarking/workloads/network-perf'
+    source $NETWORK_PERF_DIR/env.sh
     prep_uperf_workload
     cd $NETWORK_PERF_DIR && WORKLOAD="pod2pod" ./run.sh && cd -
     ;;
