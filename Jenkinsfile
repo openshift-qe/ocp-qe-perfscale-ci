@@ -124,7 +124,7 @@ pipeline {
           branches: [[name: "netobserv-perf-tests" ]],
           doGenerateSubmoduleConfigurations: false, 
           userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]],
-          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'qe-perfscale']]
+          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale']]
         ])
 
         copyArtifacts(
@@ -156,7 +156,7 @@ pipeline {
             ls -ls ~/.kube/
             env
             ls -al
-            cd qe-perfscale/scripts
+            cd ocp-qe-perfscale/scripts
             wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
             tar -zxvf Python-3.8.12.tgz
             cd Python-3.8.12
@@ -190,7 +190,7 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: 'workloads/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
+          archiveArtifacts artifacts: 'ocp-qe-perfscale/scripts/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
           }
       } // post
     } // stage
