@@ -8,6 +8,7 @@ case ${WORKLOAD_TYPE} in
 uperf)
     export NETWORK_PERF_DIR='../../e2e-benchmarking/workloads/network-perf'
     source $NETWORK_PERF_DIR/env.sh
+    override_uperf_env
     prep_uperf_workload
     cd $NETWORK_PERF_DIR && WORKLOAD="pod2pod" ./run.sh && cd -
     ;;

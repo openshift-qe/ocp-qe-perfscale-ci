@@ -7,7 +7,7 @@ spec:
   ipfix:
     cacheActiveTimeout: 60s
     cacheMaxFlows: 400
-    sampling: ${SAMPLING}
+    sampling: ${FLOW_SAMPLING}
   flowlogsPipeline:
     kind: DaemonSet
 #    kind: Deployment

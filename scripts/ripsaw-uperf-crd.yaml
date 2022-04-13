@@ -3,10 +3,11 @@
 apiVersion: ripsaw.cloudbulldozer.io/v1alpha1
 kind: Benchmark
 metadata:
-  name: uperf-${CR_NAME}-${WORKLOAD}-network-${pairs}
+  name: uperf-${WORKLOAD}-${PAIRS}
   namespace: benchmark-operator
 spec:
   uuid: ${UUID}
+  clustername: ${CLUSTER_NAME}
   elasticsearch:
     url: ${ES_SERVER}
   metadata:
@@ -14,13 +15,15 @@ spec:
     serviceaccount: backpack-view
     privileged: true
     targeted: ${METADATA_TARGETED}
-  cerberus_url: "$CERBERUS_URL"
   workload:
     name: uperf
     args:
       run_id: "$RUN_ID"
       hostnetwork: false
       serviceip: false
+      metallb:
+        addresspool: "${ADDRESSPOOL}"
+        service_etp: "${SERVICE_ETP}" 
       networkpolicy: false
       pin: true
       pin_server: "$server"
@@ -32,7 +35,7 @@ spec:
       nthrs:
         - 1
       protos:
-        - ${PROTO}
+        - ${PROTOCOL}
       test_types:
         - ${TRAFFIC_TYPE}
       sizes:
