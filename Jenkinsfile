@@ -114,9 +114,9 @@ pipeline {
           $class: 'GitSCM', 
           branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
           doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ],
+          userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]],
           extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
-        ]])
+        ])
 
         // TODO: change this to openshift/ocp-qe-perfscale-ci
         checkout([
