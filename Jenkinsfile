@@ -173,6 +173,7 @@ pipeline {
             python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
             source venv3/bin/activate
             python --version
+            cd ..
             cd ocp-qe-perfscale/scripts
             ./run_workloads.sh
             rm -rf ~/.kube
