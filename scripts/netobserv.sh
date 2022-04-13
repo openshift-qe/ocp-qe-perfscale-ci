@@ -5,16 +5,17 @@ deploy_flowcollector() {
   add_go_path
   log $(go version)
   log $PATH
-  cd ${NETOBSERV_DIR} && make deploy && cd -
+  cd ${NETOBSERV_DIR} && make deploy
+  # since deploy-loki could return exit status 1
+  make deploy-loki || true
+  cd -
   log "deploying flowcollector"
-  envsubst <ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector.yaml >ocp-qe-perfscale/scripts/flows.yaml
-  oc apply -f ocp-qe-perfscale/scripts/flows.yaml
+  envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
   log "waiting 120 seconds before checking IPFIX collector IP in OVS"
   sleep 120
   get_ipfix_collector_ip
 
-  # since deploy-loki could return exit status 1
-  make deploy-loki || true
   operate_netobserv_console_plugin "add"
 }
 
@@ -22,20 +23,6 @@ delete_flowcollector() {
   log "deleteing flowcollector"
   oc delete -f $NETOBSERV_DIR/config/samples/flows_v1alpha1_flowcollector.yaml
   rm -rf $NETOBSERV_DIR
-  # operate_loki "remove" && \
-  # operate_netobserv_console_plugin "remove"
-}
-
-operate_loki() {
-  local operation=$1
-  if [[ "$operation" == 'add' ]]; then
-    log "installing loki via helm"
-    helm upgrade --install loki grafana/loki-stack --set promtail.enabled=false &&
-      oc adm policy add-scc-to-user anyuid -z loki
-  else
-    log "uninstalling loki"
-    helm uninstall loki
-  fi
 }
 
 operate_netobserv_console_plugin() {

@@ -156,7 +156,6 @@ pipeline {
             ls -ls ~/.kube/
             env
             ls -al
-            cd ocp-qe-perfscale/scripts
             wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
             tar -zxvf Python-3.8.12.tgz
             cd Python-3.8.12
@@ -174,7 +173,7 @@ pipeline {
             python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
             source venv3/bin/activate
             python --version
-            cd ..
+            cd ocp-qe-perfscale/scripts
             ./run_workloads.sh
             rm -rf ~/.kube
             '''
