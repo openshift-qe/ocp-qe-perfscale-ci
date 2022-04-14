@@ -25,8 +25,10 @@ pipeline {
         booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the ugprade')
         string(name: 'LOADED_JOB_URL', defaultValue: '', description: 'Upgrade job url')
         string(name: 'CI_STATUS', defaultValue: 'FAIL', description: 'Scale-ci job ending status')
-        string(name: 'JOB_PARAMETERS', defaultValue: '', description:'These are the parametes that were run for the specific scale-ci job')
+        string(name: 'JOB_PARAMETERS', defaultValue: '', description:'These are the parameters that were run for the specific scale-ci job')
         text(name: 'JOB_OUTPUT', defaultValue: '', description:'This is the output that was run from the scale-ci job. This will be used to help get comparison sheets')
+        string(name: 'RAN_JOBS', defaultValue: '', description:'These are all the tests from the nightly scale-ci regresion runs')
+        string(name: 'FAILED_JOBS', defaultValue: '', description:'These are the failed tests from the nightly scale-ci regresion runs')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable
@@ -92,12 +94,18 @@ pipeline {
             pip --version
             pip install --upgrade pip
             pip install -U gspread oauth2client datetime pytz pyyaml
-            if [[ $JOB == "loaded-upgrade" ]]; then
+
+            export PYTHONIOENCODING=utf8
+            if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
+                echo "loaded-upgrade"
                 python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
-            elif [[ $JOB == "upgrade" ]]; then
+            elif [[ "${params.JOB}" == "upgrade" ]]; then
                 python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}')"
+            elif [[ "${params.JOB}" == "nightly-scale" ]]; then
+                python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}')"
             else
-                echo "$JOB_OUTPUT" >> output_file.out
+                echo "else job"
+                printf '${params.JOB_OUTPUT}' >> output_file.out
                 python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', 'output_file.out')"
             fi
             rm -rf ~/.kube

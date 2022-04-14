@@ -82,12 +82,13 @@ def get_pod_latency_data():
         rewrite_data(creation_time, uuid, file_name)
         json_response = execute_command(es_url, file_name)
         data_info = []
-        for hits in json_response['hits']['hits']:
-            data_info.append(get_data_from_json(hits['_source']))
-        sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
-        return sorted_data
-    else:
-        return []
+        if "hits" in json_response['hits'].keys():
+            for hits in json_response['hits']['hits']:
+                data_info.append(get_data_from_json(hits['_source']))
+            if len(data_info) > 0:
+                sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
+                return sorted_data
+    return []
 
 def get_uuid_uperf(cluster_name):
     file_name = "uperf_find_uuid.json"
@@ -104,8 +105,9 @@ def get_uuid_uperf(cluster_name):
     es_url = "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443"
     json_response = execute_command(es_url, file_name)
     # want to find most recent, list should already be ordered
-    for hits in json_response['hits']['hits']:
-        if "_source" not in hits and "uuid" not in hits['_source']:
-            return ""
-        return hits['_source']['uuid']
+    if "hits" in json_response['hits'].keys():
+        for hits in json_response['hits']['hits']:
+            if "_source" not in hits and "uuid" not in hits['_source']:
+                return ""
+            return hits['_source']['uuid']
     return ""

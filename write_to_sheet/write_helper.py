@@ -58,8 +58,9 @@ def get_pod_latencies():
         avg_list = []
         p99_list = []
         for pod_info in pod_latencies_list:
-            avg_list.append(pod_info[1])
-            p99_list.append(pod_info[2])
+            if len(pod_info) > 0:
+                avg_list.append(pod_info[1])
+                p99_list.append(pod_info[2])
         return avg_list
     return ["", "", "", ""]
 
@@ -93,6 +94,7 @@ def get_oc_version():
 def flexy_install_type(flexy_url):
     return_code, version_type_string = run('curl -s {}/consoleFull | grep "run_installer template -c private-templates/functionality-testing/aos-"'.format(flexy_url))
     if return_code == 0:
+        print("version_tpye " + str(version_type_string))
         version_lists = version_type_string.split("-on-")
         print('version_lists {}'.format(str(version_lists)))
         install_type = version_lists[0].split('/')[-1]
@@ -107,13 +109,14 @@ def flexy_install_type(flexy_url):
         print("Error getting flexy installtion")
         return "", "", ""
 
-def get_worker_num(scale):
+def get_worker_num(scale="false"):
     return_code, worker_count = run("oc get nodes | grep worker | wc -l | xargs")
     if return_code != 0:
         worker_count = "ERROR"
     print("scale " + str(scale))
     if scale == "true":
         worker_count = str(int(worker_count.strip()) - 1)
-    worker_count = worker_count.strip()
+    else:
+        worker_count = worker_count.strip()
     return worker_count
 #flexy_install_type("https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/54597")
