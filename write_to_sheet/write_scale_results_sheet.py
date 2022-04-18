@@ -105,15 +105,16 @@ def get_uuid_from_json(metadata):
     md_json = {}
     for md in metadata.split("\n"):
         md2 = md.replace('"', '').replace(',', '')
-        # print('md2 ' + str(''))
         md_split = md2.split(':')
-        print('len' + str(len(md_split)))
         if len(md_split) >= 2:
             md_json[md_split[0].strip(" ")] = md_split[1].strip(' ')
-    print("md josn " + str(md_json))
 
-    return md_json['uuid'], md_json
-
+    if "uuid" in md_json:
+        return md_json['uuid'], md_json
+    elif "UUID" in md_json:
+        return md_json['UUID'], md_json
+    else:
+        return "", md_json
 
 def get_router_perf_uuid(job_output):
     with open(job_output, encoding='utf-8', mode="r") as f:
@@ -184,6 +185,5 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     row.append(str(datetime.now(tz)))
     ws.insert_row(row, index, "USER_ENTERED")
-
 
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 92023, 4, 'concurrent-builds', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/concurrent-builds/4/", "PASS","cakephp,1 2", "network_perf.out")
