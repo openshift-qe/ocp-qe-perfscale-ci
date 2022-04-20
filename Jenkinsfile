@@ -14,7 +14,7 @@ def upgrade_url = ""
 def must_gather_url = ""
 def proxy_settings = ""
 def status = "PASS"
-
+def VERSION = ""
 
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
@@ -32,13 +32,25 @@ pipeline{
 			""")
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
 
-        separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
+        separator(name: "BUILD_FLEXY_COMMON_PARAMS", sectionHeader: "Build Flexy Parameters Common", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
         string(name: 'OCP_PREFIX', defaultValue: '', description: 'Name of ocp cluster you want to build')
         string(name: 'OCP_VERSION', defaultValue: '', description: 'Build version to install the cluster.')
+        separator(name: "BUILD_FLEXY_FROM_PROFILE", sectionHeader: "Build Flexy From Profile", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
+        string(name: 'CI_PROFILE', defaultValue: '', description: 'Name of ci profile to build for the cluster you want to build')
+
+         separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
+				font-size: 18px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
         choice(choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere', 'ash'], name: 'CLOUD_TYPE', description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
         Will be ignored if BUILD_NUMBER is set''')
         choice(choices: ['','ovn', 'sdn'], name: 'NETWORK_TYPE', description: 'Network type, will be ignored if BUILD_NUMBER is set')
@@ -138,6 +150,8 @@ pipeline{
             )
         string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
         string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+        string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
+        string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
     }
 
 
@@ -145,12 +159,56 @@ pipeline{
         stage("Build Flexy Clusters") {
            agent { label params['JENKINS_AGENT_LABEL'] }
            steps {
+                // checkout CI profile repo from GitLab
+                checkout changelog: false,
+                    poll: false,
+                    scm: [
+                        $class: 'GitSCM',
+                        branches: [[name: "${params.CI_PROFILES_REPO_BRANCH}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                            [$class: 'PruneStaleBranch'],
+                            [$class: 'CleanCheckout'],
+                            [$class: 'IgnoreNotifyCommit'],
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'local-ci-profiles']
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                            name: 'origin',
+                            refspec: "+refs/heads/${params.CI_PROFILES_REPO_BRANCH}:refs/remotes/origin/${params.CI_PROFILES_REPO_BRANCH}",
+                            url: "${params.CI_PROFILES_URL}"
+                        ]]
+                    ]
                 script{
+
                     def install_type_custom = params.INSTALL_TYPE
                     def custom_cloud_type = params.CLOUD_TYPE
                     def custom_jenkins_label = JENKINS_AGENT_LABEL
                      if(params.BUILD_NUMBER == "") {
-                         def network_ending = ""
+                        VERSION = params.OCP_VERSION
+                        println "${VERSION}"
+                        def version_list = VERSION.tokenize(".")
+                        println "version ${version_list}"
+                        def major_v = version_list[0]
+                        def minor_v = version_list[1]
+                        def extra_launcher_vars = ''
+                        println "minor ${minor_v} major ${major_v}"
+                        def var_loc = ""
+                        if(params.CI_PROFILE != "") {
+                          installData = readYaml(file: "local-ci-profiles/scale-ci/${major_v}.${minor_v}/${params.CI_PROFILE}.install.yaml")
+                          installData.install.flexy.each { env.setProperty(it.key, it.value) }
+
+                            var_loc = env.VARIABLES_LOCATION
+                            extra_launcher_vars = env.EXTRA_LAUNCHER_VARS
+
+                            currentBuild.description = """
+                                <b>CI Profile:</b> ${params.CI_PROFILE}<br/>
+                            """
+                        }
+                         else {
+                          def network_ending = ""
+
                           if (params.CLOUD_TYPE == "vsphere") {
                                 network_ending = "-vmc7"
                           }
@@ -162,56 +220,55 @@ pipeline{
                             }
                            }
                             def worker_type = ""
-                            if (params.CLOUD_TYPE == "aws") {
+                                if (params.CLOUD_TYPE == "aws") {
                                 if (params.INSTALL_TYPE == "sno") {
-                                    worker_type = "master_worker_AllInOne: 'true', num_masters: 1, num_workers: 0, vm_type: 'm5.4xlarge', "
+                                    extra_launcher_vars = "master_worker_AllInOne: 'true'\nnum_masters: 1\nnum_workers: 0\nvm_type: 'm5.4xlarge'\n"
                                     install_type_custom = "ipi"
                                 } else {
-                                worker_type = "vm_type_workers: 'm5.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'm5.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                                 }
                             }
                             else if (params.CLOUD_TYPE == "azure") {
-                                worker_type = "vm_type_workers: 'Standard_D8s_v3', region: centralus, num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'Standard_D8s_v3'\nregion: centralus\n num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
                             else if (params.CLOUD_TYPE == "gcp") {
-                                worker_type = "vm_type_workers: 'n1-standard-4', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'n1-standard-4'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                                 if (params.NETWORK_TYPE != "sdn") {
                                  network_ending = network_ending + "-ci"
                                 }
                             }
                             else if (params.CLOUD_TYPE == "osp") {
-                                worker_type = "vm_type_workers: 'ci.m1.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'ci.m1.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
                             else if (params.CLOUD_TYPE == "alicloud") {
 
-                                worker_type = "vm_type_workers: 'ecs.g6.xlarge', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'ecs.g6.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
                             else if (params.CLOUD_TYPE == "ibmcloud") {
-                                worker_type = "vm_type_workers: 'bx2d-4x16', region: 'jp-tok', num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = "vm_type_workers: 'bx2d-4x16'\nregion: 'jp-tok'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
                             else if (params.CLOUD_TYPE == "vsphere") {
-                                worker_type = " num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = " num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             } else if (params.CLOUD_TYPE == "ash") {
                                 custom_cloud_type = "azure"
-                                worker_type = " num_workers: " + WORKER_COUNT + ", num_masters: " + MASTER_COUNT + ","
+                                extra_launcher_vars = " num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                                 if (params.NETWORK_TYPE != "sdn") {
-                                worker_type += 'networkType: "OVNKubernetes", '
+                                extra_launcher_vars += 'networkType: "OVNKubernetes"\n'
                                 }
                                 network_ending = "-ash_wwt"
                                 custom_jenkins_label = "fedora-installer-wwt"
                             }
+                             var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
 
-                            def version = params.OCP_VERSION
-                            sh "echo ${version}"
-                            def version_list = version.tokenize(".")
-                            sh "echo version ${version_list}"
-                            def major_v = version_list[0]
-                            def minor_v = version_list[1]
-                            sh "echo minor ${minor_v} major ${major_v}"
-                            def var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
-                            sh "echo var ${var_loc}"
-                            install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
-                            value: "{ ${worker_type} installer_payload_image: 'registry.ci.openshift.org/ocp/release:${params.OCP_VERSION}'}"),text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
+                             currentBuild.description = """
+                                    <b>Cluster Built:</b> ${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}<br/>
+                                """
+                            }
+
+                            println "var ${var_loc}"
+                            install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
+                            string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
+                            value: "${extra_launcher_vars}installer_payload_image: 'registry.ci.openshift.org/ocp/release:${VERSION}'"),text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
 text(name: 'CREDENTIALS', value: '''
@@ -226,10 +283,11 @@ REG_NIGHTLY_BUILDS=9a9187c6-a54c-452a-866f-bea36caea6f9
 REG_CI_BUILDS=registry.ci.openshift.org
 GIT_FLEXY_SSH_KEY=e2f7029f-ab8d-4987-8950-39feb80d5fbd
 GIT_PRIVATE_SSH_KEY=1d2207b6-15c0-4cb0-913a-637788d12257
-REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
+REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
+                        ]
 
                         if( install.result.toString()  != "SUCCESS") {
-                           sh 'echo "build failed"'
+                           println "build failed"
                            currentBuild.result = "FAILURE"
                            status = "Install failed"
                         }
@@ -241,6 +299,11 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                         selector: specific(params.BUILD_NUMBER),
                         target: 'flexy-artifacts'
                        )
+                        installData = readYaml(file: "flexy-artifacts/workdir/install-dir/cluster_info.yaml")
+                        VERSION = installData.INSTALLER.VERSION
+                        currentBuild.description = """
+                            <b>Using Pre-Built Flexy</b> <br/>
+                        """
                      }
 
                     if (params.BUILD_NUMBER != "") {
@@ -248,6 +311,10 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                     } else if( install.result.toString() == "SUCCESS" ) {
                             build_string = install.number.toString()
                     }
+                    currentBuild.description += """
+                        <b>Version:</b> ${VERSION}<br/>
+                        <b>Flexy-install Build:</b> ${build_string}<br/>
+                    """
                  if ( build_string != "DEFAULT") {
                      copyArtifacts(
                         fingerprintArtifacts: true,
@@ -257,85 +324,130 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                         target: 'flexy-artifacts'
                        )
                     if (fileExists("flexy-artifacts/workdir/install-dir/client_proxy_setting.sh")) {
-                     sh "echo yes"
+                     println "yes"
                      proxy_settings = sh returnStdout: true, script: 'cat flexy-artifacts/workdir/install-dir/client_proxy_setting.sh'
                      proxy_settings = proxy_settings.replace('export ', '')
                     }
 
                     ENV_VARS += '\n' + proxy_settings
-                    sh "echo $ENV_VARS"
+                    println "$ENV_VARS"
                  }
                }
             }
         }
         stage("Scale Up Cluster") {
            agent { label params['JENKINS_AGENT_LABEL'] }
+            when {
+                expression { build_string != "DEFAULT" && status == "PASS" && params.SCALE_UP.toInteger() > 0}
+            }
            steps {
             script{
-             if( build_string != "DEFAULT" && status == "PASS") {
-              if(params.SCALE_UP.toInteger() > 0) {
-                scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: "${build_string}"), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
 
+
+                scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
+                    string(name: 'BUILD_NUMBER', value: "${build_string}"), text(name: "ENV_VARS", value: ENV_VARS),
+                    string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                ]
+                currentBuild.description += """
+                    <b>Scaled Up:</b>  <a href="${scale_up.absoluteUrl}"> ${params.SCALE_UP} </a><br/>
+                """
                 if( scale_up != null && scale_up.result.toString() != "SUCCESS") {
                    status = "Scale Up Failed"
                    currentBuild.result = "FAILURE"
                 }
-               }
-              } else {
-                sh 'echo "Installation of cluster failed, not running scale-up job"'
-              }
             }
-           }
+          }
         }
         stage("Perf Testing"){
             agent { label params['JENKINS_AGENT_LABEL'] }
+            when {
+                expression { build_string != "DEFAULT" && status == "PASS" }
+            }
             steps{
                 script {
-                    if( build_string != "DEFAULT" && status == "PASS") {
-                      if( ["cluster-density","pod-density","node-density","node-density-heavy", "max-namespaces","max-services","pod-density-heavy"].contains(params.CI_TYPE) ) {
-                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)]
-                       } else if (params.CI_TYPE == "etcd-perf") {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)]
-                       } else if (params.CI_TYPE == "router-perf") {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)]
-                       }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
-                       loaded_ci = build job: "scale-ci/paige-e2e-multibranch/network-perf", propagate: false, parameters:[string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)]
-                        }else{
-                        sh 'echo "No Scale-ci Job"'
-                       }
+                  if( ["cluster-density","pod-density","node-density","node-density-heavy","max-namespaces","max-services","pod-density-heavy"].contains(params.CI_TYPE) ) {
+                    loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
+                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                        string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
+                        text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+                        string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
+                    ]
+                    currentBuild.description += """
+                        <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
+                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                    """
+                   } else if (params.CI_TYPE == "etcd-perf") {
+                   loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
+                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                   ]
+                   currentBuild.description += """
+                        <b>Scale-Ci: </b> etcd-perf <br/>
+                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                    """
+                   } else if (params.CI_TYPE == "router-perf") {
 
-                        if( loaded_ci != null ) {
-                          if( loaded_ci.result.toString() != "SUCCESS") {
-                               status = "Scale CI Job Failed"
-                               currentBuild.result = "FAILURE"
-                            }
+                   loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
+                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                   ]
+                   currentBuild.description += """
+                        <b>Scale-Ci: </b> router-perf <br/>
+                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                    """
+                   }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
+
+                   loaded_ci = build job: "scale-ci/paige-e2e-multibranch/network-perf", propagate: false, parameters:[
+                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                        string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
+                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                   ]
+                   currentBuild.description += """
+                        <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                    """
+                    }else{
+                    println "No Scale-ci Job"
+                    currentBuild.description += """
+                        <b>No Scale-Ci Run</b><br/>
+                    """
+                   }
+
+                    if( loaded_ci != null ) {
+                      if( loaded_ci.result.toString() != "SUCCESS") {
+                           status = "Scale CI Job Failed"
+                           currentBuild.result = "FAILURE"
                         }
-                      } else{
-                        sh 'echo "Earlier job failed"'
-                       }
                     }
+                }
             }
         }
         stage('Upgrade'){
             agent { label params['JENKINS_AGENT_LABEL'] }
+            when {
+                expression { build_string != "DEFAULT" && status == "PASS" && UPGRADE_VERSION != ""  }
+            }
             steps{
                 script{
-                    if( build_string != "DEFAULT" ) {
-                        if( status == "PASS" ) {
-                            if( UPGRADE_VERSION != "" ) {
-                                upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)]
-                                if( upgrade_ci.result.toString() != "SUCCESS") {
-                                   status = "Upgrade Failed"
-                                   currentBuild.result = "FAILURE"
-                                }
-                            } else {
-                                sh 'echo "No upgrade version set, not running upgrade"'
-                            }
-                        } else{
-                            sh 'echo "One of the previous jobs failed, not running upgrade"'
-                           }
-                    } else {
-                        sh 'echo "Installation of cluster failed, not running upgrade"'
+                    currentBuild.description += """
+                        <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
+                    """
+                    upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
+                        string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
+                        string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
+                        booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),
+                        booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),
+                        booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)
+                    ]
+                    currentBuild.description += """
+                        <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
+                    """
+                    if( upgrade_ci.result.toString() != "SUCCESS") {
+                       status = "Upgrade Failed"
+                       currentBuild.result = "FAILURE"
                     }
                 }
             }
@@ -343,10 +455,12 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
 
         stage("Write out results") {
             agent { label params['JENKINS_AGENT_LABEL'] }
+            when {
+                expression { params.WRITE_TO_FILE == true }
+            }
             steps{
                 script{
-                  if(params.WRITE_TO_FILE == true) {
-                     sh "echo write to file $loaded_ci "
+                    println "write to file $loaded_ci "
 
                     if(loaded_ci != null ) {
                         loaded_url = loaded_ci.absoluteUrl
@@ -357,9 +471,12 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
                     if ( must_gather != null ) {
                         must_gather_url = must_gather.absoluteUrl
                     }
-                    build job: 'scale-ci/paige-e2e-multibranch/write-scale-ci-results', propagate: false,parameters: [string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL), string(name: "BUILD_NUMBER", value: build_string), string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),
-                        text(name: "ENV_VARS", value: ENV_VARS), string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE), booleanParam(name: 'SCALE', value: SCALE), string(name: 'LOADED_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "loaded-upgrade"), , string(name: 'MUST_GATHER_URL', value: must_gather_url)]
-                    }
+                    build job: 'scale-ci/paige-e2e-multibranch/write-scale-ci-results', parameters: [
+                        string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "BUILD_NUMBER", value: build_string),
+                        string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),booleanParam(name: 'SCALE', value: SCALE),
+                        string(name: 'LOADED_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "loaded-upgrade")
+                    ], propagate: false
 
                 }
               }
@@ -369,19 +486,32 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' ) ]
             steps{
                 script{
                     if(install != null && (install.result.toString() != "SUCCESS" || params.DESTROY_WHEN_DONE == true)) {
-                        destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [string(name: "BUILD_NUMBER", value: install.number.toString()),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)]
+                        destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [
+                            string(name: "BUILD_NUMBER", value: install.number.toString()),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)
+                        ]
                     } else if(install == null && params.DESTROY_WHEN_DONE == true) {
-                        destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [string(name: "BUILD_NUMBER", value: build_string),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)]
+                        destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [
+                            string(name: "BUILD_NUMBER", value: build_string),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)
+                        ]
                     }
 
                     if( destroy_ci != null) {
-                        sh 'echo "destroy not null"'
+                        println "destroy not null"
                         if( destroy_ci.result.toString() != "SUCCESS") {
-                            sh 'echo "destroy failed"'
+                            println "destroy failed"
                             currentBuild.result = "FAILURE"
                         }
                     }
                 }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                currentBuild.description += """
+                    <b>Final Status:</b> ${status}<br/>
+                """
             }
         }
     }
