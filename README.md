@@ -1,24 +1,35 @@
-# ocp-qe-perfscale-ci
+# Kraken
 
+This jenkinsfile tests the clusters ability to withstand chaotic scenarios and show it's recovery
 
-## Purpose
+For full information see [kraken github](https://github.com/redhat-chaos/krkn)
 
-This repo would contain `Jenkinsfile` and any other pertaining contents that would be used by a multi-branch pipeline in our Jenkins.
+### Configurations 
 
-## Structure
+BUILD_NUMBER: Only accepts flexy built clusters, pass the flexy id number 
 
-There are multiple orphan branches present in this repos, each of them are supposed to house one kind of workload for [E2E-benchmarking](https://github.com/cloud-bulldozer/e2e-benchmarking/). Each branch should contain one `Jenkinsfile`
+Set the type of chaos scenario to run by using SCENARIO
 
-You can create a new orphan branch simply by `git checkout --orphan BRANCHNAME` for new workload.
+Scenario types are: 
+* application-outages
+* container-scenarios
+* namespace-scenarios
+* network-scenarios
+* pod-scenarios
+* node-cpu-hog
+* node-io-hog
+* node-memory-hog
+* power-outages
+* pvc-scenario
+* time-scenarios
+* zone-outages
 
-Jenkins multi-branch pipeline job will look at the `Jenkinsfile` on each of these branches and create a new workload job for you to execute in your Jenkins.
+ENV_VARS: be able to set any of the parameters in each of the above scenarios seperate than the defaults defined in each of the env.sh files in the folder of the scenario in kraken-hub
 
-This repository also hosting the `perf-dashboard-grafana-crs` directory, that includes all the Custom Resources and relevant files that you need to deploy a fully functional perf-scale dashboard.
-This deployment uses grafana operator to enable grafana operator on your cluster, create an instance, create required datasources(in this case Prometheus and ElasticSearch) and dashboards.
+KRAKEN_REPO: what is the url of kraken you want to use
 
-See `launch-grafana.sh` for env variables we need. And, `cleanup-grafana.sh` could be used to cleanup everything created by the `launch-grafana.sh` script.
+KRAKN_REPO_BRANCH: branch of the kraken repo you set above to run (helpful with testing changes)
 
-**PREREQUISITE:** is to have `KUBECONFIG` env variable configured that can access your OpenShift cluster. 
+KRAKEN_HUB_REPO: what is the url of kraken-hub you want to use, useful when setting env vars changes
 
-### Author
-Kedar Kulkarni <@kedark3 on Github>
+KRAKN_HUB_REPO_BRANCH: what is the branch of kraken-hub you want to use; again, useful when setting env vars changes
