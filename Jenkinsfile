@@ -75,7 +75,7 @@ pipeline{
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
-        choice(choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test"], name: 'CI_TYPE', description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
+        choice(choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","concurrent-builds","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test"], name: 'CI_TYPE', description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
         Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored ''')
 
 
@@ -97,6 +97,13 @@ pipeline{
 				font-family: 'Orienta', sans-serif;
 			""")
         string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of worker nodes to be used in your cluster for this workload.')
+        separator(name: "CONCURRENT_BUILDS_JOB_INFO", sectionHeader: "Concurrent Builds Job Options", sectionHeaderStyle: """
+				font-size: 14px;
+				font-weight: bold;
+				font-family: 'Orienta', sans-serif;
+			""")
+        string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
+        string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
         separator(name: "NETWORK_PERF_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
 				font-size: 14px;
 				font-weight: bold;
@@ -365,56 +372,59 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
             }
             steps{
                 script {
-                  if( ["cluster-density","pod-density","node-density","node-density-heavy","max-namespaces","max-services","pod-density-heavy"].contains(params.CI_TYPE) ) {
+                  if( ["cluster-density","pod-density","node-density","node-density-heavy", "max-namespaces","max-services","concurrent-builds","pod-density-heavy"].contains(params.CI_TYPE) ) {
                     loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
                         string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                         string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
+                        string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
                         text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
-                        string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
+                        string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
                     ]
                     currentBuild.description += """
                         <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
                         <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                     """
                    } else if (params.CI_TYPE == "etcd-perf") {
-                   loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
-                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
-                   ]
-                   currentBuild.description += """
-                        <b>Scale-Ci: </b> etcd-perf <br/>
-                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                    """
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                       ]
+                       currentBuild.description += """
+                            <b>Scale-Ci: </b> etcd-perf <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                        """
                    } else if (params.CI_TYPE == "router-perf") {
-
-                   loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
-                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
-                   ]
-                   currentBuild.description += """
-                        <b>Scale-Ci: </b> router-perf <br/>
-                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                    """
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                       ]
+                        currentBuild.description += """
+                            <b>Scale-Ci: </b> router-perf <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                        """
                    }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
-
-                   loaded_ci = build job: "scale-ci/paige-e2e-multibranch/network-perf", propagate: false, parameters:[
-                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                        string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
-                        text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
-                   ]
-                   currentBuild.description += """
-                        <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
-                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                    """
+                       loaded_ci = build job: "scale-ci/paige-e2e-multibranch/network-perf", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                         ]
+                       currentBuild.description += """
+                            <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                       """
                     }else{
-                    println "No Scale-ci Job"
-                    currentBuild.description += """
-                        <b>No Scale-Ci Run</b><br/>
-                    """
-                   }
+                        println "No Scale-ci Job"
+                        currentBuild.description += """
+                            <b>No Scale-Ci Run</b><br/>
+                        """
+                    }
 
                     if( loaded_ci != null ) {
                       if( loaded_ci.result.toString() != "SUCCESS") {
@@ -422,6 +432,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
                            currentBuild.result = "FAILURE"
                         }
                     }
+
                 }
             }
         }
