@@ -1,6 +1,5 @@
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
-
 from datetime import datetime
 from pytz import timezone
 import write_helper
@@ -52,7 +51,6 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     last_version = versions[-1].split(".")
     row = [flexy_cell, versions[0], upgrade_path_cell, ci_cell, worker_count, status_cell, duration,scale, force,
            cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
-    row.extend(write_helper.get_pod_latencies())
     upgrade_sheet = file.open_by_url(
         "https://docs.google.com/spreadsheets/d/1yqQxAxLcYEF-VHlQ_KDLs8NOFsRLb4R8V2UM9VFaRBI/edit?usp=sharing")
     ws_upgrade = upgrade_sheet.worksheet(str(last_version[0]) + "." + str(last_version[1]))

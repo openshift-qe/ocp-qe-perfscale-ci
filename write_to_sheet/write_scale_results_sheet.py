@@ -42,9 +42,13 @@ def get_grafana_url(uuid, start_time, end_time):
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
-def get_metadata_uuid(job_output):
+def get_metadata_uuid(job_type, job_output):
     start_time = get_es_data.get_project_creation_time()
-    end_time = n_time = datetime.utcnow()
+    if start_time == "":
+        creation_time = parse_output_for_starttime(job_output)
+        d = datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%S")
+        start_time = calendar.timegm(d.timetuple()) * 1000
+    n_time = datetime.utcnow()
     to_time = calendar.timegm(n_time.timetuple()) * 1000
 
     with open(job_output, encoding='utf-8', mode="r") as f:
@@ -54,15 +58,37 @@ def get_metadata_uuid(job_output):
     uuid, md_json = get_uuid_from_json(metadata)
     if uuid == "":
         uuid = job_output_string.split('"Finished execution with UUID: ')[-1].split('"')[0]
-        if uuid == "":
-            return ""
+        if uuid == "" or len(uuid) > 40:
+            if job_type == "pod-density":
+                job_type = "node-density"
+            split_with_job = job_output_string.split("kube-burner-" + str(job_type) + "-")[-1].split(",")[0]
+            uuid = split_with_job
+            if uuid == "" or len(uuid) > 40:
+                return ""
     return get_grafana_url(uuid, start_time, to_time)
 
-def find_uperf_uuid_url(cluster_name):
-    uuid = get_es_data.get_uuid_uperf(cluster_name)
+def find_uperf_uuid_url(cluster_name, start_time):
+
+    uuid = get_es_data.get_uuid_uperf(cluster_name, start_time)
     if uuid != "":
         return uuid
     return ""
+
+def parse_output_for_starttime(job_output):
+
+    with open(job_output, encoding='utf8', mode="r") as f:
+        job_output_string = f.read()
+
+    split_output = job_output_string.split('Deploying benchmark')
+
+    time_sub = split_output[0].split("\n")[-1]
+    time_sub = re.sub("[ ]+", " ", time_sub)
+    time_sub = time_sub.split("[1m")[-1]
+    d = datetime.strptime(time_sub, "%a %b %d %H:%M:%S %Z %Y ")
+    print('d ' + str(d))
+    date_string = d.strftime("%Y-%m-%dT%H:%M:%S%Z")
+    print('dte string' + str(date_string))
+    return date_string
 
 def get_workload_params(job_type):
     workload_args = get_scale_output.get_output(job_type)
@@ -82,7 +108,6 @@ def get_nodes():
         print("Error getting nodes")
         return "ERROR"
 
-
 def get_url_out(url_sub_string):
 
     url = url_sub_string.split("-> ")[-1].split("\n")[0]
@@ -100,7 +125,6 @@ def parse_output_for_sheet(job_output):
         print('didnt find google sheet link ')
     else:
         return get_url_out(split_output[-1])
-
 
 def get_uuid_from_json(metadata):
     md_json = {}
@@ -124,7 +148,6 @@ def get_router_perf_uuid(job_output):
 
     return get_uuid_from_json(metadata)
 
-
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -144,8 +167,9 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     if job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
+        start_time = parse_output_for_starttime(job_output)
         if return_code == 0:
-            grafana_cell = find_uperf_uuid_url(CLUSTER_NAME)
+            grafana_cell = find_uperf_uuid_url(CLUSTER_NAME,start_time)
         else:
             grafana_cell = ""
     elif job_type == "router-perf":
@@ -158,7 +182,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     else:
         grafana_cell = get_benchmark_uuid()
         if not grafana_cell:
-            grafana_cell = get_metadata_uuid(job_output)
+            grafana_cell = get_metadata_uuid(job_type, job_output)
 
     ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
@@ -180,7 +204,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
                 row.append(param)
 
     if job_type not in ["etcd-perf", "network-perf", "router-perf"]:
-        row.extend(write_helper.get_pod_latencies(uuid))
+        start_time = parse_output_for_starttime(job_output)
+        row.extend(write_helper.get_pod_latencies(uuid, start_time))
 
     if job_output:
         google_sheet_url = parse_output_for_sheet(job_output)
@@ -190,4 +215,5 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     row.append(str(datetime.now(tz)))
     ws.insert_row(row, index, "USER_ENTERED")
 
-#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 97141, 70, 'etcd-perf', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/etcd-perf/70/", "FAIL","", "")
+#get_metadata_uuid("node-density", "write_output.out")
+#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 99245, 323, 'node-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/323/", "FAIL","600,3", "write_output.out")

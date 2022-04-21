@@ -5,5 +5,4 @@
 Write Scale CI Results to Spreadsheets
 
 ### Author
-Kedar Kulkarni <@kedark3 on Github>
 Paige Rubendall <@paigerube14 on GitHub>
