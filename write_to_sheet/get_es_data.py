@@ -18,7 +18,6 @@ def find_key_to_overwrite(json_file, find_key, new_value):
     for filters_list in json_file['query']['bool']['filter']:
         for filters, values in filters_list.items():
             for k, v in values.items():
-                print('v ' + str(v))
                 if k == find_key:
                     json_file['query']['bool']['filter'][counter][filters][k] = new_value
                     return json_file
@@ -39,18 +38,18 @@ def print_new_json(new_value, find_key, fileName):
     with open(fileName, "w+") as f:
         json.dump(new_json_file, f, indent=4)
 
-def get_benchmark_data():
+def get_benchmark_data(uuid):
 
     return_code, benchmark_str = run("oc get benchmark -n benchmark-operator -o yaml")
     if return_code == 0:
         benchmark_yaml_all = yaml.safe_load(benchmark_str)
         if len(benchmark_yaml_all['items']) > 0:
-            benchmark_yaml = benchmark_yaml_all['items'][0]
-            es_url = benchmark_yaml['spec']['elasticsearch']['url']
-            uuid = benchmark_yaml['spec']['uuid']
-            creation_time = benchmark_yaml['metadata']['creationTimestamp'][:-1] + ".000Z"
-            return es_url, uuid, creation_time
-    return "", "", ""
+            for benchmark_item in benchmark_yaml_all['items']:
+                if uuid == benchmark_item['spec']['uuid']:
+                    es_url = benchmark_item['spec']['elasticsearch']['url']
+                    creation_time = benchmark_item['metadata']['creationTimestamp'][:-1] + ".000Z"
+                    return es_url, creation_time
+    return "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443", get_project_creation_time(uuid)
 
 def rewrite_data(start_time, uuid, file_name):
 
@@ -76,9 +75,9 @@ def get_data_from_json(json_data):
     return [json_data['quantileName'], json_data['avg'], json_data['P99']]
 
 
-def get_pod_latency_data():
+def get_pod_latency_data(uuid):
     file_name = "get_es_data.json"
-    es_url, uuid, creation_time = get_benchmark_data()
+    es_url, creation_time = get_benchmark_data(uuid)
     if es_url != "":
         rewrite_data(creation_time, uuid, file_name)
         json_response = execute_command(es_url, file_name)
@@ -91,10 +90,15 @@ def get_pod_latency_data():
                 return sorted_data
     return []
 
-def get_project_creation_time():
+def get_project_creation_time(uuid=""):
     return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
     if return_code == 0:
         return start_time
+
+    if uuid != "":
+        return_code, start_time = run("oc get project -l kube-burner-uuid=%s  -o jsonpath='{.items[0].metadata.creationTimestamp}'" % uuid)
+        if return_code == 0:
+            return start_time
     return ""
 
 def get_uuid_uperf(cluster_name):

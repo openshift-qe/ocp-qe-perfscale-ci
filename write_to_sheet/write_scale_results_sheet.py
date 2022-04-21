@@ -12,13 +12,14 @@ import get_scale_output
 import re
 
 data_source = "Development-AWS-ES_ripsaw-kube-burner"
-
+uuid = ""
 def get_benchmark_uuid():
     return_code, benchmark_str = write_helper.run("oc get benchmark -n benchmark-operator -o json")
     if return_code == 0:
         benchmark_json = json.loads(benchmark_str)
         for item in benchmark_json['items']:
             if "uuid" in item['status']:
+                global uuid
                 uuid = item['status']['uuid']
                 #if mutliple not sure what to do
                 creation_time = item['metadata']['creationTimestamp']
@@ -49,14 +50,16 @@ def get_metadata_uuid(job_output):
     with open(job_output, encoding='utf-8', mode="r") as f:
         job_output_string = f.read()
     metadata = job_output_string.split("Run Metadata:")[-1].split("}")[0]
+    global uuid
     uuid, md_json = get_uuid_from_json(metadata)
     if uuid == "":
-        return ""
+        uuid = job_output_string.split('"Finished execution with UUID: ')[-1].split('"')[0]
+        if uuid == "":
+            return ""
     return get_grafana_url(uuid, start_time, to_time)
 
 def find_uperf_uuid_url(cluster_name):
     uuid = get_es_data.get_uuid_uperf(cluster_name)
-    print("uuid " + str(uuid))
     if uuid != "":
         return uuid
     return ""
@@ -74,7 +77,6 @@ def get_nodes():
             for status in item['status']['conditions']:
                 if "Progressing" == status['type']:
                     version = status['message'].split(" ")[-1]
-                    print('version {}'.format(str(version)))
                     return version
     else:
         print("Error getting nodes")
@@ -84,7 +86,6 @@ def get_nodes():
 def get_url_out(url_sub_string):
 
     url = url_sub_string.split("-> ")[-1].split("\n")[0]
-    print("url" + str(url))
     return url
 
 def parse_output_for_sheet(job_output):
@@ -120,6 +121,7 @@ def get_router_perf_uuid(job_output):
     with open(job_output, encoding='utf-8', mode="r") as f:
         job_output_string = f.read()
     metadata = job_output_string.split("Workload finished, results:")[-1].split("}")[0]
+
     return get_uuid_from_json(metadata)
 
 
@@ -148,6 +150,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             grafana_cell = ""
     elif job_type == "router-perf":
         if job_output:
+            global uuid
             uuid, metadata = get_router_perf_uuid(job_output)
             grafana_cell = uuid
         else:
@@ -176,7 +179,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
                 row.append(param)
 
     if job_type not in ["etcd-perf", "network-perf", "router-perf"]:
-        row.extend(write_helper.get_pod_latencies())
+        row.extend(write_helper.get_pod_latencies(uuid))
 
     if job_output:
         google_sheet_url = parse_output_for_sheet(job_output)
@@ -186,4 +189,4 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     row.append(str(datetime.now(tz)))
     ws.insert_row(row, index, "USER_ENTERED")
 
-#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 92023, 4, 'concurrent-builds', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/concurrent-builds/4/", "PASS","cakephp,1 2", "network_perf.out")
+#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 96155, 117, 'pod-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/117/", "FAIL","400", "network_perf.out")

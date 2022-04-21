@@ -29,39 +29,36 @@ def get_upgrade_duration():
                 start_time = hist['startedTime']
                 if not hist['completionTime']:
                     latestCompletiontime = datetime.now()
-                    print("Setting completion time to now")
+
                 else:
                     end_time = hist['completionTime']
                     end_date_time = datetime.strptime(end_time[:-1], "%Y-%m-%dT%H:%M:%S")
                     if end_date_time > latestCompletiontime:
-                        print("Last completion {}".format(str(end_date_time)))
+
                         latestCompletiontime = end_date_time
 
                 start_date_time = datetime.strptime(start_time[:-1], "%Y-%m-%dT%H:%M:%S")
                 if (start_date_time < earliesetStartingTime) and lastVersion:
-                    print('Earliest date re-set to {}'.format(str(start_date_time)))
                     earliesetStartingTime = start_date_time
 
         time_elapsed = latestCompletiontime - earliesetStartingTime
-
-        print("Time elapsed {}".format(str(time_elapsed)))
-        print('All versions in upgrade {}'.format(str(all_versions)))
         all_versions.reverse()
         return str(time_elapsed), all_versions
     return get_oc_version(), ""
 
-def get_pod_latencies():
-    # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
-    pod_latencies_list = get_es_data.get_pod_latency_data()
-    if len(pod_latencies_list) != 0:
-        print("Pod latency list {}".format(str(pod_latencies_list)))
-        avg_list = []
-        p99_list = []
-        for pod_info in pod_latencies_list:
-            if len(pod_info) > 0:
-                avg_list.append(pod_info[1])
-                p99_list.append(pod_info[2])
-        return avg_list
+def get_pod_latencies(uuid):
+    if uuid != "":
+        # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
+        pod_latencies_list = get_es_data.get_pod_latency_data(uuid)
+        if len(pod_latencies_list) != 0:
+            avg_list = []
+            p99_list = []
+
+            for pod_info in pod_latencies_list:
+                if len(pod_info) > 0:
+                    avg_list.append(pod_info[1])
+                    p99_list.append(pod_info[2])
+            return avg_list
     return ["", "", "", ""]
 
 
@@ -69,7 +66,6 @@ def get_uperf_uuid():
     # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
     pod_latencies_list = get_es_data.get_pod_latency_data()
     if len(pod_latencies_list) != 0:
-        print("Pod latency list {}".format(str(pod_latencies_list)))
         avg_list = []
         p99_list = []
         for pod_info in pod_latencies_list:
@@ -86,7 +82,6 @@ def get_oc_version():
             for status in item['status']['conditions']:
                 if status['type'] == "Progressing":
                     version = status['message'].split(" ")[-1]
-                    print('version {}'.format(str(version)))
                     return version
     else:
         print("Error getting clusterversion")
@@ -94,9 +89,7 @@ def get_oc_version():
 def flexy_install_type(flexy_url):
     return_code, version_type_string = run('curl -s {}/consoleFull | grep "run_installer template -c private-templates/functionality-testing/aos-"'.format(flexy_url))
     if return_code == 0:
-        print("version_tpye " + str(version_type_string))
         version_lists = version_type_string.split("-on-")
-        print('version_lists {}'.format(str(version_lists)))
         install_type = version_lists[0].split('/')[-1]
         cloud_type = version_lists[1].split('/')[0]
         if "ovn" in version_type_string:
