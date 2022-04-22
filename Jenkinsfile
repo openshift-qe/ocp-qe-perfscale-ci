@@ -52,7 +52,8 @@ pipeline {
                </p><br>
                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/router-perf-v2">Router perf readme</a> for more env vars you can set'''
             )
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
+        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
+	string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
         if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
@@ -70,7 +71,7 @@ pipeline {
       steps{
         script{
           if(params.SCALE_UP.toInteger() > 0) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL)]
           }
         }
         deleteDir()
