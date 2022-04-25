@@ -193,7 +193,7 @@ pipeline{
                         def major_v = version_list[0]
                         def minor_v = version_list[1]
                         def extra_launcher_vars = ''
-                        println "minor ${minor_v} major ${major_v}"
+                        println "major ${major_v} minor ${minor_v}"
                         def var_loc = ""
                         if(params.CI_PROFILE != "") {
                           installData = readYaml(file: "local-ci-profiles/scale-ci/${major_v}.${minor_v}/${params.CI_PROFILE}.install.yaml")
@@ -229,7 +229,7 @@ pipeline{
                                 }
                             }
                             else if (params.CLOUD_TYPE == "azure") {
-                                extra_launcher_vars = "vm_type_workers: 'Standard_D8s_v3'\nregion: centralus\n num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
+                                extra_launcher_vars = "vm_type_workers: 'Standard_D8s_v3'\nregion: centralus\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
                             else if (params.CLOUD_TYPE == "gcp") {
                                 extra_launcher_vars = "vm_type_workers: 'n1-standard-4'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
