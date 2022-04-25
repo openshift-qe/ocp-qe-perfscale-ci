@@ -167,7 +167,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     row = [version, flexy_cell, ci_cell, grafana_cell, status]
     if job_type not in ["network-perf", "router-perf"]:
         workload_args = get_workload_params(job_type)
-        if workload_args != 0 and job_parameters:
+        print('work')
+        if workload_args != 0:
             row.append(workload_args)
     elif job_type == "router-perf":
         row.append(str(metadata))
@@ -189,4 +190,4 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     row.append(str(datetime.now(tz)))
     ws.insert_row(row, index, "USER_ENTERED")
 
-#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 96155, 117, 'pod-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/117/", "FAIL","400", "network_perf.out")
+#write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 97141, 70, 'etcd-perf', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/etcd-perf/70/", "FAIL","", "")
