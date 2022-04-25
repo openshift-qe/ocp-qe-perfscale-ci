@@ -15,6 +15,7 @@ def must_gather_url = ""
 def proxy_settings = ""
 def status = "PASS"
 def VERSION = ""
+def global_scale_num = 0
 
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
@@ -45,8 +46,8 @@ pipeline{
 				font-family: 'Orienta', sans-serif;
 			""")
         string(name: 'CI_PROFILE', defaultValue: '', description: 'Name of ci profile to build for the cluster you want to build')
-
-         separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
+        choice(choices: ['extra-small','small','medium',''], name: 'PROFILE_SCALE_SIZE', description: 'Size of cluster to scale to; will be ignored if SCALE_UP is set')
+        separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
@@ -64,7 +65,7 @@ pipeline{
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
-        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
+	    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
@@ -104,7 +105,7 @@ pipeline{
 			""")
         string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
         string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
-        separator(name: "NETWORK_PERF_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
+        separator(name: "NETWORK_PERF_INFO", sectionHeader: "Network-Perf Job Options", sectionHeaderStyle: """
 				font-size: 14px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
@@ -187,10 +188,13 @@ pipeline{
                         ]]
                     ]
                 script{
-
                     def install_type_custom = params.INSTALL_TYPE
                     def custom_cloud_type = params.CLOUD_TYPE
                     def custom_jenkins_label = JENKINS_AGENT_LABEL
+                    if (params.SCALE_UP.toInteger() > 0 ) {
+                        global_scale_num = params.SCALE_UP.toInteger()
+                    }
+                    println "global num $global_scale_num"
                      if(params.BUILD_NUMBER == "") {
                         VERSION = params.OCP_VERSION
                         println "${VERSION}"
@@ -202,11 +206,27 @@ pipeline{
                         println "major ${major_v} minor ${minor_v}"
                         def var_loc = ""
                         if(params.CI_PROFILE != "") {
-                          installData = readYaml(file: "local-ci-profiles/scale-ci/${major_v}.${minor_v}/${params.CI_PROFILE}.install.yaml")
-                          installData.install.flexy.each { env.setProperty(it.key, it.value) }
+                            installData = readYaml(file: "local-ci-profiles/scale-ci/${major_v}.${minor_v}/${params.CI_PROFILE}.install.yaml")
+                            installData.install.flexy.each { env.setProperty(it.key, it.value) }
+                            println "PROFILE_SCALE_SIZE ${params.PROFILE_SCALE_SIZE}"
+                            // loop through install data keys to make sure scale is one of them
+                            for (data in installData) {
+                                if (data.key == "scale" ) {
+                                    data.value.get(params.PROFILE_SCALE_SIZE).each { env.setProperty(it.key, it.value) }
+                                    break
+                                }
+                            }
 
                             var_loc = env.VARIABLES_LOCATION
-                            extra_launcher_vars = env.EXTRA_LAUNCHER_VARS
+                            if (env.EXTRA_LAUNCHER_VARS != null ) {
+                                extra_launcher_vars = env.EXTRA_LAUNCHER_VARS  + "\n"
+                            }
+                            println "extra lanch vars ${extra_launcher_vars}"
+                            println "env scale ${env.SCALE_UP}"
+                            println "scale ${SCALE_UP}"
+                            if (global_scale_num.toInteger() == 0 && env.SCALE_UP.toInteger() > 0 ) {
+                                global_scale_num = env.SCALE_UP.toInteger()
+                            }
 
                             currentBuild.description = """
                                 <b>CI Profile:</b> ${params.CI_PROFILE}<br/>
@@ -271,10 +291,11 @@ pipeline{
                                 """
                             }
 
-                            println "var ${var_loc}"
                             install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
-                            string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
-                            value: "${extra_launcher_vars}installer_payload_image: 'registry.ci.openshift.org/ocp/release:${VERSION}'"),text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
+                                string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
+                                string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
+                                value: "${extra_launcher_vars}installer_payload_image: 'registry.ci.openshift.org/ocp/release:${VERSION}'"),
+                                text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
 text(name: 'CREDENTIALS', value: '''
@@ -289,9 +310,9 @@ REG_NIGHTLY_BUILDS=9a9187c6-a54c-452a-866f-bea36caea6f9
 REG_CI_BUILDS=registry.ci.openshift.org
 GIT_FLEXY_SSH_KEY=e2f7029f-ab8d-4987-8950-39feb80d5fbd
 GIT_PRIVATE_SSH_KEY=1d2207b6-15c0-4cb0-913a-637788d12257
-REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
+REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
+                                ''' )
                         ]
-
                         if( install.result.toString()  != "SUCCESS") {
                            println "build failed"
                            currentBuild.result = "FAILURE"
@@ -336,7 +357,8 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
                     }
 
                     ENV_VARS += '\n' + proxy_settings
-                    println "$ENV_VARS"
+                    println "$ENV_VARS $global_scale_num"
+
                  }
                }
             }
@@ -344,19 +366,18 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
         stage("Scale Up Cluster") {
            agent { label params['JENKINS_AGENT_LABEL'] }
             when {
-                expression { build_string != "DEFAULT" && status == "PASS" && params.SCALE_UP.toInteger() > 0}
+                expression { build_string != "DEFAULT" && status == "PASS" && global_scale_num.toInteger() > 0}
             }
            steps {
             script{
 
-
                 scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
                     string(name: 'BUILD_NUMBER', value: "${build_string}"), text(name: "ENV_VARS", value: ENV_VARS),
                     booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL),
-                    string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                    string(name: 'WORKER_COUNT', value: global_scale_num.toString()), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
                 ]
                 currentBuild.description += """
-                    <b>Scaled Up:</b>  <a href="${scale_up.absoluteUrl}"> ${params.SCALE_UP} </a><br/>
+                    <b>Scaled Up:</b>  <a href="${scale_up.absoluteUrl}"> ${global_scale_num} </a><br/>
                 """
                 if( scale_up != null && scale_up.result.toString() != "SUCCESS") {
                    status = "Scale Up Failed"
