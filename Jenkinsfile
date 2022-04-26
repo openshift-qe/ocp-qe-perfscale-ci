@@ -64,7 +64,7 @@ pipeline{
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
-
+        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
         string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
         string(name: 'SCALE_DOWN', defaultValue: '0', description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
@@ -97,7 +97,6 @@ pipeline{
 				font-family: 'Orienta', sans-serif;
 			""")
         string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of worker nodes to be used in your cluster for this workload.')
-
         separator(name: "NETWORK_PERF_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
 				font-size: 14px;
 				font-weight: bold;
@@ -346,6 +345,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9''' )
 
                 scale_up = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
                     string(name: 'BUILD_NUMBER', value: "${build_string}"), text(name: "ENV_VARS", value: ENV_VARS),
+                    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL),
                     string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
                 ]
                 currentBuild.description += """
