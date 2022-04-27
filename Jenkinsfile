@@ -8,7 +8,8 @@ if (userId) {
 
 def RETURNSTATUS = "default"
 def output = ""
-
+def cerberus_job = ""
+def status = "FAIL"
 pipeline {
   agent none
 
@@ -16,6 +17,8 @@ pipeline {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         choice(choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds"], name: 'WORKLOAD', description: '''Type of kube-burner job to run''')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
+        booleanParam(name: 'CLEANUP', defaultValue: false, description: 'Cleanup namespaces (and all sub-objects) created from workload')
+        booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
 
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
@@ -93,13 +96,13 @@ pipeline {
           }
         }
         deleteDir()
+
         checkout([
           $class: 'GitSCM',
           branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
           doGenerateSubmoduleConfigurations: false,
           userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]
           ]])
-
         copyArtifacts(
             filter: '',
             fingerprintArtifacts: true,
@@ -115,71 +118,90 @@ pipeline {
         }
 
         script{
-          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
-              RETURNSTATUS = sh(returnStatus: true, script: '''
-                  # Get ENV VARS Supplied by the user to this job and store in .env_override
-                  echo "$ENV_VARS" > .env_override
-                  # Export those env vars so they could be used by CI Job
-                  set -a && source .env_override && set +a
-                  cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
-                  export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
-                  export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
-                  mkdir -p ~/.kube
-                  cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                  ls -ls ~/.kube/
-                  cd workloads/kube-burner
-                  python3.9 --version
-                  python3.9 -m pip install virtualenv
-                  python3.9 -m virtualenv venv3
+            withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+                RETURNSTATUS = sh(returnStatus: true, script: '''
+                    # Get ENV VARS Supplied by the user to this job and store in .env_override
+                    echo "$ENV_VARS" > .env_override
+                    # Export those env vars so they could be used by CI Job
+                    set -a && source .env_override && set +a
+                    cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
+                    export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
+                    export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
+                    mkdir -p ~/.kube
+                    cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                    ls -ls ~/.kube/
+                    cd workloads/kube-burner
+                    python3.9 --version
+                    python3.9 -m pip install virtualenv
+                    python3.9 -m virtualenv venv3
 
-                  source venv3/bin/activate
-                  python --version
+                    source venv3/bin/activate
+                    python --version
 
-                  if [[ $WORKLOAD == "cluster-density" ]]; then
-                    export JOB_ITERATIONS=$VARIABLE
-                  elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
-                    export PODS=$VARIABLE
-                  elif [[ $WORKLOAD == "max-namespaces" ]]; then
-                    export NAMESPACE_COUNT=$VARIABLE
-                  elif [[ $WORKLOAD == "max-services" ]]; then
-                    export SERVICE_COUNT=$VARIABLE
-                  elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
-                    export PODS_PER_NODE=$VARIABLE
-                  fi
-                  set -o pipefail
-                  ./run.sh | tee "kube-burner.out"
-              ''')
+                    if [[ $WORKLOAD == "cluster-density" ]]; then
+                      export JOB_ITERATIONS=$VARIABLE
+                    elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
+                      export PODS=$VARIABLE
+                    elif [[ $WORKLOAD == "max-namespaces" ]]; then
+                      export NAMESPACE_COUNT=$VARIABLE
+                    elif [[ $WORKLOAD == "max-services" ]]; then
+                      export SERVICE_COUNT=$VARIABLE
+                    elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
+                      export PODS_PER_NODE=$VARIABLE
+                    fi
+                    set -o pipefail
+                    ./run.sh | tee "kube-burner.out"
+                ''')
               output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
           }
         }
+
         script{
-            def status = "FAIL"
-            if( RETURNSTATUS.toString() == "0") {
-                status = "PASS"
-            }else {
+            if(params.CERBERUS_CHECK == true) {
+                cerberus_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cerberus',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
+                    ],
+                    propagate: false
+                if( status == "PASS") {
+                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                        status = "Cerberus check failed"
+                    }
+                } else {
+                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                        status += "Cerberus check failed"
+                    }
+                }
+            }
+         }
+
+        script{
+
+            if( status != "PASS") {
                 currentBuild.result = "FAILURE"
             }
-           if(params.WRITE_TO_FILE == true) {
+            if(params.WRITE_TO_FILE == true) {
+                def parameter_to_pass = VARIABLE
+                if (params.WORKLOAD == "node-density" || params.WORKLOAD == "node-density-heavy" ) {
+                    parameter_to_pass += "," + NODE_COUNT
+                }
+                else if (params.WORKLOAD == "concurrent-builds" ) {
+                    parameter_to_pass = APP_LIST + "," + BUILD_LIST
+                }
 
-            def parameter_to_pass = VARIABLE
-            if (params.WORKLOAD == "node-density" || params.WORKLOAD == "node-density-heavy" ) {
-                parameter_to_pass += "," + NODE_COUNT
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
+                        string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
+                        text(name: "JOB_OUTPUT", value: "${output}")
+                    ],
+                    propagate: false
+
             }
-            else if (params.WORKLOAD == "concurrent-builds" ) {
-                parameter_to_pass = APP_LIST + "," + BUILD_LIST
-            }
-
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
-                parameters: [
-                    string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
-                    string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
-                    string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
-                    string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
-                    text(name: "JOB_OUTPUT", value: "${output}")
-                ],
-                propagate: false
-
-           }
        }
        script{
           // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
@@ -191,6 +213,19 @@ pipeline {
             ]
           }
         }
+
+       script{
+            if(params.CLEANUP == true) {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "UNINSTALL_BENCHMARK_OP", value: false),
+                        string(name: "CI_TYPE", value: WORKLOAD)
+                     ],
+                    propagate: false
+            }
+         }
+
       }
 
     }
