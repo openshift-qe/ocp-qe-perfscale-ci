@@ -25,7 +25,7 @@ pipeline {
         )
         string(name: 'WORKER_COUNT', defaultValue: '', description:'Total Worker count desired in the cluster')
         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes')
-	text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
+        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
                SOMEVAR1='env-test'<br>
@@ -54,74 +54,73 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        ansiColor('xterm') {
-        sh label: '', script: '''
-        mkdir -p ~/.kube
-        # Get ENV VARS Supplied by the user to this job and store in .env_override
-        echo "$ENV_VARS" > .env_override
-        # Export those env vars so they could be used by CI Job
-        set -a && source .env_override && set +a
-        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-        oc config view
-        oc projects
-        ls -ls ~/.kube/
-        env
-        log(){
-          echo -e "\033[1m$(date "+%d-%m-%YT%H:%M:%S") ${@}\033[0m"
-        }
-        function scaleMachineSets(){
-          scale_num=$(oc get --no-headers machinesets -A | awk '{print $2}' | wc -l | xargs)
-          scale_size=$(($1/$scale_num))
-          set -x
-          for machineset in $(oc get --no-headers machinesets -A | awk '{print $2}'); do
-              oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
-          done
-          if [[ $(($1%$scale_num)) != 0 ]]; then
-            oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%$scale_num))))
-          fi
-          set +x
-          local retries=0
-          local attempts=100
-          while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
-              log "Following nodes are currently present, waiting for desired count $1 to be met."
-              log "Machinesets:"
-              oc get machinesets -A
-              log "Nodes:"
-              oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
-              log "Sleeping for 60 seconds"
-              sleep 60
-              ((retries += 1))
-              if [[ "${retries}" -gt ${attempts} ]]; then
-
-                for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
-                    oc describe node $node
-                done
-
-                for machine in $(oc get machines -n openshift-machine-api --no-headers | grep -v "master" | grep -v "Running" | awk '{print $1}'); do
-                    oc describe machine $machine -n openshift-machine-api
-                done
-
-                echo "error: all $1 nodes didn't become READY in time, failing"
-                exit 1
-              fi
-          done;
-          log "All nodes seem to be ready"
-          oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
-        }
-
-        scaleMachineSets $WORKER_COUNT
-        rm -rf ~/.kube
-        '''
+        script{
+            if (params.WORKER_COUNT.toInteger() > 0 ) {
+                RETURNSTATUS = sh(returnStatus: true, script: '''
+                    mkdir -p ~/.kube
+                    # Get ENV VARS Supplied by the user to this job and store in .env_override
+                    echo "$ENV_VARS" > .env_override
+                    # Export those env vars so they could be used by CI Job
+                    set -a && source .env_override && set +a
+                    cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                    oc config view
+                    oc projects
+                    ls -ls ~/.kube/
+                    env
+                    log(){
+                      echo -e "\033[1m$(date "+%d-%m-%YT%H:%M:%S") ${@}\033[0m"
+                    }
+                    function scaleMachineSets(){
+                      scale_num=$(oc get --no-headers machinesets -A | awk '{print $2}' | wc -l | xargs)
+                      scale_size=$(($1/$scale_num))
+                      set -x
+                      for machineset in $(oc get --no-headers machinesets -A | awk '{print $2}'); do
+                          oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
+                      done
+                      if [[ $(($1%$scale_num)) != 0 ]]; then
+                        oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%$scale_num))))
+                      fi
+                      set +x
+                      local retries=0
+                      local attempts=100
+                      while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
+                          log "Following nodes are currently present, waiting for desired count $1 to be met."
+                          log "Machinesets:"
+                          oc get machinesets -A
+                          log "Nodes:"
+                          oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
+                          log "Sleeping for 60 seconds"
+                          sleep 60
+                          ((retries += 1))
+                          if [[ "${retries}" -gt ${attempts} ]]; then
+                            for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
+                                oc describe node $node
+                            done
+                            for machine in $(oc get machines -n openshift-machine-api --no-headers | grep -v "master" | grep -v "Running" | awk '{print $1}'); do
+                                oc describe machine $machine -n openshift-machine-api
+                            done
+                            echo "error: all $1 nodes didn't become READY in time, failing"
+                            exit 1
+                          fi
+                      done;
+                      log "All nodes seem to be ready"
+                      oc get nodes --no-headers -l node-role.kubernetes.io/worker | cat -n
+                    }
+                    scaleMachineSets $WORKER_COUNT
+                    rm -rf ~/.kube
+                '''
+                )
+          }
         }
         script{
-	  if(params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
+          if (params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
             if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
               string(name: 'INFRA_NODES', value: 'true'),
-              text(name: 'ENV_VARS', value: '''
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
@@ -142,7 +141,7 @@ OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
               string(name: 'INFRA_NODES', value: 'true'),
-              text(name: 'ENV_VARS', value: '''
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS
 OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3
@@ -161,7 +160,7 @@ OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
               string(name: 'INFRA_NODES', value: 'true'),
-              text(name: 'ENV_VARS', value: '''
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
@@ -173,14 +172,15 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32
-              ''')]
-            }else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
-              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
-              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
-              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
-              text(name: 'ENV_VARS', value: ENV_VARS + '''
+                    ''')
+                  ]
+                } else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
+                  build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+                      string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                      string(name: 'INFRA_NODES', value: 'true'),
+                      text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120
 OPENSHIFT_INFRA_NODE_CPU_COUNT=48
 OPENSHIFT_INFRA_NODE_MEMORY_SIZE=196608
@@ -217,6 +217,6 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
       }
         
     }
-}
+  }
 }
 
