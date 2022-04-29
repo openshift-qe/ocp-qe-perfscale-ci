@@ -196,128 +196,28 @@ pipeline{
                     }
                     println "global num $global_scale_num"
                      if(params.BUILD_NUMBER == "") {
-                        VERSION = params.OCP_VERSION
-                        println "${VERSION}"
-                        def version_list = VERSION.tokenize(".")
-                        println "version ${version_list}"
-                        def major_v = version_list[0]
-                        def minor_v = version_list[1]
-                        def extra_launcher_vars = ''
-                        println "major ${major_v} minor ${minor_v}"
-                        def var_loc = ""
-                        if(params.CI_PROFILE != "") {
-                            installData = readYaml(file: "local-ci-profiles/scale-ci/${major_v}.${minor_v}/${params.CI_PROFILE}.install.yaml")
-                            installData.install.flexy.each { env.setProperty(it.key, it.value) }
-                            println "PROFILE_SCALE_SIZE ${params.PROFILE_SCALE_SIZE}"
-                            // loop through install data keys to make sure scale is one of them
-                            for (data in installData) {
-                                if (data.key == "scale" ) {
-                                    data.value.get(params.PROFILE_SCALE_SIZE).each { env.setProperty(it.key, it.value) }
-                                    break
-                                }
-                            }
 
-                            var_loc = env.VARIABLES_LOCATION
-                            if (env.EXTRA_LAUNCHER_VARS != null ) {
-                                extra_launcher_vars = env.EXTRA_LAUNCHER_VARS  + "\n"
-                            }
-                            println "extra lanch vars ${extra_launcher_vars}"
-                            println "env scale ${env.SCALE_UP}"
-                            println "scale ${SCALE_UP}"
-                            if (global_scale_num.toInteger() == 0 && env.SCALE_UP.toInteger() > 0 ) {
-                                global_scale_num = env.SCALE_UP.toInteger()
-                            }
-
-                            currentBuild.description = """
-                                <b>CI Profile:</b> ${params.CI_PROFILE}<br/>
-                            """
-                        }
-                         else {
-                          def network_ending = ""
-
-                          if (params.CLOUD_TYPE == "vsphere") {
-                                network_ending = "-vmc7"
-                          }
-                           if (params.NETWORK_TYPE != "sdn") {
-                            if (params.CLOUD_TYPE == "alicloud") {
-                                network_ending = "-fips-${params.NETWORK_TYPE}-ci"
-                            } else if (params.CLOUD_TYPE != "ash" ) {
-                                network_ending += "-${params.NETWORK_TYPE}"
-                            }
-                           }
-                            def worker_type = ""
-                                if (params.CLOUD_TYPE == "aws") {
-                                if (params.INSTALL_TYPE == "sno") {
-                                    extra_launcher_vars = "master_worker_AllInOne: 'true'\nnum_masters: 1\nnum_workers: 0\nvm_type: 'm5.4xlarge'\n"
-                                    install_type_custom = "ipi"
-                                } else {
-                                extra_launcher_vars = "vm_type_workers: 'm5.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                                }
-                            }
-                            else if (params.CLOUD_TYPE == "azure") {
-                                extra_launcher_vars = "vm_type_workers: 'Standard_D8s_v3'\nregion: centralus\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                            }
-                            else if (params.CLOUD_TYPE == "gcp") {
-                                extra_launcher_vars = "vm_type_workers: 'n1-standard-4'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                                if (params.NETWORK_TYPE != "sdn") {
-                                 network_ending = network_ending + "-ci"
-                                }
-                            }
-                            else if (params.CLOUD_TYPE == "osp") {
-                                extra_launcher_vars = "vm_type_workers: 'ci.m1.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                            }
-                            else if (params.CLOUD_TYPE == "alicloud") {
-
-                                extra_launcher_vars = "vm_type_workers: 'ecs.g6.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                            }
-                            else if (params.CLOUD_TYPE == "ibmcloud") {
-                                extra_launcher_vars = "vm_type_workers: 'bx2d-4x16'\nregion: 'jp-tok'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                            }
-                            else if (params.CLOUD_TYPE == "vsphere") {
-                                extra_launcher_vars = " num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                            } else if (params.CLOUD_TYPE == "ash") {
-                                custom_cloud_type = "azure"
-                                extra_launcher_vars = " num_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
-                                if (params.NETWORK_TYPE != "sdn") {
-                                extra_launcher_vars += 'networkType: "OVNKubernetes"\n'
-                                }
-                                network_ending = "-ash_wwt"
-                                custom_jenkins_label = "fedora-installer-wwt"
-                            }
-                             var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
-
-                             currentBuild.description = """
-                                    <b>Cluster Built:</b> ${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}<br/>
-                                """
-                            }
-
-                            install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
-                                string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
-                                string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
-                                value: "${extra_launcher_vars}installer_payload_image: 'registry.ci.openshift.org/ocp/release:${VERSION}'"),
-                                text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
-GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
-GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
-text(name: 'CREDENTIALS', value: '''
-DYNECT_CREDENTIALS=b1666c61-4a76-40b7-950f-a3d40f721e59
-REG_STAGE=41c2dd39-aad7-4f07-afec-efc052b450f5
-REG_QUAY=c1802784-0f74-4b35-99fb-32dfa9a207ad
-REG_CLOUD=fba37700-62f8-4883-8905-53f86461ba5b
-REG_CONNECT=819c9e9f-1e9c-4d2b-9dc0-fc630674bc9b
-REG_REDHAT=819c9e9f-1e9c-4d2b-9dc0-fc630674bc9b
-REG_BREW_OSBS=brew-registry-osbs-mirror
-REG_NIGHTLY_BUILDS=9a9187c6-a54c-452a-866f-bea36caea6f9
-REG_CI_BUILDS=registry.ci.openshift.org
-GIT_FLEXY_SSH_KEY=e2f7029f-ab8d-4987-8950-39feb80d5fbd
-GIT_PRIVATE_SSH_KEY=1d2207b6-15c0-4cb0-913a-637788d12257
-REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
-                                ''' )
+                        install = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-builder/', parameters: [
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                            string(name: 'OCP_PREFIX', value: OCP_PREFIX),string(name: 'OCP_VERSION', value: OCP_VERSION),
+                            string(name: 'CI_PROFILE', value: CI_PROFILE),string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),
+                            string(name: 'NETWORK_TYPE', value: NETWORK_TYPE),string(name: 'INSTALL_TYPE', value: INSTALL_TYPE),
+                            string(name: 'MASTER_COUNT', value: MASTER_COUNT),string(name: "WORKER_COUNT", value: WORKER_COUNT)
                         ]
+                        def build_num = ""
+                        if (install.description?.trim()) {
+                            def description = readYaml(text: install.description)
+                            if (description["FLEXY_BUILD_NUMBER"] != null) {
+                              build_num = description["FLEXY_BUILD_NUMBER"]
+                            }
+                        }
+
                         if( install.result.toString()  != "SUCCESS") {
                            println "build failed"
                            currentBuild.result = "FAILURE"
                            status = "Install failed"
                         }
+                        build_string = build_num
                     } else {
                      copyArtifacts(
                         filter: '',
@@ -331,13 +231,12 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                         currentBuild.description = """
                             <b>Using Pre-Built Flexy</b> <br/>
                         """
+
+                        if (params.BUILD_NUMBER != "") {
+                            build_string = params.BUILD_NUMBER
+                        }
                      }
 
-                    if (params.BUILD_NUMBER != "") {
-                            build_string = params.BUILD_NUMBER
-                    } else if( install.result.toString() == "SUCCESS" ) {
-                            build_string = install.number.toString()
-                    }
                     currentBuild.description += """
                         <b>Version:</b> ${VERSION}<br/>
                         <b>Flexy-install Build:</b> ${build_string}<br/>
@@ -429,7 +328,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                         """
                    }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
-                       loaded_ci = build job: "scale-ci/paige-e2e-multibranch/network-perf", propagate: false, parameters:[
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
@@ -519,7 +418,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                 script{
                     if(install != null && (install.result.toString() != "SUCCESS" || params.DESTROY_WHEN_DONE == true)) {
                         destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [
-                            string(name: "BUILD_NUMBER", value: install.number.toString()),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)
+                            string(name: "BUILD_NUMBER", value: build_string),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL)
                         ]
                     } else if(install == null && params.DESTROY_WHEN_DONE == true) {
                         destroy_ci = build job: 'ocp-common/Flexy-destroy', parameters: [
@@ -532,6 +431,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                         if( destroy_ci.result.toString() != "SUCCESS") {
                             println "destroy failed"
                             currentBuild.result = "FAILURE"
+                            status = "Destroy Failed"
                         }
                     }
                 }
