@@ -124,11 +124,11 @@ def check_cluster_version():
     return ""
 
 # Main function
-def check_upgrade(expected_cluster_version, wait_num=240):
+def check_upgrade(expected_cluster_version, wait_num=300):
     print(f"Starting upgrade check to {expected_cluster_version}")
     upgrade_version = check_cluster_version()
     j = 0
-    # Will wait for up to 2 hours.. might need to increase
+    # Will wait for up to 2.5 hours... might need to increase or decrease - need to observe.
     while j < wait_num:
         if upgrade_version == expected_cluster_version:
             wait_for_nodes_ready()
