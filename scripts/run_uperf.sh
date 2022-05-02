@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source $NETWORK_PERF_DIR/common.sh
+cd $NETWORK_PERF_DIR && source $NETWORK_PERF_DIR/common.sh && cd -
 
 log "###############################################"
 log "Workload: ${WORKLOAD}"

@@ -13,6 +13,7 @@ uperf)
     override_uperf_env
     export WORKLOAD="pod2pod"
     prep_uperf_workload
+    cd $NETWORK_PERF_DIR
     ./run_uperf.sh
     ;;
 node-density-heavy)
