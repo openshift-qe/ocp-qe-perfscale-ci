@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+CR=ripsaw-uperf-crd.yaml
 # run network-perf common.sh
 cd $NETWORK_PERF_DIR && source common.sh && cd -
 
