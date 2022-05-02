@@ -10,10 +10,8 @@ uperf)
     export NETWORK_PERF_DIR='../../e2e-benchmarking/workloads/network-perf'
     source $NETWORK_PERF_DIR/env.sh
     source $NETWORK_PERF_DIR/common.sh
-    override_uperf_env
     export WORKLOAD="pod2pod"
     prep_uperf_workload
-    cd $NETWORK_PERF_DIR
     ./run_uperf.sh
     ;;
 node-density-heavy)
