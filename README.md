@@ -6,4 +6,3 @@ Run Network observability end-to-end perf tests with a given network variant of 
 
 ### Author
 Mehul Modi <@memodi on Github>
-
