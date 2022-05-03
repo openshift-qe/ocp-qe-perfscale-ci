@@ -79,7 +79,7 @@ pipeline {
           kind: Pod
           metadata:
             labels:
-              label: ${JENKINS_AGENT}
+              label: ${params['JENKINS_AGENT']}
           spec:
             containers:
             - name: "jnlp"
