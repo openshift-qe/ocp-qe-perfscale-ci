@@ -67,10 +67,12 @@ def verify_version_in_channel_list(expected_version):
     split_output = output.split("Recommended updates")
     new_line_output = split_output[-1].split('\n')
     for line in new_line_output:
-        space_line = line.split('   ')[0]
-        if expected_version == space_line.strip():
-            print('expected version in list')
-            return
+
+        space_line = line.split('  ')
+        for s_line in space_line:
+            if s_line != "" and expected_version == s_line.split(" ")[0].strip():
+                print('expected version in list')
+                return
     print("ERROR")
 
 def get_upgrade_status(mcp_json):
