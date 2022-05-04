@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import json
@@ -80,6 +80,7 @@ def main():
 		json.dump(loki_data, loki_file)
 
 	# exit if no issues
+	print(f"Data captured successfully and written to {data_dir}")
 	sys.exit(0)
 
 

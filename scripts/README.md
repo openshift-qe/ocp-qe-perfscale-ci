@@ -11,5 +11,5 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 
 ### Running the tool
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
-2. Install requirements with `pip install -r scripts/nope_requirements.txt`
+2. Install requirements with `pip install -r scripts/requirements.txt`
 3. Run the tool with `./scripts/nope.py` with the `--url` arg being your cluster's URL and the `--token` arg being your token for Bearer authentication. You can get the token by logging into your cluster as `kubeadmin` and running `oc whoami -t`.
