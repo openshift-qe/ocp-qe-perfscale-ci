@@ -102,7 +102,8 @@ if __name__ == '__main__':
 	NAMESPACE = args.namespace
 
 	# clean arguments
-	CLUSTER_URL = CLUSTER_URL.removeprefix('https://')
+	CLUSTER_URL = CLUSTER_URL.removeprefix('https://api.')
+	CLUSTER_URL = CLUSTER_URL.removesuffix(':6443')
 
 	# set query constants
 	CPU_QUERY = f'pod:container_cpu_usage:sum{{namespace="{NAMESPACE}"}}'
