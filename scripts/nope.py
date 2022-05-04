@@ -9,9 +9,10 @@ import requests
 
 CLUSTER_URL = ''
 TOKEN = ''
-CPU_QUERY = 'pod:container_cpu_usage:sum{namespace="network-observability"}'
-MEM_QUERY = 'sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) BY (pod)'
-LOKI_QUERY = 'kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}'
+NAMESPACE = ''
+CPU_QUERY = ''
+MEM_QUERY = ''
+LOKI_QUERY = ''
 
 
 def run_query(query_type=''):
@@ -36,7 +37,7 @@ def run_query(query_type=''):
 		}
 	else:
 		print(f"invalid query_type: {query_type}")
-		return
+		sys.exit(1)
 	
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
@@ -92,14 +93,21 @@ if __name__ == '__main__':
 	# set customization flags
 	parser.add_argument("--url", type=str, help='Cluster URL', required=True)
 	parser.add_argument("--token", type=str, help='Token for Bearer auth', required=True)
+	parser.add_argument("--namespace", type=str, default='network-observability', help='Namespace for query - defaults to "network-observability"', required=False)
 
 	# parse arguments
 	args = parser.parse_args()
 	CLUSTER_URL = args.url
 	TOKEN = args.token
+	NAMESPACE = args.namespace
 
 	# clean arguments
 	CLUSTER_URL = CLUSTER_URL.removeprefix('https://')
+
+	# set query constants
+	CPU_QUERY = f'pod:container_cpu_usage:sum{{namespace="{NAMESPACE}"}}'
+	MEM_QUERY = f'sum(container_memory_working_set_bytes{{namespace="{NAMESPACE}",container="",}}) BY (pod)'
+	LOKI_QUERY = f'kubelet_volume_stats_used_bytes{{namespace="{NAMESPACE}", persistentvolumeclaim="loki-store"}}'
 
 	# begin main program execution
 	main()
