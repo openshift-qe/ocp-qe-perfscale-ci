@@ -3,6 +3,7 @@
 import sys
 import json
 import pathlib
+import subprocess
 import argparse
 import requests
 
@@ -91,19 +92,33 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Network Observability Prometheus and Elasticsearch tool (NOPE)')
 
 	# set customization flags
-	parser.add_argument("--url", type=str, help='Cluster URL', required=True)
-	parser.add_argument("--token", type=str, help='Token for Bearer auth', required=True)
+	parser.add_argument("--url", type=str, help='Override for Cluster URL', required=False)
+	parser.add_argument("--token", type=str, help='Override for Bearer auth token', required=False)
 	parser.add_argument("--namespace", type=str, default='network-observability', help='Namespace for query - defaults to "network-observability"', required=False)
 
 	# parse arguments
 	args = parser.parse_args()
+
 	CLUSTER_URL = args.url
+	if CLUSTER_URL is None:
+		CLUSTER_URL = subprocess.run(['oc', 'get', 'infrastructure', 'cluster', '-o', 'jsonpath="{.status.apiServerURL}"'], capture_output=True, text=True).stdout
+		print(f"CLUSTER_URL (raw): {CLUSTER_URL}")
+
 	TOKEN = args.token
+	if TOKEN is None:
+		TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
+		print(f"TOKEN (raw): {TOKEN}")
+
 	NAMESPACE = args.namespace
+	print(f"NAMESPACE: {NAMESPACE}")
 
 	# clean arguments
-	CLUSTER_URL = CLUSTER_URL.removeprefix('https://api.')
-	CLUSTER_URL = CLUSTER_URL.removesuffix(':6443')
+	CLUSTER_URL = CLUSTER_URL.removeprefix('"https://api.')
+	CLUSTER_URL = CLUSTER_URL.removesuffix(':6443"')
+	print(f"CLUSTER_URL (cleaned): {CLUSTER_URL}")
+
+	TOKEN = TOKEN[:-1]
+	print(f"TOKEN (cleaned): {TOKEN}")
 
 	# set query constants
 	CPU_QUERY = f'pod:container_cpu_usage:sum{{namespace="{NAMESPACE}"}}'
