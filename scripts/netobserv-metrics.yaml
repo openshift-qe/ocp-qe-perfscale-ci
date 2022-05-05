@@ -1,0 +1,21 @@
+
+- query: pod:container_cpu_usage:sum{namespace="network-observability"}
+  metricName: cpuUsage
+
+- query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsage
+
+- query: avg_over_time(kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[5m])
+  metricName: lokiStorageUsage
+
+- query: sum(rate(flow_process_nf_count[1m])*60) by (pod)
+  metricName: nFlowsProcessedPerMinute
+
+- query: flow_summary_processing_time_us{quantile="0.9"}
+  metricName: FlowProcessingTime
+
+- query: sum(rate(flow_traffic_summary_size_bytes_sum[1m])*60) by (pod)
+  metricName: nBytes
+
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60 by (pod)
+  metricName: nFlowLogsProcessed
