@@ -91,12 +91,12 @@ if __name__ == '__main__':
 	print(f"TOKEN (cleaned): {TOKEN}")
 
 	# set queries
-	with open(SCRIPT_DIR + '/' + YAML_FILE, 'r') as yaml_file:
-		try:
+	try:
+		with open(SCRIPT_DIR + '/' + YAML_FILE, 'r') as yaml_file:
 			QUERIES = yaml.safe_load(yaml_file)
-		except Exception as e:
-			print(f'Failed to read YAML file {YAML_FILE}: {e}')
-			sys.exit(1)
+	except Exception as e:
+		print(f'Failed to read YAML file {YAML_FILE}: {e}')
+		sys.exit(1)
 
 	# begin main program execution
 	main()
