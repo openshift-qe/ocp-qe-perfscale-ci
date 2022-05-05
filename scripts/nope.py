@@ -39,10 +39,9 @@ def run_query(query):
 def main():
 
 	# get prometheus data
-	num_queries = range(len(QUERIES))
-	for index in num_queries:
-		metric_name = QUERIES[index]['metricName']
-		query = QUERIES[index]['query']
+	for entry in QUERIES:
+		metric_name = entry['metricName']
+		query = entry['query']
 		RESULTS[metric_name] = run_query(query)
 
 	# ensure data directory exists (create if not)
