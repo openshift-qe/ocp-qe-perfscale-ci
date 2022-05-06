@@ -503,7 +503,7 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                     if ( must_gather != null ) {
                         must_gather_url = must_gather.absoluteUrl
                     }
-                    build job: 'scale-ci/paige-e2e-multibranch/write-scale-ci-results', parameters: [
+                    build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [
                         string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "BUILD_NUMBER", value: build_string),
                         string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),text(name: "ENV_VARS", value: ENV_VARS),
                         string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),booleanParam(name: 'SCALE', value: SCALE),
