@@ -1,11 +1,18 @@
 deploy_operatorhub_noo() {
   oc new-project network-observability
-  oc wait --timeout=180s --for=condition=ready pod app=network-observability-operator -n network-observability
 
+  oc apply -f operator_group.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/noo-subscription.yaml
-  envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
+  sleep 20
+  oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
 
+  envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
+  echo "====> Waiting for flowlogs-pipeline pod to be ready"
+  while :; do
+    oc get daemonset flowlogs-pipeline -n network-observability && break
+    sleep 1
+  done
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
 
   deploy_loki
