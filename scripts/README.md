@@ -7,7 +7,7 @@ Multiple workloads are run to generate traffic for the the cluster:
 3. router-perf
 
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
-The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
+The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml_file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
 
 ### Running the tool
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
