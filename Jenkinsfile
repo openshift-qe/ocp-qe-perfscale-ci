@@ -123,7 +123,7 @@ pipeline {
 
         checkout([
           $class: 'GitSCM', 
-          branches: [[name: "NETOBSERV-332" ]],
+          branches: [[name: "netobserv-perf-tests" ]],
           doGenerateSubmoduleConfigurations: false, 
           userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]],
           extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale']]
