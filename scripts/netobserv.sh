@@ -65,3 +65,10 @@ get_ipfix_collector_ip() {
     log "$OVS_IPFIX_COLLECTOR_IP is configured for $podName"
   done
 }
+
+uninstall_operatorhub_netobserv() {
+  oc delete flowcollector/cluster
+  oc delete -f $WORKSPACE/ocp-qe-perfscale/scripts/noo-subscription.yaml
+  oc delete csv/netobserv-operator.v0.1.2 -n network-observability
+  oc delete -f $WORKSPACE/ocp-qe-perfscale/scripts/operator_group.yaml
+}

@@ -13,4 +13,7 @@ populate_netobserv_metrics() {
 
 prep_kubeburner_workload() {
     export METRICS_PROFILE=$PWD/netobserv-metrics.yaml
+    export THANOS_QUERIER_HOST=$(oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host')
+    export PROM_URL="https://$THANOS_QUERIER_HOST"
+    export PROM_USER_WORKLOAD="true"
 }
