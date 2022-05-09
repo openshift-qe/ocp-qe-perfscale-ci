@@ -56,5 +56,20 @@ SCALE_DOWN: scale down the cluster to a certain number of workers after the work
 
 Use INFRA_WORKLOAD_INSTALL to install infrastructure and workload nodes to a cluster. This will move promethues pods to those machines to allow the worker nodes to only run the workload under test 
 
+### Benchmark-Comparison 
+The [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison) tool will run at the end of the
+ kube-burner workload. It will send a google spreedsheet of the data to your email. When spreadsheet is recieved
+  please change the sharing to be viewable by anyone within Red Hat with link
+
+If COMPARSION_CONFIG environment variable is not set in the ENV_VARS the script will automatically set to gather data
+ based on these config files
+ 
+ * [clusterVersion.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/clusterVersion.json) 
+ * [podLatency.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/podLatency.json)
+ * [podCPU-avg.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/podCPU-avg.json)
+ * [podCPU-max.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/podCPU-max.json)
+ * [podMemory-avg.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/podMemory-avg.json)
+ * [podMemory-max.json](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner/touchstone-configs/podMemory-max.json)
+
 ### Author
 Paige Rubendall <@paigerube14 on Github>
