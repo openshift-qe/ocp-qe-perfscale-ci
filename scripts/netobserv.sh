@@ -5,7 +5,10 @@ deploy_operatorhub_noo() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/noo-subscription.yaml
   sleep 20
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
-
+  while :; do
+    oc get crd/flowcollectors.flows.netobserv.io && break
+    sleep 1
+  done
   envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
