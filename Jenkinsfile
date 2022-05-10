@@ -20,6 +20,10 @@ pipeline {
             for agents with go tools, use goc48, goc49 etc. <br/> 
         '''
         )
+
+        choice(name: 'Deploy_NetObserv', choices: ['OperatorHub', 'main', 'None'], description: '''Option to Deploy netobserv from main or OperatorHub release, select one.<br>
+            If none selected tests will run without NetObserv deployed <br/>''')
+
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -154,9 +158,9 @@ pipeline {
             ls -ls ~/.kube/
             env
             ls -al
-            wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
-            tar -zxvf Python-3.8.12.tgz
-            cd Python-3.8.12
+            wget https://www.python.org/ftp/python/3.9.12/Python-3.9.12.tgz
+            tar -zxvf Python-3.9.12.tgz
+            cd Python-3.9.12
             newdirname=~/.localpython
             if [ -d "$newdirname" ]; then
               echo "Directory already exists"

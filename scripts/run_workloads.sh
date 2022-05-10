@@ -3,7 +3,13 @@ source ../../e2e-benchmarking/utils/benchmark-operator.sh
 source ./common.sh
 source ./netobserv.sh
 
-deploy_flowcollector
+if [[ $Deploy_NetObserv == "OperatorHub" ]]; then
+    deploy_operatorhub_noo
+elif [[ $Deploy_NetObserv == "main" ]]; then
+    deploy_main_noo
+fi
+
+populate_netobserv_metrics
 
 case ${WORKLOAD_TYPE} in
 uperf)
@@ -14,7 +20,7 @@ uperf)
     ;;
 node-density-heavy)
     export KUBE_BURNER_DIR='../../e2e-benchmarking/workloads/kube-burner'
-    #TODO: update
+    prep_kubeburner_workload
     export WORKLOAD="node-density-heavy"
     cd $KUBE_BURNER_DIR && ./run.sh && cd -
     ;;

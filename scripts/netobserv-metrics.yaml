@@ -1,0 +1,28 @@
+
+# 1. network-observability pods CPU usage
+- query: pod:container_cpu_usage:sum{namespace="network-observability"}
+  metricName: cpuUsage
+
+# 2. network-observability pods memory usage
+- query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsage
+
+# 3. loki-store PVC usage averaging over 5 mins period
+- query: avg_over_time(kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[5m])
+  metricName: lokiStorageUsage
+
+# 4. Number of netflows processed per minute aggregated by FLP pods
+- query: sum(rate(flow_process_nf_count[1m])*60) by (pod)
+  metricName: nFlowsProcessedPerMinute
+
+# 5. Flow processing time in microseconds for 90% quantile.
+- query: flow_summary_processing_time_us{quantile="0.9"}
+  metricName: FlowProcessingTime
+
+# 6. Number of bytes for flows per minute aggregated by FLP pods.
+- query: sum(rate(flow_traffic_summary_size_bytes_sum[1m])*60) by (pod)
+  metricName: nBytes
+
+# 7. Number of flows processed by ingester per minute aggregated by FLP pods.
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
+  metricName: nFlowLogsProcessed
