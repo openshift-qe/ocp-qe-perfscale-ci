@@ -71,14 +71,14 @@ pipeline {
                       echo -e "\033[1m$(date "+%d-%m-%YT%H:%M:%S") ${@}\033[0m"
                     }
                     function scaleMachineSets(){
-                      scale_num=$(oc get --no-headers machinesets -A | awk '{print $2}' | wc -l | xargs)
+                      scale_num=$(oc get --no-headers machinesets -A -l machine.openshift.io/cluster-api-cluster | awk '{print $2}' | wc -l | xargs)
                       scale_size=$(($1/$scale_num))
                       set -x
-                      for machineset in $(oc get --no-headers machinesets -A | awk '{print $2}'); do
+                      for machineset in $(oc get --no-headers machinesets -A -l machine.openshift.io/cluster-api-cluster | awk '{print $2}'); do
                           oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
                       done
                       if [[ $(($1%$scale_num)) != 0 ]]; then
-                        oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%$scale_num))))
+                        oc scale machinesets -n openshift-machine-api  $(oc get --no-headers machinesets -A -l machine.openshift.io/cluster-api-cluster | awk '{print $2}' | head -1) --replicas $(($scale_size+$(($1%$scale_num))))
                       fi
                       set +x
                       local retries=0
