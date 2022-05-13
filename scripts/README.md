@@ -15,7 +15,6 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 3. Set your `kubeconfig` and login to your cluster as `kubeadmin`
 4. Run the tool with `./scripts/nope.py`
 
-
 ## Metrics Collection
 Below are the metrics that are collected as part of the tests:
 * CPU usage of pods in network-observability NS

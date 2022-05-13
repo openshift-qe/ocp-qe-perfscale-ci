@@ -7,7 +7,11 @@ import pathlib
 import subprocess
 import argparse
 import requests
+import urllib3
 
+
+# disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # directory constants 
 ROOT_DIR = str(pathlib.Path(__file__).parent.parent)
@@ -15,24 +19,42 @@ SCRIPT_DIR = ROOT_DIR + '/scripts'
 DATA_DIR = ROOT_DIR + '/data'
 
 # NOPE constants
-CLUSTER_URL = ''
-TOKEN = ''
+THANOS_URL = None
+TOKEN = None
 YAML_FILE = ''
 QUERIES = {}
 RESULTS = {}
+DEBUG = False
+
+# query constants
+IS_RANGE = False
+START_TIME = None
+END_TIME = None
+STEP = None
 
 
 def run_query(query):
 
-	# intialize request vars
-	endpoint = f"https://prometheus-k8s-openshift-monitoring.apps.{CLUSTER_URL}/api/v1/query"
+	# construct request
 	headers = {"Authorization": f"Bearer {TOKEN}"}
-	params = {
-		'query': query
-	}
+	if IS_RANGE:
+		endpoint = f"{THANOS_URL}/api/v1/query_range"
+		params = {
+			'query': query,
+			'start': START_TIME,
+			'end': END_TIME,
+			'step': STEP
+		}
+	else:
+		endpoint = f"{THANOS_URL}/api/v1/query"
+		params = {
+			'query': query
+		}
 
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
+	if DEBUG:
+		print(f"\nMaking request: {data.request.url}")
 	return data.json()
 
 
@@ -52,7 +74,7 @@ def main():
 		json.dump(RESULTS, data_file)
 
 	# exit if no issues
-	print(f"Data captured successfully and written to {DATA_DIR}")
+	print(f"\nData captured successfully and written to {DATA_DIR}")
 	sys.exit(0)
 
 
@@ -62,35 +84,58 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Network Observability Prometheus and Elasticsearch tool (NOPE)')
 
 	# set customization flags
-	parser.add_argument("--url", type=str, help='Override for Cluster URL', required=False)
-	parser.add_argument("--token", type=str, help='Override for Bearer auth token', required=False)
-	parser.add_argument("--yaml_file", type=str, default='netobserv-metrics.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv-metrics.yaml"', required=False)
+	parser.add_argument("--url", type=str, help='Override for Thanos URL')
+	parser.add_argument("--token", type=str, help='Override for Bearer auth token')
+	parser.add_argument("--yaml_file", type=str, default='netobserv-metrics.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv-metrics.yaml"')
+	parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics')
+	parser.add_argument("--starttime", type=str, help='Start time for range query - must be used in conjuncture with --endtime and --step')
+	parser.add_argument("--endtime", type=str, help='End time for range query - must be used in conjuncture with --starttime and --step')
+	parser.add_argument("--step", type=str, help='Step time for range query - must be used in conjuncture with --starttime and --endtime')
+	parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
 
 	# parse arguments
 	args = parser.parse_args()
 
-	CLUSTER_URL = args.url
-	if CLUSTER_URL is None:
-		CLUSTER_URL = subprocess.run(['oc', 'get', 'infrastructure', 'cluster', '-o', 'jsonpath="{.status.apiServerURL}"'], capture_output=True, text=True).stdout
-		print(f"CLUSTER_URL (raw): {CLUSTER_URL}")
+	# check if range query arguments are valid and if so set constants
+	START_TIME = args.starttime
+	END_TIME = args.endtime
+	STEP = args.step
+	if all(v is None for v in [START_TIME, END_TIME, STEP]):
+		IS_RANGE = False
+	elif any(v is None for v in [START_TIME, END_TIME, STEP]):
+		print("START_TIME, END_TIME, and STEP must all be used together or not at all")
+		sys.exit(1)
+	else:
+		IS_RANGE = True
 
+	# determine if running in debug mode or not
+	DEBUG = args.debug
+	if DEBUG:
+		print('\nDebug mode is enabled')
+
+	# get cluster URL override or determine it automtically if no override is provided
+	THANOS_URL = args.url
+	if THANOS_URL is None:
+		THANOS_URL = subprocess.run(['oc', 'get', 'route', 'thanos-querier', '-n', 'openshift-monitoring', '-o', 'jsonpath="{.spec.host}"'], capture_output=True, text=True).stdout
+		THANOS_URL = "https://" + THANOS_URL[1:-1]
+		print(f"\nTHANOS_URL: {THANOS_URL}")
+
+	# get token override or determine it automtically if no override is provided
 	TOKEN = args.token
 	if TOKEN is None:
-		TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
-		print(f"TOKEN (raw): {TOKEN}")
+		user_workloads = args.user_workloads
+		if user_workloads:
+			TOKEN = subprocess.run(['oc', 'sa', 'get-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+		else:
+			TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
+			TOKEN = TOKEN[:-1]
+		print(f"TOKEN: {TOKEN}")
 
+	# get YAML file with queries
 	YAML_FILE = args.yaml_file
 	print(f"YAML_FILE: {YAML_FILE}")
 
-	# clean arguments
-	CLUSTER_URL = CLUSTER_URL.removeprefix('"https://api.')
-	CLUSTER_URL = CLUSTER_URL.removesuffix(':6443"')
-	print(f"CLUSTER_URL (cleaned): {CLUSTER_URL}")
-
-	TOKEN = TOKEN[:-1]
-	print(f"TOKEN (cleaned): {TOKEN}")
-
-	# set queries
+	# set queries constant with data from YAML file
 	try:
 		with open(SCRIPT_DIR + '/' + YAML_FILE, 'r') as yaml_file:
 			QUERIES = yaml.safe_load(yaml_file)
