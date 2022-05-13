@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     app: flowlogs-pipeline
-  name: flowlogs-pipeline
+  name: flp
   namespace: network-observability
 spec:
   ports:
