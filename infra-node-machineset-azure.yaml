@@ -8,7 +8,7 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: infra-${CLUSTER_NAME}1
+    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}1
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -43,7 +43,7 @@ items:
               version: ""
             internalLoadBalancer: ""
             kind: AzureMachineProviderSpec
-            location: centralus
+            location: ${AZURE_LOCATION}
             managedIdentity: ${CLUSTER_NAME}-identity
             metadata:
               creationTimestamp: null
@@ -75,7 +75,7 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: infra-${AZURE_LOCATION}2
+    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}2
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -110,7 +110,7 @@ items:
               version: ""
             internalLoadBalancer: ""
             kind: AzureMachineProviderSpec
-            location: centralus
+            location: ${AZURE_LOCATION}
             managedIdentity: ${CLUSTER_NAME}-identity
             metadata:
               creationTimestamp: null
@@ -142,7 +142,7 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: infra-${AZURE_LOCATION}3
+    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}3
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -177,7 +177,7 @@ items:
               version: ""
             internalLoadBalancer: ""
             kind: AzureMachineProviderSpec
-            location: centralus
+            location: ${AZURE_LOCATION}
             managedIdentity: ${CLUSTER_NAME}-identity
             metadata:
               creationTimestamp: null

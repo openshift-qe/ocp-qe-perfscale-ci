@@ -6,7 +6,7 @@ metadata:
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
-  name: workload-${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-workload-${AZURE_LOCATION}
   namespace: openshift-machine-api
 spec:
   replicas: 1
@@ -41,7 +41,7 @@ spec:
             version: ""
           internalLoadBalancer: ""
           kind: AzureMachineProviderSpec
-          location: centralus
+          location: ${AZURE_LOCATION}
           managedIdentity: ${CLUSTER_NAME}-identity
           metadata:
             creationTimestamp: null
