@@ -13,7 +13,7 @@ def loaded_url = ""
 def upgrade_url = ""
 def must_gather_url = ""
 def proxy_settings = ""
-def status = "Fail"
+def status = "PASS"
 def VERSION = ""
 def global_scale_num = 0
 
@@ -45,8 +45,12 @@ pipeline{
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
-        string(name: 'CI_PROFILE', defaultValue: '', description: 'Name of ci profile to build for the cluster you want to build')
-        choice(choices: ['extra-small','small','medium',''], name: 'PROFILE_SCALE_SIZE', description: 'Size of cluster to scale to; will be ignored if SCALE_UP is set')
+        string(name: 'CI_PROFILE', defaultValue: '', description: """Name of ci profile to build for the cluster you want to build <br>
+            You'll give the name of the file (under the specific version) without `.install.yaml`
+        """)
+        choice(choices: ['extra-small','small','medium',''], name: 'PROFILE_SCALE_SIZE', description: """Set scale size to set number of workers to add and define size of masters and workers. <br>
+        For information about size definitions see <a href="https://gitlab.cee.redhat.com/aosqe/ci-profiles/-/blob/master/scale-ci/4.11/02_IPI-on-AWS.install.yaml#L10"> here </a> (will need ot look at your specific profile) <br>
+        set Size of cluster to scale to; will be ignored if SCALE_UP is set""")
         separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
