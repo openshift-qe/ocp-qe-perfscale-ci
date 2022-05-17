@@ -33,8 +33,8 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/memodi/e2e-benchmarking', description:'You can change this to point to your fork if needed. Upstream is: https://github.com/cloud-bulldozer/e2e-benchmarking')
+        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'netobserv-trials', description:'You can change this to point to a branch on your fork if needed. Change it to "master" if using upstream repo.')
         choice(name: 'WORKLOAD_TYPE', choices: ['uperf', 'node-density-heavy'], description: 'Specify workload type')
 
         // netobserv params
@@ -125,7 +125,7 @@ pipeline {
           $class: 'GitSCM', 
           branches: [[name: "netobserv-perf-tests" ]],
           doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: "https://github.com/memodi/ocp-qe-perfscale-ci" ]],
+          userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
           extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale']]
         ])
         
