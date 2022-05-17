@@ -36,8 +36,8 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-       string(name: 'CERBERUS_REPO', defaultValue:'https://github.com/cloud-bulldozer/cerberus', description:'You can change this to point to your fork if needed.')
-       string(name: 'CERBERUS_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+       string(name: 'CERBERUS_REPO', defaultValue:'https://github.com/chaos-kubox/cerberus', description:'You can change this to point to your fork if needed.')
+       string(name: 'CERBERUS_REPO_BRANCH', defaultValue:'main', description:'You can change this to point to a branch on your fork if needed.')
      }
 
   stages {
