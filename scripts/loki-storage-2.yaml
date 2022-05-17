@@ -37,33 +37,42 @@ data:
         shared_store: filesystem
         cache_location: /loki-store/boltdb-cache
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: loki
   labels:
     app: loki
   namespace: network-observability
 spec:
-  securityContext:
-    runAsGroup: 1000
-    runAsUser: 1000
-    fsGroup: 1000
-  volumes:
-    - name: loki-store
-      persistentVolumeClaim:
-        claimName: loki-store
-    - name: loki-config
-      configMap:
-        name: loki-config
-  containers:
-    - name: loki
-      image: grafana/loki:2.4.1
-      volumeMounts:
-        - mountPath: "/loki-store"
-          name: loki-store
-        - mountPath: "/etc/loki"
-          name: loki-config
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      securityContext:
+        privileged: false
+        capabilities: {}
+        allowPrivilegeEscalation: false
+      volumes:
+        - name: loki-store
+          persistentVolumeClaim:
+            claimName: loki-store
+        - name: loki-config
+          configMap:
+            name: loki-config
+      containers:
+        - name: loki
+          image: grafana/loki:2.4.1
+          volumeMounts:
+            - mountPath: "/loki-store"
+              name: loki-store
+            - mountPath: "/etc/loki"
+              name: loki-config
 ---
 kind: Service
 apiVersion: v1
