@@ -33,6 +33,7 @@ pipeline {
         string(name:'INFRA_NODES', defaultValue:'true', description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
         text(name: 'ENV_VARS', defaultValue: '''PLEASE FILL ME''', description:'''<p>
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
+               For OPENSHIFT_PROMETHEUS_STORAGE_CLASS and OPENSHIFT_ALERTMANAGER_STORAGE_CLASS, use `oc get storageclass` to get them on your cluster.<br>
                e.g.<b>for AWS:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          <br>
@@ -51,8 +52,8 @@ pipeline {
                OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500             <br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS     <br>
                OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3    <br>
-               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=Premium_LRS  <br>
-               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=Premium_LRS<br>
+               OPENSHIFT_PROMETHEUS_STORAGE_CLASS=managed-csi  <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=managed-csi<br>
                e.g.<b>for GCP:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100    <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd <br>

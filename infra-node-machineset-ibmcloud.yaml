@@ -9,7 +9,7 @@ items:
       machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
       machine.openshift.io/cluster-api-machine-role: infra
       machine.openshift.io/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-1
+    name: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-1
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -57,7 +57,7 @@ items:
       machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
       machine.openshift.io/cluster-api-machine-role: infra
       machine.openshift.io/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-2
+    name: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-2
     namespace: openshift-machine-api
   spec:
     replicas: 1
@@ -105,7 +105,7 @@ items:
       machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
       machine.openshift.io/cluster-api-machine-role: infra
       machine.openshift.io/cluster-api-machine-type: infra
-    name: '${CLUSTER_NAME}-infra-3'
+    name: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-3
     namespace: openshift-machine-api
   spec:
     replicas: 1

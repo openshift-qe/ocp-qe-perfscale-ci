@@ -7,7 +7,7 @@ A job that will allow adding and removing firewall ports for HostNetwork Uperf t
 
 ## Current supported cloud cluster types
 * AWS
-* Azure
+* Azure (only support cluster on region: centralus)
 * GCP
 * Vsphere
 * Alicloud/Alibaba (only infra nodes)

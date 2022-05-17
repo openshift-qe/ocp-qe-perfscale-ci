@@ -4,7 +4,7 @@ metadata:
   generation: 1
   labels:
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-  name: workload-machines-${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-workload-machines-${CLUSTER_NAME}
   namespace: openshift-machine-api
 spec:
   replicas: 1

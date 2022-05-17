@@ -5,7 +5,7 @@ metadata:
     machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
     machine.openshift.io/cluster-api-machine-role: workload
     machine.openshift.io/cluster-api-machine-type: workload
-  name: workload-${CLUSTER_REGION}-a
+  name:${CLUSTER_NAME}- workload-${CLUSTER_REGION}-a
   namespace: openshift-machine-api
 spec:
   replicas: 1
