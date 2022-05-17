@@ -13,7 +13,7 @@ def loaded_url = ""
 def upgrade_url = ""
 def must_gather_url = ""
 def proxy_settings = ""
-def status = "PASS"
+def status = "Fail"
 def VERSION = ""
 def global_scale_num = 0
 
@@ -197,10 +197,24 @@ pipeline{
                     println "global num $global_scale_num"
                      if(params.BUILD_NUMBER == "") {
 
+
+                        if(params.CI_PROFILE != "" ) {
+                            currentBuild.description = """
+                                <b>CI Profile:</b> ${params.CI_PROFILE} <br/>
+                                <b>Profile Size:</b> ${params.PROFILE_SCALE_SIZE} <br/>
+                            """
+                        } else {
+                            currentBuild.description = """
+                                <b>Create Cluster: </b> ${params.INSTALL_TYPE} on ${params.CLOUD_TYPE}-${params.NETWORK_TYPE} <br/>
+                            """
+                        }
+
                         install = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-builder/', parameters: [
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                            string(name: 'CI_PROFILES_URL', value: CI_PROFILES_URL),string(name: 'CI_PROFILES_REPO_BRANCH', value: CI_PROFILES_REPO_BRANCH),
                             string(name: 'OCP_PREFIX', value: OCP_PREFIX),string(name: 'OCP_VERSION', value: OCP_VERSION),
-                            string(name: 'CI_PROFILE', value: CI_PROFILE),string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),
+                            string(name: 'CI_PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SCALE_SIZE', value: PROFILE_SCALE_SIZE),
+                            string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),
                             string(name: 'NETWORK_TYPE', value: NETWORK_TYPE),string(name: 'INSTALL_TYPE', value: INSTALL_TYPE),
                             string(name: 'MASTER_COUNT', value: MASTER_COUNT),string(name: "WORKER_COUNT", value: WORKER_COUNT)
                         ]
@@ -212,10 +226,8 @@ pipeline{
                             }
                         }
 
-                        if( install.result.toString()  != "SUCCESS") {
-                           println "build failed"
-                           currentBuild.result = "FAILURE"
-                           status = "Install failed"
+                        if( install.result.toString() == "SUCCESS") {
+                           status = "PASS"
                         }
                         build_string = build_num
                     } else {
