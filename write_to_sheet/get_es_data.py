@@ -75,20 +75,21 @@ def get_data_from_json(json_data):
     return [json_data['quantileName'], json_data['avg'], json_data['P99']]
 
 
-def get_pod_latency_data(uuid):
+def get_pod_latency_data(uuid, creation_time=""):
     file_name = "get_es_data.json"
-    es_url, creation_time = get_benchmark_data(uuid)
+    es_url, start_time = get_benchmark_data(uuid)
+    if start_time == "":
+        start_time = creation_time
     if es_url != "":
-        rewrite_data(creation_time, uuid, file_name)
+        rewrite_data(start_time, uuid, file_name)
         json_response = execute_command(es_url, file_name)
         data_info = []
-        if "hits" in json_response['hits'].keys():
+        if "hits" in json_response.keys() and "hits" in json_response['hits'].keys():
             for hits in json_response['hits']['hits']:
                 data_info.append(get_data_from_json(hits['_source']))
-            if len(data_info) > 0:
-                sorted_data = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
-                return sorted_data
-    return []
+        if len(data_info) > 0:
+            data_info = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
+    return data_info
 
 def get_project_creation_time(uuid=""):
     return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
@@ -101,10 +102,8 @@ def get_project_creation_time(uuid=""):
             return start_time
     return ""
 
-def get_uuid_uperf(cluster_name):
+def get_uuid_uperf(cluster_name, start_time):
     file_name = "uperf_find_uuid.json"
-
-    start_time = get_project_creation_time()
 
     #start time to be when benchmark-operator was created
     print_new_json(start_time, "gte", file_name)
@@ -116,7 +115,7 @@ def get_uuid_uperf(cluster_name):
     es_url = "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443"
     json_response = execute_command(es_url, file_name)
     # want to find most recent, list should already be ordered
-    if "hits" in json_response['hits'].keys():
+    if "hits" in json_response.keys() and "hits" in json_response['hits'].keys():
         for hits in json_response['hits']['hits']:
             if "_source" not in hits and "uuid" not in hits['_source']:
                 return ""

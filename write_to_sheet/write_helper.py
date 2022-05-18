@@ -7,7 +7,7 @@ def run(command):
     try:
         output = subprocess.check_output(command, shell=True, universal_newlines=True)
     except subprocess.CalledProcessError as exc:
-        print("Status : FAIL", exc.returncode, exc.output)
+        print("Status : ", command, exc.output)
         return exc.returncode, exc.output
     return 0, output
 
@@ -46,10 +46,10 @@ def get_upgrade_duration():
         return str(time_elapsed), all_versions
     return get_oc_version(), ""
 
-def get_pod_latencies(uuid):
+def get_pod_latencies(uuid="",creation_time=""):
     if uuid != "":
         # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
-        pod_latencies_list = get_es_data.get_pod_latency_data(uuid)
+        pod_latencies_list = get_es_data.get_pod_latency_data(uuid, creation_time)
         if len(pod_latencies_list) != 0:
             avg_list = []
             p99_list = []
@@ -59,19 +59,6 @@ def get_pod_latencies(uuid):
                     avg_list.append(pod_info[1])
                     p99_list.append(pod_info[2])
             return avg_list
-    return ["", "", "", ""]
-
-
-def get_uperf_uuid():
-    # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
-    pod_latencies_list = get_es_data.get_pod_latency_data()
-    if len(pod_latencies_list) != 0:
-        avg_list = []
-        p99_list = []
-        for pod_info in pod_latencies_list:
-            avg_list.append(pod_info[1])
-            p99_list.append(pod_info[2])
-        return avg_list
     return ["", "", "", ""]
 
 def get_oc_version():

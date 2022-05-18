@@ -15,8 +15,6 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, ran_jobs, faile
 
     sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1Zp116e0goej2Q8TOF6o9AwsXbWd-WqCsmwhFA1SFdIk/edit?usp=sharing")
 
-    ws = sheet.worksheet("Nightly Scale-CI")
-
     index = 2
     flexy_url = f"https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/{flexy_id}"
     cloud_type, install_type, network_type = write_helper.flexy_install_type(flexy_url)
@@ -37,7 +35,8 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, ran_jobs, faile
     cluster_version = write_helper.get_oc_version()
     tz = timezone('EST')
     row = [flexy_cell, cluster_version, cloud_type, install_type, network_type, worker_count, ci_cell, failed_jobs, str(datetime.now(tz)), status]
-
+    ws = sheet.worksheet("Nightly Scale-CI")
     ws.insert_row(row, index, "USER_ENTERED")
-
+    ws = sheet.worksheet(str(last_version[0]) + "." + str(last_version[1]))
+    ws.insert_row(row, index, "USER_ENTERED")
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", "93505", "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/scale-profile-regression/30/console", "['pod-density','node-density']", "['node-density']", "TEST")
