@@ -8,16 +8,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${CLUSTER_NAME}a
+    name: ${CLUSTER_NAME}-infra-a
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-a
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-a
     template:
       metadata:
         creationTimestamp: null
@@ -25,7 +23,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-a
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-a
       spec:
         metadata:
           creationTimestamp: null
@@ -73,16 +71,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${CLUSTER_NAME}b
+    name: ${CLUSTER_NAME}-infra-b
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-b
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-b
     template:
       metadata:
         creationTimestamp: null
@@ -90,7 +86,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-b
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-b
       spec:
         metadata:
           creationTimestamp: null
@@ -138,16 +134,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${CLUSTER_NAME}c
+    name: ${CLUSTER_NAME}-infra-c
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-c
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-c
     template:
       metadata:
         creationTimestamp: null
@@ -155,7 +149,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-c
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-c
       spec:
         metadata:
           creationTimestamp: null

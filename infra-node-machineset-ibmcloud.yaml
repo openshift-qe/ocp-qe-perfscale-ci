@@ -16,14 +16,14 @@ items:
     selector:
       matchLabels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-1
     template:
       metadata:
         labels:
           machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
           machine.openshift.io/cluster-api-machine-role: infra
           machine.openshift.io/cluster-api-machine-type: infra
-          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}
+          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-1
       spec:
         metadata:
           labels:
@@ -64,14 +64,14 @@ items:
     selector:
       matchLabels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-        machine.openshift.io/cluster-api-machineset: '${CLUSTER_NAME}-infra-${CLUSTER_REGION}'
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-2
     template:
       metadata:
         labels:
           machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
           machine.openshift.io/cluster-api-machine-role: infra
           machine.openshift.io/cluster-api-machine-type: infra
-          machine.openshift.io/cluster-api-machineset: '${CLUSTER_NAME}-infra-${CLUSTER_REGION}'
+          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-2
       spec:
         metadata:
           labels:
@@ -112,14 +112,14 @@ items:
     selector:
       matchLabels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-        machine.openshift.io/cluster-api-machineset: '${CLUSTER_NAME}-infra-${CLUSTER_REGION}'
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-3
     template:
       metadata:
         labels:
           machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
           machine.openshift.io/cluster-api-machine-role: infra
           machine.openshift.io/cluster-api-machine-type: infra
-          machine.openshift.io/cluster-api-machineset: '${CLUSTER_NAME}-infra-${CLUSTER_REGION}'
+          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-3
       spec:
         metadata:
           labels:

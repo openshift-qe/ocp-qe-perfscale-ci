@@ -15,7 +15,7 @@ items:
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}a
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}a
     template:
       metadata:
         creationTimestamp: null
@@ -23,7 +23,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}a
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}a
       spec:
         metadata:
           creationTimestamp: null
@@ -84,7 +84,7 @@ items:
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}b
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}b
     template:
       metadata:
         creationTimestamp: null
@@ -92,7 +92,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}b
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}b
       spec:
         metadata:
           creationTimestamp: null
@@ -153,7 +153,7 @@ items:
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}c
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}c
     template:
       metadata:
         creationTimestamp: null
@@ -161,7 +161,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${CLUSTER_REGION}c
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}c
       spec:
         metadata:
           creationTimestamp: null
