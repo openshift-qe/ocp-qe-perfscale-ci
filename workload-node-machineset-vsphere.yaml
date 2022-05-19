@@ -4,16 +4,14 @@ metadata:
   generation: 1
   labels:
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-  name: ${CLUSTER_NAME}-workload-machines-${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-workload
   namespace: openshift-machine-api
 spec:
   replicas: 1
   selector:
     matchLabels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: workload-machines-${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload
   template:
     metadata:
       creationTimestamp: null
@@ -21,7 +19,7 @@ spec:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: workload-machines-${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload
     spec:
       metadata:
         creationTimestamp: null

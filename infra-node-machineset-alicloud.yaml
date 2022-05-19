@@ -16,14 +16,14 @@ items:
     selector:
       matchLabels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-        machine.openshift.io/cluster-api-machineset: infra-${CLUSTER_REGION}a
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-a
     template:
       metadata:
         labels:
           machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
           machine.openshift.io/cluster-api-machine-role: infra
           machine.openshift.io/cluster-api-machine-type: infra
-          machine.openshift.io/cluster-api-machineset: infra-${CLUSTER_REGION}a
+          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-a
       spec:
         metadata:
           labels:
@@ -94,14 +94,14 @@ items:
     selector:
       matchLabels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-        machine.openshift.io/cluster-api-machineset: infra-${CLUSTER_REGION}b
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-b
     template:
       metadata:
         labels:
           machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
           machine.openshift.io/cluster-api-machine-role: infra
           machine.openshift.io/cluster-api-machine-type: infra
-          machine.openshift.io/cluster-api-machineset: infra-${CLUSTER_REGION}b
+          machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-infra-${CLUSTER_REGION}-b
       spec:
         metadata:
           labels:

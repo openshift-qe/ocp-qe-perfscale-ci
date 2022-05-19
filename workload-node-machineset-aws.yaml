@@ -13,7 +13,7 @@ spec:
   selector:
     matchLabels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: workload-${CLUSTER_REGION}a
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload-${CLUSTER_REGION}a
   template:
     metadata:
       creationTimestamp: null
@@ -21,7 +21,7 @@ spec:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: workload-${CLUSTER_REGION}a
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload-${CLUSTER_REGION}a
     spec:
       metadata:
         creationTimestamp: null

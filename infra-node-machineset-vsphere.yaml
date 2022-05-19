@@ -4,16 +4,14 @@ metadata:
   generation: 1
   labels:
     ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-  name: ${CLUSTER_NAME}-infra-machines-${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-infra
   namespace: openshift-machine-api
 spec:
   replicas: 3
   selector:
     matchLabels:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-machines-${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra
   template:
     metadata:
       creationTimestamp: null
@@ -21,7 +19,7 @@ spec:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-machines-${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra
     spec:
       metadata:
         creationTimestamp: null

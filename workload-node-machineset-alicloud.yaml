@@ -5,21 +5,21 @@ metadata:
     machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
     machine.openshift.io/cluster-api-machine-role: workload
     machine.openshift.io/cluster-api-machine-type: workload
-  name:${CLUSTER_NAME}- workload-${CLUSTER_REGION}-a
+  name: ${CLUSTER_NAME}-workload-${CLUSTER_REGION}-a
   namespace: openshift-machine-api
 spec:
   replicas: 1
   selector:
     matchLabels:
       machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
-      machine.openshift.io/cluster-api-machineset: workload-${CLUSTER_REGION}a
+      machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-workload-${CLUSTER_REGION}-a
   template:
     metadata:
       labels:
         machine.openshift.io/cluster-api-cluster: ${CLUSTER_NAME}
         machine.openshift.io/cluster-api-machine-role: workload
         machine.openshift.io/cluster-api-machine-type: workload
-        machine.openshift.io/cluster-api-machineset: workload-${CLUSTER_REGION}a
+        machine.openshift.io/cluster-api-machineset: ${CLUSTER_NAME}-workload-${CLUSTER_REGION}-a
     spec:
       metadata:
         labels:

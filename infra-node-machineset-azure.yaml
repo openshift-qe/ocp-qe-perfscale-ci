@@ -8,14 +8,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}1
+    name: ${CLUSTER_NAME}-infra-1
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}1
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-1
     template:
       metadata:
         creationTimestamp: null
@@ -23,7 +23,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}1
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-1
       spec:
         metadata:
           creationTimestamp: null
@@ -75,14 +75,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}2
+    name: ${CLUSTER_NAME}-infra-2
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}2
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-2
     template:
       metadata:
         creationTimestamp: null
@@ -90,7 +90,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}2
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-2
       spec:
         metadata:
           creationTimestamp: null
@@ -142,14 +142,14 @@ items:
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
       ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-    name: ${CLUSTER_NAME}-infra-${AZURE_LOCATION}3
+    name: ${CLUSTER_NAME}-infra-3
     namespace: openshift-machine-api
   spec:
     replicas: 1
     selector:
       matchLabels:
         ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
-        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}3
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-3
     template:
       metadata:
         creationTimestamp: null
@@ -157,7 +157,7 @@ items:
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: infra
           ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: infra
-          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: infra-${AZURE_LOCATION}3
+          ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-infra-3
       spec:
         metadata:
           creationTimestamp: null
