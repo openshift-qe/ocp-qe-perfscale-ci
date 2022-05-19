@@ -209,6 +209,21 @@ OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
 OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
 OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
+            } else if(env.VARIABLES_LOCATION.indexOf("ibmcloud") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=bx2d-48x192
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128
+OPENSHIFT_PROMETHEUS_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
+OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
+              ''')]
             } else {
             echo "Cloud type is not set up yet"
             }
