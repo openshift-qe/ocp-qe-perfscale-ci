@@ -25,4 +25,3 @@ Below are the metrics that are collected as part of the tests:
 * Total sum of number of bytes 
 * Summary of packet size within Flows
 * Number of log lines (flow logs) processed
-

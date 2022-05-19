@@ -19,8 +19,8 @@ SCRIPT_DIR = ROOT_DIR + '/scripts'
 DATA_DIR = ROOT_DIR + '/data'
 
 # NOPE constants
-THANOS_URL = None
-TOKEN = None
+THANOS_URL = ''
+TOKEN = ''
 YAML_FILE = ''
 QUERIES = {}
 RESULTS = {}
@@ -54,7 +54,7 @@ def run_query(query):
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
 	if DEBUG:
-		print(f"\nMaking request: {data.request.url}")
+		print(f"\Made GET request with following URL: {data.request.url}")
 	return data.json()
 
 
@@ -84,8 +84,6 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Network Observability Prometheus and Elasticsearch tool (NOPE)')
 
 	# set customization flags
-	parser.add_argument("--url", type=str, help='Override for Thanos URL')
-	parser.add_argument("--token", type=str, help='Override for Bearer auth token')
 	parser.add_argument("--yaml_file", type=str, default='netobserv-metrics.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv-metrics.yaml"')
 	parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics')
 	parser.add_argument("--starttime", type=str, help='Start time for range query - must be used in conjuncture with --endtime and --step')
@@ -113,23 +111,19 @@ if __name__ == '__main__':
 	if DEBUG:
 		print('\nDebug mode is enabled')
 
-	# get cluster URL override or determine it automtically if no override is provided
-	THANOS_URL = args.url
-	if THANOS_URL is None:
-		THANOS_URL = subprocess.run(['oc', 'get', 'route', 'thanos-querier', '-n', 'openshift-monitoring', '-o', 'jsonpath="{.spec.host}"'], capture_output=True, text=True).stdout
-		THANOS_URL = "https://" + THANOS_URL[1:-1]
-		print(f"\nTHANOS_URL: {THANOS_URL}")
+	# get thanos URL from cluster
+	THANOS_URL = subprocess.run(['oc', 'get', 'route', 'thanos-querier', '-n', 'openshift-monitoring', '-o', 'jsonpath="{.spec.host}"'], capture_output=True, text=True).stdout
+	THANOS_URL = "https://" + THANOS_URL[1:-1]
+	print(f"\nTHANOS_URL: {THANOS_URL}")
 
-	# get token override or determine it automtically if no override is provided
-	TOKEN = args.token
-	if TOKEN is None:
-		user_workloads = args.user_workloads
-		if user_workloads:
-			TOKEN = subprocess.run(['oc', 'sa', 'get-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
-		else:
-			TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
-			TOKEN = TOKEN[:-1]
-		print(f"TOKEN: {TOKEN}")
+	# get token from cluster
+	user_workloads = args.user_workloads
+	if user_workloads:
+		TOKEN = subprocess.run(['oc', 'sa', 'get-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+	else:
+		TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
+		TOKEN = TOKEN[:-1]
+	print(f"TOKEN: {TOKEN}")
 
 	# get YAML file with queries
 	YAML_FILE = args.yaml_file
