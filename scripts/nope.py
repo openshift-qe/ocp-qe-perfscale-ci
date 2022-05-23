@@ -8,6 +8,7 @@ import subprocess
 import argparse
 import requests
 import urllib3
+import datetime
 
 
 # disable SSL warnings
@@ -54,7 +55,7 @@ def run_query(query):
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
 	if DEBUG:
-		print(f"\Made GET request with following URL: {data.request.url}")
+		print(f"\nMade GET request with following URL: {data.request.url}")
 	return data.json()
 
 
@@ -85,7 +86,7 @@ if __name__ == '__main__':
 
 	# set customization flags
 	parser.add_argument("--yaml_file", type=str, default='netobserv-metrics.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv-metrics.yaml"')
-	parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics')
+	parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
 	parser.add_argument("--starttime", type=str, help='Start time for range query - must be used in conjuncture with --endtime and --step')
 	parser.add_argument("--endtime", type=str, help='End time for range query - must be used in conjuncture with --starttime and --step')
 	parser.add_argument("--step", type=str, help='Step time for range query - must be used in conjuncture with --starttime and --endtime')
@@ -104,6 +105,8 @@ if __name__ == '__main__':
 		print("START_TIME, END_TIME, and STEP must all be used together or not at all")
 		sys.exit(1)
 	else:
+		print("\nParsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
+		print("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
 		IS_RANGE = True
 
 	# determine if running in debug mode or not
@@ -120,6 +123,9 @@ if __name__ == '__main__':
 	user_workloads = args.user_workloads
 	if user_workloads:
 		TOKEN = subprocess.run(['oc', 'sa', 'get-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+		if TOKEN == '':
+			print("No token could be found - ensure all the Prerequistie steps in the README were followed")
+			sys.exit(1)
 	else:
 		TOKEN = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
 		TOKEN = TOKEN[:-1]
