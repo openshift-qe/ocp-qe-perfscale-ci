@@ -12,7 +12,8 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 ### Prerequisties
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
 2. Create an OCP4 cluster with OVN enabled
-3. Install the [Network Observability Operator](https://github.com/netobserv/network-observability-operator) by cloning the operator and running `$ make deploy ; oc apply -f config/samples/flows_v1alpha1_flowcollector.yaml ; make deploy-loki ; make deploy-grafana`
+3. Set your `kubeconfig` and login to your cluster as `kubeadmin`
+4. Install the [Network Observability Operator](https://github.com/netobserv/network-observability-operator) by cloning the operator and running `$ make deploy ; oc apply -f config/samples/flows_v1alpha1_flowcollector.yaml ; make deploy-loki ; make deploy-grafana`
 
 ### Setting up FLP service and creating service-monitor
 1. Navigate to the root directory of this repository
@@ -36,8 +37,7 @@ $ ripsaw benchmark run -f $tmpfile -t 7200
 
 ### Running the tool
 1. Install requirements with `pip install -r scripts/requirements.txt`
-2. Set your `kubeconfig` and login to your cluster as `kubeadmin`
-3. Run the tool with `./scripts/nope.py`
+2. Run the tool with `./scripts/nope.py`
 
 ## Metrics Collection
 Below are the metrics that are collected as part of the tests:
