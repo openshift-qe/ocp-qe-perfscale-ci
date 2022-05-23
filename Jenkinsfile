@@ -118,14 +118,14 @@ pipeline{
                         }
                         var_loc = env.VARIABLES_LOCATION
                         if (env.EXTRA_LAUNCHER_VARS != null ) {
-                            extra_launcher_vars = env.EXTRA_LAUNCHER_VARS
+                            extra_launcher_vars = env.EXTRA_LAUNCHER_VARS + '\n'
                         }
                         println "extra lanch vars ${extra_launcher_vars}"
                         println "env scale ${env.SCALE_UP}"
 
                         install_type_desc = "${params.CI_PROFILE}"
                     }
-                     else {
+                    else {
                        def network_ending = ""
 
                         if (params.CLOUD_TYPE == "vsphere") {
