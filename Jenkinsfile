@@ -100,9 +100,9 @@ pipeline {
         deleteDir()
 
         copyArtifacts(
-            filter: '', 
-            fingerprintArtifacts: true, 
-            projectName: 'ocp-common/Flexy-install', 
+            filter: '',
+            fingerprintArtifacts: true,
+            projectName: 'ocp-common/Flexy-install',
             selector: specific(params.BUILD_NUMBER),
             target: 'flexy-artifacts'
         )
@@ -245,15 +245,15 @@ pipeline {
           }
         }
       }
-        
+
     }
     stage('Configure given Flexy Cluster for LargeScale Tests - Configure Infra node for Prometheus'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
         copyArtifacts(
-            filter: '', 
-            fingerprintArtifacts: true, 
-            projectName: 'ocp-common/Flexy-install', 
+            filter: '',
+            fingerprintArtifacts: true,
+            projectName: 'ocp-common/Flexy-install',
             selector: specific(params.BUILD_NUMBER),
             target: 'flexy-artifacts'
         )
@@ -347,12 +347,11 @@ pipeline {
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.region}}')
               envsubst < infra-node-machineset-ibmcloud.yaml | oc apply -f -
               envsubst < workload-node-machineset-ibmcloud.yaml | oc apply -f -
-
             fi
             retries=0
             attempts=60
-            while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers| wc -l) -lt 3 ]]; do
-              oc get nodes
+            while [[ $(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\\n"}{end}' | grep True | wc -l | xargs) -lt 3 ]]; do
+              oc get nodes -l 'node-role.kubernetes.io/infra='
               oc get machines -A
               oc get machinesets -A
               sleep 30
@@ -363,8 +362,8 @@ pipeline {
               fi
             done
             retries=0
-            while [[ $(oc get nodes -l 'node-role.kubernetes.io/workload=' --no-headers| wc -l) -lt 1 ]]; do
-              oc get nodes
+            while [[ $(oc get nodes -l 'node-role.kubernetes.io/workload=' --no-headers -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\\n"}{end}' | grep True | wc -l | xargs) -lt 1 ]]; do
+              oc get nodes -l 'node-role.kubernetes.io/workload='
               oc get machines -A
               oc get machinesets -A
               sleep 30
