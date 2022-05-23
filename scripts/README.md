@@ -26,12 +26,12 @@ oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-moni
 oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
 ```
 
-### Simulating network traffic
+### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
 2. Once the operator is installed, run the commands below to begin simulating network traffic:
 ```bash
-$ source <path/to/uperf_env.sh> # TODO: Determine if we should include this
-$ tmpfile=$(mktemp); envsubst < <path/to/uperf_pod2pod.yaml> > $tmpfile && echo $tmpfile  # TODO: Determine if we should include this
+$ source scripts/uperf_env.sh <duration in seconds>
+$ tmpfile=$(mktemp); envsubst < scripts/uperf_pod2pod.yaml > $tmpfile && echo $tmpfile
 $ ripsaw benchmark run -f $tmpfile -t 7200
 ```
 
