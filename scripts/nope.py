@@ -8,6 +8,7 @@ import subprocess
 import argparse
 import requests
 import urllib3
+import datetime
 
 
 # disable SSL warnings
@@ -104,6 +105,8 @@ if __name__ == '__main__':
 		print("START_TIME, END_TIME, and STEP must all be used together or not at all")
 		sys.exit(1)
 	else:
+		print("\nParsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
+		print("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
 		IS_RANGE = True
 
 	# determine if running in debug mode or not
