@@ -1,0 +1,40 @@
+---
+
+apiVersion: ripsaw.cloudbulldozer.io/v1alpha1
+kind: Benchmark
+metadata:
+  name: uperf-pod2pod
+  namespace: benchmark-operator
+spec:
+  uuid: ${UUID}
+  elasticsearch:
+    url: https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
+  metadata:
+    collection: false
+    serviceaccount: backpack-view
+    privileged: true
+    targeted: true
+  cerberus_url: ""
+  workload:
+    name: uperf
+    args:
+      run_id: ""
+      hostnetwork: false
+      serviceip: false
+      networkpolicy: false
+      pin: true
+      pin_server: "${server}"
+      pin_client: "${client}"
+      multus:
+        enabled: false
+      samples: 3
+      pair: 4
+      nthrs:
+        - 1
+      protos:
+        - tcp
+      test_types:
+        - rr
+      sizes:
+        - 16384
+      runtime: ${RUNTIME}
