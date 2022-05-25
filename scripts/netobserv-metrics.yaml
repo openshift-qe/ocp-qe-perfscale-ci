@@ -31,6 +31,6 @@
 - query: sum(rate(flow_traffic_packets[1m])*60) by (pod)
   metricName: nPacketsProcessedPerMinute
 
-# 9. Rate of increase/decrease of loki-store usage per minute
+# 9. Rate of increase/decrease of loki-store usage per second over each minute
 - query: deriv(kubelet_volume_stats_available_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[1m])
   metricName: lokiStoreRate
