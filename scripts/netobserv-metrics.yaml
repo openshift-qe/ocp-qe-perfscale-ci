@@ -26,3 +26,11 @@
 # 7. Number of flows processed by ingester per minute aggregated by FLP pods.
 - query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
   metricName: nFlowLogsProcessed
+
+# 8. Number of packets processed per minute aggregated by FLP pods
+- query: sum(rate(flow_traffic_packets[1m])*60) by (pod)
+  metricName: nPacketsProcessedPerMinute
+
+# 9. Rate of increase/decrease of loki-store usage per second over each minute
+- query: deriv(kubelet_volume_stats_available_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[1m])
+  metricName: lokiStoreRate
