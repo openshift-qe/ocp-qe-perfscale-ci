@@ -59,7 +59,45 @@ def run_query(query):
 	return data.json()
 
 
+def get_operator_info():
+
+	# intialize info and base_commands objects
+	info = {}
+	base_commands = {
+		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[0].metadata.labels.version}"'],
+		"flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"'],
+		"loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"'],
+		"agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"'],
+	}
+
+	# collect data from cluster about netobserv operator
+	for command in base_commands:
+		info[command] = subprocess.run(base_commands[command], capture_output=True, text=True).stdout[1:-1]
+		if DEBUG:
+			print(f"\nExecuted base command '{' '.join(base_commands[command])}' to get {command} data")
+	
+	# get agent details based on detected agent (should be ebpf or ipfix)
+	agent = info["agent"]
+	agent_commands = {
+		"sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.sampling}}"'],
+		"cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheActiveTimeout}}"'],
+		"cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheMaxFlows}}"']
+	}
+
+	# collect data from cluster about agent
+	for command in agent_commands:
+		info[command] = subprocess.run(agent_commands[command], capture_output=True, text=True).stdout[1:-1]
+		if DEBUG:
+			print(f"\nExecuted agent command '{' '.join(agent_commands[command])}' to get {command} data")
+
+	# return all collected data
+	return info
+
+
 def main():
+
+	# get operator data
+	RESULTS["netobservEnv"] = get_operator_info()
 
 	# get prometheus data
 	for entry in QUERIES:
