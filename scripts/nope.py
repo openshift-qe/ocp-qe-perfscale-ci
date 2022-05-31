@@ -136,6 +136,12 @@ def main():
 
 if __name__ == '__main__':
 
+	# sanity check that kubeconfig is set
+	result = subprocess.run(['oc', 'whoami'], capture_output=True, text=True)
+	if result.returncode != 0:
+		print("Could not connect to cluster - ensure all the Prerequistie steps in the README were followed")
+		sys.exit(1)
+
 	# initialize argument parser
 	parser = argparse.ArgumentParser(description='Network Observability Prometheus and Elasticsearch tool (NOPE)')
 
