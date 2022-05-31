@@ -80,7 +80,7 @@ pipeline {
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
         script{
-          if(params.SCALE_UP.toInteger() > 0) {
+          if(params.SCALE_UP.toInteger() > 0 || params.INFRA_WORKLOAD_INSTALL == true) {
             
 	build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL) ]
           }

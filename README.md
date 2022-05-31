@@ -46,5 +46,15 @@ BUILD_LIST: space delimited list of concurrent builds to build, best to run one 
  time 
 ```
 
+### Scaling and Adding Infra/Workload Nodes
+
+These use the Jenkinsfile defined on [cluster-worker-scaling](https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/cluster-workers-scaling) branch
+
+Set SCALE_UP to scale the worker nodes on your cluster up to that number. This takes into account the current number of workers and splits the workers between the machinesets 
+
+SCALE_DOWN: scale down the cluster to a certain number of workers after the workload is completed 
+
+Use INFRA_WORKLOAD_INSTALL to install infrastructure and workload nodes to a cluster. This will move promethues pods to those machines to allow the worker nodes to only run the workload under test 
+
 ### Author
 Paige Rubendall <@paigerube14 on Github>
