@@ -59,7 +59,30 @@ def run_query(query):
 	return data.json()
 
 
-def get_operator_info():
+def run_commands(commands, outputs={}):
+
+	# iterate through commands dictionary
+	for command in commands:
+		if DEBUG:
+			print(f"\nExecuting command '{' '.join(commands[command])}' to get {command} data")
+		result = subprocess.run(commands[command], capture_output=True, text=True)
+
+		# record command stdout if execution was succesful
+		if result.returncode == 0:
+			output = result.stdout[1:-1]
+			if DEBUG:
+				print(f"Got back result: {output}")
+			outputs[command] = output
+
+		# otherwise raise an Exception with stderr
+		else:
+			raise Exception(f"Command '{command}' execution resulted in stderr output: {result.stderr}")
+
+	# if all commands were successful return outputs dictionary
+	return outputs
+
+
+def get_netobserv_env_info():
 
 	# intialize info and base_commands objects
 	info = {}
@@ -67,15 +90,12 @@ def get_operator_info():
 		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[0].metadata.labels.version}"'],
 		"flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"'],
 		"loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"'],
-		"agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"'],
+		"agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"']
 	}
 
-	# collect data from cluster about netobserv operator
-	for command in base_commands:
-		info[command] = subprocess.run(base_commands[command], capture_output=True, text=True).stdout[1:-1]
-		if DEBUG:
-			print(f"\nExecuted base command '{' '.join(base_commands[command])}' to get {command} data")
-	
+	# collect data from cluster about netobserv operator and store in info dict
+	info = run_commands(base_commands)
+
 	# get agent details based on detected agent (should be ebpf or ipfix)
 	agent = info["agent"]
 	agent_commands = {
@@ -84,11 +104,8 @@ def get_operator_info():
 		"cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheMaxFlows}}"']
 	}
 
-	# collect data from cluster about agent
-	for command in agent_commands:
-		info[command] = subprocess.run(agent_commands[command], capture_output=True, text=True).stdout[1:-1]
-		if DEBUG:
-			print(f"\nExecuted agent command '{' '.join(agent_commands[command])}' to get {command} data")
+	# collect data from cluster about agent and append to info dict
+	info = run_commands(agent_commands, info)
 
 	# return all collected data
 	return info
@@ -97,7 +114,7 @@ def get_operator_info():
 def main():
 
 	# get operator data
-	RESULTS["netobservEnv"] = get_operator_info()
+	RESULTS["netobservEnv"] = get_netobserv_env_info()
 
 	# get prometheus data
 	for entry in QUERIES:
