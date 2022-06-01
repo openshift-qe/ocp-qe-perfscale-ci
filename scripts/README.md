@@ -67,6 +67,11 @@ PROM_USER_WORKLOAD="true"
 2. `E2E_BENCHMARKING_REPO` should be set to `https://github.com/memodi/e2e-benchmarking`
 3. `E2E_BENCHMARKING_REPO_BRANCH` should be set to `netobserv-trials`
 
+### Updating common parameters of flowcollector
+1. To update IPFix sampling rate to desired value, update flowcollector with following JSON patch with desired value:
+```
+oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": 100}]'
+```
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml_file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
 
@@ -74,3 +79,9 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
 2. Install requirements with `pip install -r scripts/requirements.txt`
 3. Run the tool with `./scripts/nope.py`
+
+### Fetching metrics using touchstone 
+NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by https://github.com/cloud-bulldozer/benchmark-comparison. Once you have touchstone setup, you can run command as below:
+```
+touchstone_compare/bin/touchstone_compare --database elasticsearch -url <elasticsearch instance:port> -u <run uuid> --config=scripts/netobserv_touchstone.json
+```
