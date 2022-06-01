@@ -47,7 +47,7 @@ deploy_loki() {
 }
 
 delete_flowcollector() {
-  log "deleteing flowcollector"
+  log "deleting flowcollector"
   oc delete -f $NETOBSERV_DIR/config/samples/flows_v1alpha1_flowcollector.yaml
   rm -rf $NETOBSERV_DIR
 }
