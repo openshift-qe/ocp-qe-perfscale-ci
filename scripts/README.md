@@ -59,7 +59,7 @@ Navigate to the `scripts/` directory of this repository and run `$ prep_kubeburn
 Navigate to the Jenkins job page and click on `Build with Parameters`. Ensure you set the following variables correctly before building:
 1. `ENV_VARS` should be set as such:
 ```
-METRICS_PROFILE=scripts/netobserv-metrics.yaml
+METRICS_PROFILE=metrics-profiles/netobserv-metrics.yaml
 THANOS_QUERIER_HOST <-- copy from local env which is set after running prep_kubeburner_workload step
 PROM_URL="https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
 PROM_USER_WORKLOAD="true"
