@@ -67,7 +67,7 @@ PROM_USER_WORKLOAD="true"
 2. `E2E_BENCHMARKING_REPO` should be set to `https://github.com/memodi/e2e-benchmarking`
 3. `E2E_BENCHMARKING_REPO_BRANCH` should be set to `netobserv-trials`
 
-### Updating common parameters of flowcollector
+## Updating common parameters of flowcollector
 1. To update IPFix sampling rate to desired value, update flowcollector with following JSON patch with desired value:
 `$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": 100}]'`
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
@@ -79,5 +79,5 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 3. Run the tool with `./scripts/nope.py`
 
 ## Fetching metrics using touchstone 
-NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as below:
+NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as:
 `$ touchstone_compare/bin/touchstone_compare --database elasticsearch -url <elasticsearch instance:port> -u <run uuid> --config=scripts/netobserv_touchstone.json`
