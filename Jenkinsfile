@@ -53,7 +53,7 @@ pipeline {
 			""")
         string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
         string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
-
+        string(name: "COMPARISON_CONFIG", defaultValue: "clusterVersion.json podLatency.json podCPU-avg.json podCPU-max.json podMemory-avg.json podMemory-max.json", description: 'Json files of what data to output into a google sheet')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -78,11 +78,18 @@ pipeline {
 
     stage('Run Kube-Burner Test'){
       agent { label params['JENKINS_AGENT_LABEL'] }
+      environment{
+          EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+      }
       steps{
         script{
           if(params.SCALE_UP.toInteger() > 0 || params.INFRA_WORKLOAD_INSTALL == true) {
-            
-	build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL) ]
+
+	        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
+	            string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS),
+	            string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+	            booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL)
+            ]
           }
         }
         deleteDir()
@@ -108,52 +115,41 @@ pipeline {
         }
 
         script{
-          ansiColor('xterm') {
-          RETURNSTATUS = sh(returnStatus: true, script: '''
-          # Get ENV VARS Supplied by the user to this job and store in .env_override
-          echo "$ENV_VARS" > .env_override
-          # Export those env vars so they could be used by CI Job
-          set -a && source .env_override && set +a
-          mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
-          ls -ls ~/.kube/
-          env
-          cd workloads/kube-burner
-          wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
-          tar -zxvf Python-3.8.12.tgz
-          cd Python-3.8.12
-          newdirname=~/.localpython
-          if [ -d "$newdirname" ]; then
-            echo "Directory already exists"
-          else
-            mkdir -p $newdirname
-            ./configure --prefix=$HOME/.localpython
-            make
-            make install
-          fi
-          /home/jenkins/.localpython/bin/python3 --version
-          python3 -m pip install virtualenv
-          python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
-          source venv3/bin/activate
-          python --version
-          cd ..
-          if [[ $WORKLOAD == "cluster-density" ]]; then
-            export JOB_ITERATIONS=$VARIABLE
-          elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
-            export PODS=$VARIABLE
-          elif [[ $WORKLOAD == "max-namespaces" ]]; then
-            export NAMESPACE_COUNT=$VARIABLE
-          elif [[ $WORKLOAD == "max-services" ]]; then
-            export SERVICE_COUNT=$VARIABLE
-          elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
-            export PODS_PER_NODE=$VARIABLE
-          fi
-          set -o pipefail
-          ./run.sh | tee "kube-burner.out"
-          ''')
-          output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
+          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+              RETURNSTATUS = sh(returnStatus: true, script: '''
+                  # Get ENV VARS Supplied by the user to this job and store in .env_override
+                  echo "$ENV_VARS" > .env_override
+                  # Export those env vars so they could be used by CI Job
+                  set -a && source .env_override && set +a
+                  cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
+                  export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
+                  export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
+                  mkdir -p ~/.kube
+                  cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                  ls -ls ~/.kube/
+                  cd workloads/kube-burner
+                  python3.9 --version
+                  python3.9 -m pip install virtualenv
+                  python3.9 -m virtualenv venv3
+
+                  source venv3/bin/activate
+                  python --version
+
+                  if [[ $WORKLOAD == "cluster-density" ]]; then
+                    export JOB_ITERATIONS=$VARIABLE
+                  elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
+                    export PODS=$VARIABLE
+                  elif [[ $WORKLOAD == "max-namespaces" ]]; then
+                    export NAMESPACE_COUNT=$VARIABLE
+                  elif [[ $WORKLOAD == "max-services" ]]; then
+                    export SERVICE_COUNT=$VARIABLE
+                  elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
+                    export PODS_PER_NODE=$VARIABLE
+                  fi
+                  set -o pipefail
+                  ./run.sh | tee "kube-burner.out"
+              ''')
+              output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
           }
         }
         script{
