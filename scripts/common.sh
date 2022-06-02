@@ -6,8 +6,8 @@ prep_uperf_workload() {
 }
 
 populate_netobserv_metrics() {
-    oc apply -f cluster-monitoring-config.yaml
-    oc apply -f service-monitor.yaml
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
     log "Added ServiceMonitor for NetObserv prometheus metrics"
 }
 

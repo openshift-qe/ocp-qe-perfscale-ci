@@ -126,7 +126,7 @@ pipeline {
           branches: [[name: "netobserv-perf-tests" ]],
           doGenerateSubmoduleConfigurations: false, 
           userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale']]
+          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
         ])
         
         copyArtifacts(

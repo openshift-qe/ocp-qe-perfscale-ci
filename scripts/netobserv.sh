@@ -1,16 +1,16 @@
 deploy_operatorhub_noo() {
   oc new-project network-observability
 
-  oc apply -f operator_group.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/noo-subscription.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
   sleep 20
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
   done
-  envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
+  envsubst <$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
     oc get daemonset flowlogs-pipeline -n network-observability && break
@@ -30,8 +30,8 @@ deploy_main_noo() {
   log $PATH
   cd ${NETOBSERV_DIR} && make deploy && cd -
   log "deploying flowcollector"
-  envsubst <$WORKSPACE/ocp-qe-perfscale/scripts/flows_v1alpha1_flowcollector.yaml >$WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/flows.yaml
+  envsubst <$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector.yaml >$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
   log "waiting 120 seconds before checking IPFIX collector IP in OVS"
   sleep 120
@@ -40,8 +40,8 @@ deploy_main_noo() {
 }
 
 deploy_loki() {
-  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/loki-storage-1.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale/scripts/loki-storage-2.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/loki-storage-1.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/loki-storage-2.yaml
   oc wait --timeout=120s --for=condition=ready pod -l app=loki -n network-observability
   log "loki is deployed"
 }
@@ -71,7 +71,7 @@ get_ipfix_collector_ip() {
 
 uninstall_operatorhub_netobserv() {
   oc delete flowcollector/cluster
-  oc delete -f $WORKSPACE/ocp-qe-perfscale/scripts/noo-subscription.yaml
+  oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
   oc delete csv/netobserv-operator.v0.1.2 -n network-observability
-  oc delete -f $WORKSPACE/ocp-qe-perfscale/scripts/operator_group.yaml
+  oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
 }

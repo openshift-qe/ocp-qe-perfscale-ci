@@ -1,0 +1,130 @@
+{
+    "elasticsearch": {
+        "metadata": {
+            "cpuinfo-metadata": {
+                "additional_fields": [
+                    "pod_name"
+                ],
+                "fields": [
+                    "value.Model name",
+                    "value.Architecture",
+                    "value.CPU(s)"
+                ]
+            },
+            "meminfo-metadata": {
+                "additional_fields": [
+                    "pod_name"
+                ],
+                "fields": [
+                    "value.MemTotal"
+                ]
+            },
+            "k8s_cluster_info-metadata": {
+                "fields": [
+                    "value.cluster_version"
+                ]
+            }
+        },
+        "ripsaw-kube-burner": [
+            {
+                "filter": {
+                    "metricName.keyword": "nFlowsProcessedPerMinute"
+                },
+                "buckets": [
+                    "labels.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "nPacketsProcessedPerMinute"
+                },
+                "buckets": [
+                    "labels.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "lokiStorageUsage"
+                },
+                "buckets": [
+                    "labels.persistentvolumeclaim.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "FlowProcessingTime"
+                },
+                "buckets": [
+                    "labels.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "cpuUsage"
+                },
+                "buckets": [
+                    "labels.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "memoryUsage"
+                },
+                "buckets": [
+                    "labels.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            }
+        ]
+    }
+}
