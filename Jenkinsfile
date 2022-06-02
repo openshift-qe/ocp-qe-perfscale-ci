@@ -86,6 +86,9 @@ pipeline {
                OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128<br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=ibmc-vpc-block-5iops-tier<br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier<br>
+               e.g. <b>for OSP:</b><br>
+               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.cpu.xxxl<br>
+               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.cpu.xxl<br>
                <b>And ALWAYS INCLUDE(except for vSphere provider) this part, for Prometheus AlertManager, it may look like</b>:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
                OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
@@ -347,6 +350,9 @@ pipeline {
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.region}}')
               envsubst < infra-node-machineset-ibmcloud.yaml | oc apply -f -
               envsubst < workload-node-machineset-ibmcloud.yaml | oc apply -f -
+            elif [[ $(echo $VARIABLES_LOCATION | grep osp -c) > 0 ]]; then
+              envsubst < infra-node-machineset-osp.yaml | oc apply -f -
+              envsubst < workload-node-machineset-osp.yaml | oc apply -f -
             fi
             retries=0
             attempts=60
