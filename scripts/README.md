@@ -79,7 +79,7 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 3. Run the tool with `./scripts/nope.py`
 
 ### Fetching metrics using touchstone 
-NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by https://github.com/cloud-bulldozer/benchmark-comparison. Once you have touchstone setup, you can run command as below:
+NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as below:
 ```
 touchstone_compare/bin/touchstone_compare --database elasticsearch -url <elasticsearch instance:port> -u <run uuid> --config=scripts/netobserv_touchstone.json
 ```
