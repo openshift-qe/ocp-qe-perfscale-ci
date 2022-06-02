@@ -69,9 +69,7 @@ PROM_USER_WORKLOAD="true"
 
 ### Updating common parameters of flowcollector
 1. To update IPFix sampling rate to desired value, update flowcollector with following JSON patch with desired value:
-```
-oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": 100}]'
-```
+`$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": 100}]'`
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml_file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
 
