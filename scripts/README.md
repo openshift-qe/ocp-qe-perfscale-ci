@@ -17,7 +17,7 @@ Below are the metrics that are collected as part of the tests:
 * Summary of packet size within Flows
 * Number of log lines (flow logs) processed
 
-## Prerequisties
+## Prerequisites
 1. Create an OCP4 cluster with OVN enabled
 2. Set your `kubeconfig` and login to your cluster as `kubeadmin` - you can verify that you are successfully connected to the cluster by running the simple check below:
 ```bash
@@ -38,6 +38,24 @@ There are two methods you can use to install the operator:
 
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
+
+### Updating common parameters of flowcollector
+You can update common parameters of flowcollector with the following commands:
+- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]'`
+- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]'`
+    -  Note that 1000m = 1000 millicores, i.e. 1 core
+- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
+- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]`
+
+### Using Dittybopper
+1. Set the appropriate environmental variables by running the following:
+```bash
+export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring)
+export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'`
+```
+2. From `ocp-qe-perfscale-ci/scripts`, run `$ envsubst '${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}' < netobserv-dittybopper.yaml.template > /tmp/netobserv-dittybopper.yaml`
+3. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
+4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml`
 
 ### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
@@ -67,11 +85,8 @@ PROM_USER_WORKLOAD="true"
 2. `E2E_BENCHMARKING_REPO` should be set to `https://github.com/memodi/e2e-benchmarking`
 3. `E2E_BENCHMARKING_REPO_BRANCH` should be set to `netobserv-trials`
 
-## Updating common parameters of flowcollector
-1. To update IPFix sampling rate to desired value, update flowcollector with following JSON patch with desired value:
-`$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": 100}]'`
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
-The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml_file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
+The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
 
 ### Running the NOPE tool
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
