@@ -50,6 +50,16 @@ In both installation types, the flexy job id will be printed to the description 
 -upgrade jobs will be able to get the flexy id to run on that cluster
 
 
+## Scaling and Adding Infra/Workload Nodes
+
+This workload uses the Jenkinsfile defined on [cluster-worker-scaling](https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/cluster-workers-scaling) branch
+
+Set SCALE_UP to scale the worker nodes on your cluster up to that number. This takes into account the current number of workers and splits the workers between the machinesets 
+
+SCALE_DOWN: scale down the cluster to a certain number of workers after the workload is completed 
+
+Use INFRA_WORKLOAD_INSTALL to install infrastructure and workload nodes to a cluster. This will move promethues pods to those machines to allow the worker nodes to only run the workload under test 
+
 
 ## Scale Ci Options
 Types: 

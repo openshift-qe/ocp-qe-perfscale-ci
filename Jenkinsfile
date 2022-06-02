@@ -203,10 +203,29 @@ pipeline{
 
 
                         if(params.CI_PROFILE != "" ) {
+
+                            // read data from CI profile install file
+                            installData = readYaml(file: "local-ci-profiles/scale-ci/4.10/${CI_PROFILE}.install.yaml")
+                            installData.install.flexy.each { env.setProperty(it.key, it.value) }
+                            // loop through install data keys to make sure scale is one of them
+                            def scale_profile_size = 0
+                            for (data in installData) {
+                                if (data.key == "scale" ) {
+                                    scale_profile_size = data.value.get(PROFILE_SCALE_SIZE).SCALE_UP
+                                    break
+                                }
+                            }
+                            if (scale_profile_size != 0 && global_scale_num == 0 ) {
+                                // get scale_up val from profile
+                                global_scale_num = scale_profile_size
+                                
+                            }
+                            println "scale up not null $global_scale_num"
                             currentBuild.description = """
                                 <b>CI Profile:</b> ${params.CI_PROFILE} <br/>
                                 <b>Profile Size:</b> ${params.PROFILE_SCALE_SIZE} <br/>
                             """
+
                         } else {
                             currentBuild.description = """
                                 <b>Create Cluster: </b> ${params.INSTALL_TYPE} on ${params.CLOUD_TYPE}-${params.NETWORK_TYPE} <br/>
@@ -281,7 +300,7 @@ pipeline{
         stage("Scale Up Cluster") {
            agent { label params['JENKINS_AGENT_LABEL'] }
             when {
-                expression { build_string != "DEFAULT" && status == "PASS" && global_scale_num.toInteger() > 0}
+                expression { build_string != "DEFAULT" && status == "PASS" && (global_scale_num.toInteger() > 0 || params.INFRA_WORKLOAD_INSTALL == true)}
             }
            steps {
             script{
