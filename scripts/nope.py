@@ -45,9 +45,9 @@ UUID = None
 
 
 def run_query(query):
-	''' takes in a prometheus query
+	''' takes in a Prometheus query
 		executes either regular or range query based on global constants
-		returns the JSON data delievered by prometheus
+		returns the JSON data delievered by Prometheus or an exception if the query fails
 	'''
 
 	# construct request
@@ -68,6 +68,8 @@ def run_query(query):
 
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
+	if data.status_code != 200:
+		raise Exception("Query to fetch Prometheus data failed. Try again using `--user-workloads` argument for Prometheus user workloads if you did not already.") 
 	return data.json()
 
 
