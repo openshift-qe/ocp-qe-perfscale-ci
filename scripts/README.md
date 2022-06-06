@@ -39,14 +39,6 @@ There are two methods you can use to install the operator:
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
-### Updating common parameters of flowcollector
-You can update common parameters of flowcollector with the following commands:
-- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]'`
-- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]'`
-    -  Note that 1000m = 1000 millicores, i.e. 1 core
-- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
-- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]`
-
 ### Using Dittybopper
 1. Set the appropriate environmental variables by running the following:
 ```bash
@@ -56,6 +48,15 @@ export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -
 2. From `ocp-qe-perfscale-ci/scripts`, run `$ envsubst '${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}' < netobserv-dittybopper.yaml.template > /tmp/netobserv-dittybopper.yaml`
 3. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
 4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml`
+5. To import the data into Grafana, navigate to the URL printed above after deployment and import the `NetObserv_Metrics.json` file from the `scripts/` directory. You can also get the URL by running `$ oc get routes -n dittybopper`.
+
+### Updating common parameters of flowcollector
+You can update common parameters of flowcollector with the following commands:
+- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]'`
+- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]'`
+    -  Note that 1000m = 1000 millicores, i.e. 1 core
+- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
+- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]`
 
 ### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`

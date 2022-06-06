@@ -1,3 +1,4 @@
 data/
 kubeconfig
 kubeadmin-password
+scripts/flows.yaml
