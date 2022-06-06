@@ -42,13 +42,13 @@ Navigate to the `scripts/` directory of this repository and run `$ populate_neto
 ### Using Dittybopper
 1. Set the appropriate environmental variables by running the following:
 ```bash
-export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring)
+export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
 export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'`
 ```
 2. From `ocp-qe-perfscale-ci/scripts`, run `$ envsubst '${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}' < netobserv-dittybopper.yaml.template > /tmp/netobserv-dittybopper.yaml`
 3. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml`
-5. To import the data into Grafana, navigate to the URL printed above after deployment and import the `NetObserv_Metrics.json` file from the `scripts/` directory. You can also get the URL by running `$ oc get routes -n dittybopper`.
+4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/NetObserv_Metrics.json`
+5. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the `NetObserv_Metrics.json` in the `Dashboards` view.
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
@@ -93,6 +93,8 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
 2. Install requirements with `pip install -r scripts/requirements.txt`
 3. Run the tool with `./scripts/nope.py`
+
+To see all command line options available for the NOPE tool, you can run it with the `--help` argument.
 
 ## Fetching metrics using touchstone 
 NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as:
