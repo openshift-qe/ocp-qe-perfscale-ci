@@ -242,12 +242,16 @@ do
         #Check if the worker node is arm64 or x86_64
         if [[ "X$node_arch" == "Xarm64" ]];then
           target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://arm64.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
+          if [[ $target_sha == "" ]]; then
+             echo "Could not find target version in 'https://arm64.ocp.releases.ci.openshift.org/graph'"
+             exit 1
+          fi
         else
           target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://amd64.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
-        fi
-        if [[ $target_sha == "" ]]; then
-          echo "Could not find target version in 'https://amd64[arm64].ocp.releases.ci.openshift.org/graph'"
-          exit 1
+          if [[ $target_sha == "" ]]; then
+             echo "Could not find target version in 'https://amd64.ocp.releases.ci.openshift.org/graph'"
+             exit 1
+          fi
         fi
         if [ "X$enable_force" == "Xtrue" ];then
           upgrade_line="oc adm upgrade --to-image $target_sha --force --allow-explicit-upgrade"
@@ -281,7 +285,7 @@ do
       if [ "X$enable_force" == "Xtrue" ];then
         upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:${target_version_prefix}-${arch_prefix} --force --allow-explicit-upgrade"
       else
-        upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:${target_version_prefix}-{arch_prefix} --allow-explicit-upgrade"
+        upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release:${target_version_prefix}-${arch_prefix} --allow-explicit-upgrade"
       fi
     fi
   fi
