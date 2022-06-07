@@ -106,9 +106,9 @@ def get_netobserv_env_info():
 	# intialize info and base_commands objects
 	info = {}
 	base_commands = {
-		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[0].metadata.labels.version}"'],
-		"flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"'],
-		"loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"'],
+		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[0].metadata.labels.version}"', '-n', 'network-observability'],
+		"flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"', '-n', 'network-observability'],
+		"loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"', '-n', 'network-observability'],
 		"agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"']
 	}
 
