@@ -41,7 +41,8 @@ pipeline {
         string(name: 'SMALL_SCALE_ROUTES', defaultValue: '100', description:'Number of routes of each termination to create in the small scale scenario')
         string(name: 'SMALL_SCALE_CLIENTS', defaultValue: '1 40 200', description: 'Threads/route to use in the small scale scenario')
         string(name: 'SMALL_SCALE_CLIENTS_MIX', defaultValue: '1 20 80', description: 'Threads/route to use in the small scale scenario with mix termination')
-        string(name: 'ENGINE', defaultValue:  'local', description: 'leave it as local for execution in jenkins, other options are docker or podman but will not work if the jenkins slave does not have those programs installed')
+        string(name: 'BASELINE_UUID', defaultValue:'', description: 'Baseline UUID used for comparison')
+        string(name: 'COMPARISON_ALIASES', defaultValue:'',description: 'Benchmark-comparison aliases, e.g. 4.10.z 4.11.0-0.nightly-xxxx')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
