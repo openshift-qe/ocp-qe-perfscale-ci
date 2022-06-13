@@ -382,7 +382,7 @@ pipeline {
             oc get nodes
             oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
             oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
-            if [[ $(find $WORKSPACE/flexy-artifacts/workdir/install-dir/ | grep vsphere -c) > 0 ]]; then
+            if [[ $(cat $WORKSPACE/flexy-artifacts/workdir/install-dir/metadata.json | grep vsphere -c) > 0 ]]; then
               envsubst < monitoring-config-vsphere.yaml | oc apply -f -
             else
               envsubst < monitoring-config.yaml | oc apply -f -
