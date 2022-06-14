@@ -5,6 +5,24 @@ import json
 import numpy as np
 
 IGNORE_DATA = ("benchmarkEnv", "netobservEnv")
+AVERAGE_METRICS = (
+    "cpuUsage",
+    "memoryUsage",
+    "nFlowsProcessedPerMinute",
+    "FlowProcessingTime",
+    "nPacketsProcessedPerMinute",
+    "nFlowLogsProcessed",
+    "nBytes",
+    "ebpfCpuUsage",
+    "ebpfmemoryUsage",
+)
+PERC_90_METRICS = (
+    "nFlowsProcessedPerMinute",
+    "nPacketsProcessedPerMinute",
+    "FlowProcessingTime",
+    "nFlowLogsProcessed",
+    "nBytes",
+)
 
 
 def compute_avg(resource, data):
@@ -42,26 +60,9 @@ def process_metrics(file):
         for metric in metrics_data.keys():
             if metric in IGNORE_DATA:
                 continue
-            if metric in (
-                "cpuUsage",
-                "memoryUsage",
-                "nFlowsProcessedPerMinute",
-                "FlowProcessingTime",
-                "nPacketsProcessedPerMinute",
-                "nFlowLogsProcessed",
-                "nBytes",
-                "ebpfCpuUsage",
-                "ebpfmemoryUsage",
-            ):
+            if metric in AVERAGE_METRICS:
                 compute_avg(metric, metrics_data[metric]["data"]["result"])
-
-            if metric in (
-                "nFlowsProcessedPerMinute",
-                "nPacketsProcessedPerMinute",
-                "FlowProcessingTime",
-                "nFlowLogsProcessed",
-                "nBytes",
-            ):
+            if metric in PERC_90_METRICS:
                 compute_90th_perc(metric, metrics_data[metric]["data"]["result"])
 
             if metric == "lokiStorageUsage":
