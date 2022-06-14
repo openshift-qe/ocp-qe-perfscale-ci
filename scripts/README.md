@@ -57,6 +57,7 @@ You can update common parameters of flowcollector with the following commands:
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]`
+- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]`
 
 ### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
