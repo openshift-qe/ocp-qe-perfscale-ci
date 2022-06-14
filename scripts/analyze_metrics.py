@@ -4,7 +4,7 @@ import sys
 import json
 import numpy as np
 
-IGNORE_DATA = ["benchmarkEnv", "netobservEnv"]
+IGNORE_DATA = ("benchmarkEnv", "netobservEnv")
 
 
 def compute_avg(resource, data):
