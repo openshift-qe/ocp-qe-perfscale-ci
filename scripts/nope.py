@@ -250,7 +250,7 @@ if __name__ == '__main__':
 	# get token from cluster
 	user_workloads = args.user_workloads
 	if user_workloads:
-		TOKEN = subprocess.run(['oc', 'sa', 'get-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+		TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
 		if TOKEN == '':
 			logging.error("No token could be found - ensure all the Prerequisite steps in the README were followed")
 			sys.exit(1)
