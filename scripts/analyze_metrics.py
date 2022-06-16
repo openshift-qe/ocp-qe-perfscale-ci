@@ -64,7 +64,6 @@ def process_metrics(file):
                 compute_avg(metric, metrics_data[metric]["data"]["result"])
             if metric in PERC_90_METRICS:
                 compute_90th_perc(metric, metrics_data[metric]["data"]["result"])
-
             if metric == "lokiStorageUsage":
                 analyze_diskutil(metric, metrics_data[metric]["data"]["result"])
 

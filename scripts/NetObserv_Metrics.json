@@ -77,7 +77,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "NetObserv Pod CPU Usage",
+      "title": "NetObserv Pods CPU Usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -174,7 +174,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "NetoBserv Pod Memory Usage",
+      "title": "NetObserv Pods Memory Usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -368,7 +368,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Flows processed per minute",
+      "title": "Flows Processed per minute",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -465,7 +465,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Number of Packets Processed Per minute",
+      "title": "Number of Packets Processed per minute",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -657,7 +657,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Number of bytes for flows per minute",
+      "title": "Number of Bytes for Flows per minute",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -754,7 +754,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Flow Processing time 90% quantile",
+      "title": "Flow Processing Time (90% Quantile)",
       "tooltip": {
         "shared": true,
         "sort": 0,
