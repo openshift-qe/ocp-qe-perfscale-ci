@@ -23,7 +23,7 @@ pipeline {
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
         )
-        string(name: 'WORKER_COUNT', defaultValue: '', description:'Total Worker count desired in the cluster')
+        string(name: 'WORKER_COUNT', defaultValue: '0', description:'Total Worker count desired in the cluster')
         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
@@ -114,27 +114,50 @@ pipeline {
         }
         script{
           if (params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
-            if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
-              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
-              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
-              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
-              text(name: 'ENV_VARS', value: ENV_VARS + '''
+
+              sh(script: '''
+                mkdir -p ~/.kube
+                # Get ENV VARS Supplied by the user to this job and store in .env_override
+                echo "$ENV_VARS" > .env_override
+                # Export those env vars so they could be used by CI Job
+                set -a && source .env_override && set +a
+                cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                oc cluster-info
+  
+                oc whoami''')
+              def architecture_type = sh(returnStdout: true, script: '''
+                node_name=$(oc get node --no-headers | grep master| head -1| awk '{print $1}')
+                oc get node $node_name -ojsonpath='{.status.nodeInfo.architecture}'
+              ''')
+              println "architecture_type $architecture_type"
+              if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
+                if (architecture_type.contains("arm64")) {
+                      ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m6g.12xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m6g.8xlarge'''
+              } else {
+                  ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge'''
+              }
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+                string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+                string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                string(name: 'INFRA_NODES', value: 'true'),
+                text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
 OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
 OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
 OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_IOPS=0
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge
-              ''')]
+                  ''')]
             }else if(env.VARIABLES_LOCATION.indexOf("azure") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
