@@ -153,6 +153,11 @@ pipeline {
                     ./run.sh | tee "kube-burner.out"
                 ''')
               output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
+              if (RETURNSTATUS.toInteger() == 0) {
+                  status = "PASS"
+              } else { 
+                  currentBuild.result = "FAILURE"
+              }
           }
         }
 
