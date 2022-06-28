@@ -25,6 +25,10 @@ pipeline {
         )
         string(name: 'WORKER_COUNT', defaultValue: '0', description:'Total Worker count desired in the cluster')
         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes')
+        booleanParam(name: 'INSTALL_DITTYBOPPER', defaultValue: true, description: 'Value to install dittybopper dashboards to cluster')
+        string(name: 'DITTYBOPPER_REPO', defaultValue:'https://github.com/cloud-bulldozer/performance-dashboards.git', description:'You can change this to point to your fork if needed')
+        string(name: 'DITTYBOPPER_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed')
+        string(name: 'DITTYBOPPER_PARAMS', defaultValue:'', description:'Arguments that are added when deploying dittybopper')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -141,10 +145,13 @@ OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge'''
               }
                 build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
                 string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                string(name: 'INFRA_NODES', value: 'true'),
+                booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+                string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+                string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+                string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
                 text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
@@ -160,10 +167,13 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
                   ''')]
             }else if(env.VARIABLES_LOCATION.indexOf("azure") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
+              booleanParam(name: 'INFRA_NODES', value: true),,booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+              string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS
@@ -179,10 +189,13 @@ OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
               ''')]
             }else if(env.VARIABLES_LOCATION.indexOf("gcp") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
+              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+              string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
@@ -199,10 +212,13 @@ OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32
                   ]
                 } else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
                       string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                      string(name: 'INFRA_NODES', value: 'true'),
+                      booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+                      string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+                      string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+                      string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
                       text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120
 OPENSHIFT_INFRA_NODE_CPU_COUNT=48
@@ -217,10 +233,13 @@ OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment
               ''')]
             } else if(env.VARIABLES_LOCATION.indexOf("alicloud") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
+              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+              string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ecs.g6.13xlarge
@@ -234,10 +253,13 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
             } else if(env.VARIABLES_LOCATION.indexOf("ibmcloud") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
-              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              string(name: 'INFRA_NODES', value: 'true'),
+              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
+              string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
+              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=bx2d-48x192
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128
