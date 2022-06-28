@@ -294,8 +294,21 @@ pipeline {
             if [[ $(echo $VARIABLES_LOCATION | grep aws -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export CLUSTER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
-              envsubst < infra-node-machineset-aws.yaml | oc apply -f -
-              envsubst < workload-node-machineset-aws.yaml | oc apply -f -
+              export SUBNET=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 1).spec.template.spec.providerSpec.value.subnet)}}')
+              if [[ $(echo $SUBNET | grep Name -c) > 0  ]]; then
+                envsubst < infra-node-machineset-aws.yaml | oc apply -f -
+                envsubst < workload-node-machineset-aws.yaml | oc apply -f -
+              else
+                # for customer vpc cluster
+                export SUBNET_ID_1=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).spec.template.spec.providerSpec.value.subnet.id)}}')
+                export SUBNET_ID_2=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 1).spec.template.spec.providerSpec.value.subnet.id)}}')
+                if [[ -n $SUBNET_ID_1 &&  -n $SUBNET_ID_2 ]]; then
+                  envsubst < infra-node-machineset-aws-customervpc.yaml | oc apply -f -
+                  envsubst < workload-node-machineset-aws-customervpc.yaml | oc apply -f -
+                else
+                  echo "error: subnet id not found."
+                fi             
+              fi
             elif [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
