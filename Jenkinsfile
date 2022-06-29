@@ -133,6 +133,10 @@ pipeline {
                 node_name=$(oc get node --no-headers | grep master| head -1| awk '{print $1}')
                 oc get node $node_name -ojsonpath='{.status.nodeInfo.architecture}'
               ''')
+              ENV_VARS += '''
+OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
+OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
+OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi'''
               println "architecture_type $architecture_type"
               if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
                 if (architecture_type.contains("arm64")) {
@@ -158,9 +162,6 @@ OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_IOPS=0
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
@@ -180,9 +181,6 @@ OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS
 OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=managed-csi
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=managed-csi
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS
 OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
@@ -202,13 +200,9 @@ OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
 GCP_PROJECT=openshift-qe
 GCP_SERVICE_ACCOUNT_EMAIL=openshift-qe.iam.gserviceaccount.com
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32
-                    ''')
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32''')
                   ]
                 } else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
@@ -229,8 +223,7 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=32
 OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072
 OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2
-OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment
-              ''')]
+OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment''')]
             } else if(env.VARIABLES_LOCATION.indexOf("alicloud") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
@@ -247,9 +240,6 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ecs.g6.8xlarge
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=alicloud-disk
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=alicloud-disk
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
             } else if(env.VARIABLES_LOCATION.indexOf("ibmcloud") != -1){
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
@@ -265,11 +255,18 @@ OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=bx2d-48x192
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
-OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d
-OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi
-OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi
               ''')]
-            } else {
+            } else if(env.VARIABLES_LOCATION.indexOf("osp") != -1){
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
+              string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'HOST_NETWORK_CONFIGS', value:'false'),
+              string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
+              string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+              string(name: 'INFRA_NODES', value: 'true'),
+              text(name: 'ENV_VARS', value: ENV_VARS + '''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.m5.xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.m5.large
+              ''')]
+            }else {
             echo "Cloud type is not set up yet"
             }
           }
