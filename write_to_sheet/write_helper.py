@@ -77,14 +77,19 @@ def flexy_install_type(flexy_url):
     return_code, version_type_string = run('curl -s {}/consoleFull | grep "run_installer template -c private-templates/functionality-testing/aos-"'.format(flexy_url))
     if return_code == 0:
         version_lists = version_type_string.split("-on-")
-        install_type = version_lists[0].split('/')[-1]
         cloud_type = version_lists[1].split('/')[0]
-        if "ovn" in version_type_string:
+        net_status, network_type_string = run("oc get network cluster -o jsonpath='{.status.networkType}'")
+        node_status, node_name=run("oc get node --no-headers | grep master| head -1| awk '{print $1}'")
+        node_name = node_name.strip()
+        arch_type_status, architecture_type = run("oc get node " + str(node_name) + " --no-headers -ojsonpath='{.status.nodeInfo.architecture}'")
+
+        architecture_type = architecture_type.strip()
+        if "ovn" in network_type_string.lower():
             network_type = "OVN"
         else:
             network_type = "SDN"
 
-        return cloud_type, install_type, network_type
+        return cloud_type, architecture_type, network_type
     else:
         print("Error getting flexy installtion")
         return "", "", ""

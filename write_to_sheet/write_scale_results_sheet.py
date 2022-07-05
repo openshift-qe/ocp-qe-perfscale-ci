@@ -111,6 +111,7 @@ def get_nodes():
 def get_url_out(url_sub_string):
 
     url = url_sub_string.split("-> ")[-1].split("\n")[0]
+    url = url.rstrip(" *")
     return url
 
 def parse_output_for_sheet(job_output):
@@ -162,8 +163,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     ws = sheet.worksheet(job_type)
 
     index = 2
-
-    flexy_cell='=HYPERLINK("https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/'+str(flexy_id)+'","'+str(flexy_id)+'")'
+    flexy_url = 'https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/' +str(flexy_id)
+    flexy_cell='=HYPERLINK("'+flexy_url+'","'+str(flexy_id)+'")'
 
     if job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
@@ -187,8 +188,9 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
     tz = timezone('EST')
+    cloud_type, architecture_type, network_type = write_helper.flexy_install_type(flexy_url)
+    row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type]
 
-    row = [version, flexy_cell, ci_cell, grafana_cell, status]
     if job_type not in ["network-perf", "router-perf"]:
         workload_args = get_workload_params(job_type)
         print('work')
@@ -217,3 +219,4 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
 #get_metadata_uuid("node-density", "write_output.out")
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 99245, 323, 'node-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/323/", "FAIL","600,3", "write_output.out")
+
