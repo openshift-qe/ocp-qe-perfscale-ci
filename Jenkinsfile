@@ -78,7 +78,7 @@ pipeline {
                     function waitForReady() {
                         set +x
                         local retries=0
-                        local attempts=100
+                        local attempts=140
                         while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
                             log "Following nodes are currently present, waiting for desired count $1 to be met."
                             log "Machinesets:"
