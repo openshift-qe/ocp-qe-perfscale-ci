@@ -86,7 +86,7 @@ pipeline {
                       fi
                       set +x
                       local retries=0
-                      local attempts=100
+                      local attempts=140
                       while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker -o wide | grep CoreOS | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
                           log "Following nodes are currently present, waiting for desired count $1 to be met."
                           log "Machinesets:"
@@ -97,7 +97,7 @@ pipeline {
                           sleep 60
                           ((retries += 1))
                           if [[ "${retries}" -gt ${attempts} ]]; then
-                            for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
+                            for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker -o wide | grep CoreOS | egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
                                 oc describe node $node
                             done
                             for machine in $(oc get machines -n openshift-machine-api --no-headers | grep -v "master" | grep -v "Running" | awk '{print $1}'); do
