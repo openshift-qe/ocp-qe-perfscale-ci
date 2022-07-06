@@ -4,7 +4,7 @@ from datetime import datetime
 from pytz import timezone
 import write_helper
 
-def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force):
+def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force, env_vars):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -32,7 +32,7 @@ def write_to_sheet(google_sheet_account, flexy_id, job_url, status, scale, force
     if worker_master == "1":
         sno = "yes"
 
-    row = [flexy_cell, all_versions[0], ci_cell, worker_count, status, duration, scale, force, cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
+    row = [flexy_cell, all_versions[0], ci_cell, worker_count, status, duration, scale, force, cloud_type, install_type, network_type, sno, str(datetime.now(tz)), env_vars]
 
     ws = sheet.worksheet("Upgrade Output")
     ws.insert_row(row, index, "USER_ENTERED")
