@@ -2,7 +2,7 @@ deploy_operatorhub_noo() {
   oc new-project network-observability
 
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml.bak
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
   sleep 20
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
   while :; do
