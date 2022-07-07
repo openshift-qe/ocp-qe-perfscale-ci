@@ -8,10 +8,10 @@ spec:
   ipfix:
     cacheActiveTimeout: 60s
     cacheMaxFlows: 100
-    sampling: ${FLOW_SAMPLING}
+    sampling: 100
   ebpf:
-    image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.1.0'
-    imagePullPolicy: IfNotPresent
+    image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.1.1'
+    imagePullPolicy: Always
     sampling: 0
     cacheActiveTimeout: 5s
     cacheMaxFlows: 1000
@@ -19,10 +19,10 @@ spec:
     excludeInterfaces: ["lo"]
     logLevel: info
   flowlogsPipeline:
-    kind: DaemonSet
+    kind: Deployment
     port: 2055
-    image: 'quay.io/netobserv/flowlogs-pipeline:v0.1.1'
-    imagePullPolicy: IfNotPresent
+    image: 'quay.io/netobserv/flowlogs-pipeline:v0.1.2'
+    imagePullPolicy: Always
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
@@ -39,8 +39,8 @@ spec:
       app: netobserv-flowcollector
   consolePlugin:
     register: true
-    image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.2'
-    imagePullPolicy: IfNotPresent
+    image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.3'
+    imagePullPolicy: Always
     port: 9001
     logLevel: info
     portNaming:

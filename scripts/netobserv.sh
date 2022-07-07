@@ -13,7 +13,7 @@ deploy_operatorhub_noo() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
-    oc get daemonset flowlogs-pipeline -n network-observability && break
+    oc get deployment flowlogs-pipeline -n network-observability && break
     sleep 1
   done
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
@@ -72,6 +72,6 @@ get_ipfix_collector_ip() {
 uninstall_operatorhub_netobserv() {
   oc delete flowcollector/cluster
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
-  oc delete csv/netobserv-operator.v0.1.2 -n network-observability
+  oc delete csv/netobserv-operator.v0.1.3 -n network-observability
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
 }
