@@ -57,6 +57,7 @@ pipeline {
         string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
         string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
         string(name: "COMPARISON_CONFIG", defaultValue: "clusterVersion.json podLatency.json podCPU-avg.json podCPU-max.json podMemory-avg.json podMemory-max.json", description: 'Json files of what data to output into a google sheet')
+        booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
