@@ -4,17 +4,27 @@ metadata:
   name: cluster
 spec:
   namespace: "network-observability"
+  agent: ipfix
   ipfix:
     cacheActiveTimeout: 60s
     cacheMaxFlows: 400
-    sampling: ${FLOW_SAMPLING}
+    sampling: 100
+  ebpf:
+    image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
+    imagePullPolicy: Always
+    sampling: 0
+    cacheActiveTimeout: 5s
+    cacheMaxFlows: 1000
+    interfaces: []
+    excludeInterfaces: ["lo"]
+    logLevel: info
   flowlogsPipeline:
     kind: DaemonSet
 #    kind: Deployment
 #    replicas: 1
     port: 2055
     image: 'quay.io/netobserv/flowlogs-pipeline:main'
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
@@ -30,7 +40,7 @@ spec:
       app: netobserv-flowcollector
   consolePlugin:
     image: 'quay.io/netobserv/network-observability-console-plugin:main'
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     port: 9001
     logLevel: info
     portNaming:
