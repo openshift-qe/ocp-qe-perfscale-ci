@@ -4,7 +4,7 @@ from datetime import datetime
 from pytz import timezone
 import write_helper
 
-def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url, loaded_upgrade_url, status, scale, force):
+def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url, loaded_upgrade_url, status, scale, force, env_vars):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -37,7 +37,9 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     tz = timezone('EST')
 
     worker_count = write_helper.get_worker_num(scale)
-    row = [flexy_cell, versions[0], worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz))]
+
+    cloud_type, arch_type, network_type = write_helper.flexy_install_type(flexy_url)
+    row = [flexy_cell, versions[0], cloud_type, arch_type, network_type, worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz)),env_vars]
     ws.insert_row(row, index, "USER_ENTERED")
 
     return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs")
@@ -50,7 +52,7 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
 
     last_version = versions[-1].split(".")
     row = [flexy_cell, versions[0], upgrade_path_cell, ci_cell, worker_count, status_cell, duration,scale, force,
-           cloud_type, install_type, network_type, sno, str(datetime.now(tz))]
+           cloud_type, install_type, network_type, sno, str(datetime.now(tz)), env_vars]
     upgrade_sheet = file.open_by_url(
         "https://docs.google.com/spreadsheets/d/1yqQxAxLcYEF-VHlQ_KDLs8NOFsRLb4R8V2UM9VFaRBI/edit?usp=sharing")
     ws_upgrade = upgrade_sheet.worksheet(str(last_version[0]) + "." + str(last_version[1]))

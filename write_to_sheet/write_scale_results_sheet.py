@@ -124,6 +124,7 @@ def parse_output_for_sheet(job_output):
     #need to get not first one
     if job_output_string == split_output[-1]:
         print('didnt find google sheet link ')
+        return ""
     else:
         return get_url_out(split_output[-1])
 
@@ -149,7 +150,7 @@ def get_router_perf_uuid(job_output):
 
     return get_uuid_from_json(metadata)
 
-def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output):
+def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -189,7 +190,9 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     version = write_helper.get_oc_version()
     tz = timezone('EST')
     cloud_type, architecture_type, network_type = write_helper.flexy_install_type(flexy_url)
-    row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type]
+
+    worker_count = write_helper.get_worker_num()
+    row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type, worker_count]
 
     if job_type not in ["network-perf", "router-perf"]:
         workload_args = get_workload_params(job_type)
@@ -211,10 +214,10 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     if job_output:
         google_sheet_url = parse_output_for_sheet(job_output)
-        if google_sheet_url:
-            row.append(google_sheet_url)
+        row.append(google_sheet_url)
 
     row.append(str(datetime.now(tz)))
+    row.append(str(env_vars))
     ws.insert_row(row, index, "USER_ENTERED")
 
 #get_metadata_uuid("node-density", "write_output.out")
