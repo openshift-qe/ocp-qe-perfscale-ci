@@ -8,6 +8,8 @@ if (userId) {
 
 def RETURNSTATUS = "default"
 def output = ""
+def status = "FAIL"
+
 pipeline {
   agent none
 
@@ -20,8 +22,10 @@ pipeline {
         )
         choice(choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'], name: 'WORKLOAD_TYPE', description: 'Workload type')
         booleanParam(name: "NETWORK_POLICY", defaultValue: false, description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods")
+        booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')        
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc410',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
  isn't stable<br>
@@ -105,16 +109,37 @@ pipeline {
             ./run.sh | tee "network-perf.out"
             ''')
             output = sh(returnStdout: true, script: 'cat workloads/network-perf/network-perf.out')
+            if (RETURNSTATUS.toInteger() == 0) {
+                  status = "PASS"
+              } else { 
+                  currentBuild.result = "FAILURE"
+              }
           }
         }
+
+        script{
+            if(params.CERBERUS_CHECK == true) {
+                cerberus_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cerberus',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
+                    ],
+                    propagate: false
+                if( status == "PASS") {
+                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                        status = "Cerberus check failed"
+                    }
+                } else {
+                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                        status += "Cerberus check failed"
+                        currentBuild.result = "FAILURE"
+                    }
+                }
+            }
+         }
         script{
             def parameter_to_pass = NETWORK_POLICY + "," + WORKLOAD_TYPE
-            def status = "FAIL"
-            if( RETURNSTATUS.toString() == "0") {
-                status = "PASS"
-            } else {
-                currentBuild.result = "FAILURE"
-            }
            if(params.WRITE_TO_FILE == true) {
             build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
                 parameters: [
