@@ -87,7 +87,7 @@ pipeline {
                       set +x
                       local retries=0
                       local attempts=100
-                      while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
+                      while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker -o wide | grep CoreOS | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
                           log "Following nodes are currently present, waiting for desired count $1 to be met."
                           log "Machinesets:"
                           oc get machinesets -A
