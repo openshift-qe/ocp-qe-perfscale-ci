@@ -8,6 +8,7 @@ if (userId) {
 
 def RETURNSTATUS = "default"
 def output = ""
+def status = "FAIL"
 pipeline {
   agent none
   parameters {
@@ -93,10 +94,7 @@ pipeline {
           exit $final_health
 
           ''')
-          sh "echo $RETURNSTATUS"
-        }
-      script{
-            def status = "FAIL"
+            
             sh "echo $RETURNSTATUS"
             if( RETURNSTATUS.toString() == "0") {
                 status = "PASS"
@@ -105,7 +103,7 @@ pipeline {
            }
       }
       script {
-          if (fileExists("inspect_data")) {
+          if (status != "PASS" && fileExists("inspect_data")) {
              archiveArtifacts artifacts: 'inspect_data/*,inspect_data/**', fingerprint: false
           }
        }
