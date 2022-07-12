@@ -141,10 +141,13 @@ pipeline {
                 def result = cerberus_job.result.toString()
                 println "cerberus result $result"
                 if( status == "PASS") {
+                    println "previous status = pass"
                     if (cerberus_job.result.toString() != "SUCCESS") {
                         status = "Cerberus check failed"
+                        currentBuild.result = "FAILURE"
                     }
                 } else {
+                    println "previous test had already failed"
                     if (cerberus_job.result.toString() != "SUCCESS") {
                         status += ", Cerberus check failed"
                         currentBuild.result = "FAILURE"
