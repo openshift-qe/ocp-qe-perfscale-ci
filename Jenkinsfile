@@ -138,12 +138,14 @@ pipeline {
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                     ],
                     propagate: false
+                def result = cerberus_job.result.toString()
+                println "cerberus result $result"
                 if( status == "PASS") {
-                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                    if (cerberus_job.result.toString() != "SUCCESS") {
                         status = "Cerberus check failed"
                     }
                 } else {
-                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                    if (cerberus_job.result.toString() != "SUCCESS") {
                         status += ", Cerberus check failed"
                         currentBuild.result = "FAILURE"
                     }
