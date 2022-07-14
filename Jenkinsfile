@@ -316,10 +316,19 @@ pipeline {
                   fi             
                 fi
               elif [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
-                export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
                 export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
-                envsubst < infra-node-machineset-azure.yaml | oc apply -f -
-                envsubst < workload-node-machineset-azure.yaml | oc apply -f -
+                # Below variables are needed for verification if we are working with vpc cluster.
+                export NETWORK_RESOURCE_GROUP_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.networkResourceGroup}}')
+                export VNET_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.vnet}}')
+                export SUBNET_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).spec.template.spec.providerSpec.value.subnet)}}')
+                if [[ $(echo $NETWORK_RESOURCE_GROUP_ID | grep $CLUSTER_NAME -c) > 0 ]]; then
+                  envsubst < infra-node-machineset-azure.yaml | oc apply -f -
+                  envsubst < workload-node-machineset-azure.yaml | oc apply -f -
+                else
+                  # for customer vpc cluster
+                  envsubst < infra-node-machineset-azure-customervpc.yaml | oc apply -f -
+                  envsubst < workload-node-machineset-azure-customervpc.yaml | oc apply -f -
+                fi
               elif [[ $(echo $VARIABLES_LOCATION | grep gcp -c) > 0 ]]; then
 
                 echo $NETWORK_NAME
