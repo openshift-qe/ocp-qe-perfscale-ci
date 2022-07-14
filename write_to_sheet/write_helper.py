@@ -11,6 +11,12 @@ def run(command):
         return exc.returncode, exc.output
     return 0, output
 
+
+def get_env_vars_from_file(file_name): 
+    with open(file_name, encoding='utf8', mode="r") as f:
+        env_vars_string = f.read()
+    return env_vars_string
+
 def get_upgrade_duration():
     return_code, version_str = run("oc get clusterversion -o json")
     all_versions = []
