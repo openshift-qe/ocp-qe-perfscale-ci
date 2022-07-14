@@ -104,7 +104,7 @@ pipeline {
             python3.9 -m virtualenv venv3
             source venv3/bin/activate
             python --version
-            cd ..
+
             export WORKLOAD=$WORKLOAD_TYPE
             ./run.sh | tee "network-perf.out"
             ''')
