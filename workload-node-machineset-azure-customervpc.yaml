@@ -1,0 +1,65 @@
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  creationTimestamp: null
+  labels:
+    ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+    ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
+    ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
+  name: ${CLUSTER_NAME}-workload
+  namespace: openshift-machine-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+      ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-cluster: ${CLUSTER_NAME}
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-role: workload
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machine-type: workload
+        ${MACHINESET_METADATA_LABEL_PREFIX}/cluster-api-machineset: ${CLUSTER_NAME}-workload
+    spec:
+      metadata:
+        creationTimestamp: null
+        labels:
+          node-role.kubernetes.io/workload: ""
+      providerSpec:
+        value:
+          apiVersion: azureproviderconfig.openshift.io/v1beta1
+          credentialsSecret:
+            name: azure-cloud-credentials
+            namespace: openshift-machine-api
+          image:
+            offer: ""
+            publisher: ""
+            resourceID: /resourceGroups/${CLUSTER_NAME}-rg/providers/Microsoft.Compute/images/${CLUSTER_NAME}-gen2
+            sku: ""
+            version: ""
+          internalLoadBalancer: ""
+          kind: AzureMachineProviderSpec
+          location: ${AZURE_LOCATION}
+          managedIdentity: ${CLUSTER_NAME}-identity
+          metadata:
+            creationTimestamp: null
+          natRule: null
+          networkResourceGroup: ${NETWORK_RESOURCE_GROUP_ID}
+          osDisk:
+            diskSizeGB: ${OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE}
+            managedDisk:
+              storageAccountType: ${OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE}
+            osType: Linux
+          publicIP: false
+          publicLoadBalancer: ""
+          resourceGroup: ${CLUSTER_NAME}-rg
+          sshPrivateKey: ""
+          sshPublicKey: ""
+          subnet: ${SUBNET_ID}
+          userDataSecret:
+            name: worker-user-data
+          vmSize: ${OPENSHIFT_WORKLOAD_NODE_VM_SIZE}
+          vnet: ${VNET_ID}
+          zone: "1"
