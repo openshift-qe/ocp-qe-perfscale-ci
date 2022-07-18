@@ -1,11 +1,29 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
+def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
+def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
+
+if (userCause) {
+  userId = userCause.getUserId()
+} else if (upstreamCause) {
+  def upstreamJob = Jenkins.getInstance().getItemByFullName(upstreamCause.getUpstreamProject(), hudson.model.Job.class)
+  if (upstreamJob) {
+    def upstreamBuild = upstreamJob.getBuildByNumber(upstreamCause.getUpstreamBuild())
+    if (upstreamBuild) {
+      def realUpstreamCause = upstreamBuild.getCause(Cause.UserIdCause)
+      if (realUpstreamCause) {
+        userId = realUpstreamCause.getUserId()
+      }
+    }
+  }
+}
 if (userId) {
   currentBuild.displayName = userId
-}
+} 
 
+
+println "user id $userId"
 def RETURNSTATUS = "default"
 def output = ""
 def cerberus_job = ""
@@ -203,6 +221,7 @@ pipeline {
                     cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
                     export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
                     export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
+
                     mkdir -p ~/.kube
                     cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
                     ls -ls ~/.kube/
@@ -243,6 +262,7 @@ pipeline {
                     parameters: [
                         string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                         string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                     ],
                     propagate: false
