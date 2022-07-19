@@ -130,6 +130,8 @@ pipeline {
   
                 oc whoami''')
               def architecture_type = sh(returnStdout: true, script: '''
+                # Export those env vars so they could be used by CI Job
+                set -a && source .env_override && set +a
                 node_name=$(oc get node --no-headers | grep master| head -1| awk '{print $1}')
                 oc get node $node_name -ojsonpath='{.status.nodeInfo.architecture}'
               ''')
