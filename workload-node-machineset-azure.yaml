@@ -53,7 +53,7 @@ spec:
               storageAccountType: ${OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE}
             osType: Linux
           publicIP: true
-          publicLoadBalancer: ""
+          publicLoadBalancer: ${CLUSTER_NAME}
           resourceGroup: ${CLUSTER_NAME}-rg
           sshPrivateKey: ""
           sshPublicKey: ""
