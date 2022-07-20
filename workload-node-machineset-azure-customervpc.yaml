@@ -29,7 +29,8 @@ spec:
           node-role.kubernetes.io/workload: ""
       providerSpec:
         value:
-          apiVersion: azureproviderconfig.openshift.io/v1beta1
+          acceleratedNetworking: true
+          apiVersion: machine.openshift.io/v1beta1
           credentialsSecret:
             name: azure-cloud-credentials
             namespace: openshift-machine-api
