@@ -17,7 +17,8 @@ pipeline {
         booleanParam(name: 'CERBERUS_DAEMON_MODE', defaultValue: false, description: 'This variable will set cerberus to run forever (only way to stop is abort job)')
         booleanParam(name: 'INSPECT_COMPONENTS', defaultValue: false,  description: 'This variable will set cerberus to inspect failing components')
         string(name: "CERBERUS_WATCH_NAMESPACES", defaultValue: "[openshift-etcd, openshift-apiserver, openshift-kube-apiserver, openshift-monitoring, openshift-kube-controller-manager, openshift-machine-api, openshift-kube-scheduler, openshift-ingress, openshift-sdn]", description: "Which specific namespaces you want to watch any failing components, use [^.*\$] if you want to watch all namespaces")
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        string(name: "CERBERUS_IGNORE_PODS", defaultValue: "[^installer*]", description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above")
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -37,7 +38,7 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-       string(name: 'CERBERUS_REPO', defaultValue:'https://github.com/chaos-kubox/cerberus', description:'You can change this to point to your fork if needed.')
+       string(name: 'CERBERUS_REPO', defaultValue:'https://github.com/redhat-chaos/cerberus', description:'You can change this to point to your fork if needed.')
        string(name: 'CERBERUS_REPO_BRANCH', defaultValue:'main', description:'You can change this to point to a branch on your fork if needed.')
      }
 
@@ -68,7 +69,7 @@ pipeline {
 
         script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
-          wget https://raw.githubusercontent.com/cloud-bulldozer/kraken-hub/master/cerberus/env.sh
+          wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/env.sh
           source env.sh
           # Get ENV VARS Supplied by the user to this job and store in .env_override
           echo "$ENV_VARS" > .env_override
@@ -78,7 +79,7 @@ pipeline {
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           export CERBERUS_KUBECONFIG=~/.kube/config
           env
-          wget https://raw.githubusercontent.com/cloud-bulldozer/kraken-hub/master/cerberus/cerberus.yaml.template
+          wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/cerberus.yaml.template
           envsubst <cerberus.yaml.template > cerberus.yaml
           python3 --version
           python3 -m venv venv3
