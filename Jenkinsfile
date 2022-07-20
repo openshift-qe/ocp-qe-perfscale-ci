@@ -415,7 +415,11 @@ pipeline {
               else
                 envsubst < monitoring-config.yaml | oc apply -f -
               fi
+              echo "Moving ingress controllers to infra nodes"
               oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
+
+              echo "Moving image registry to infra nodes"
+              oc patch -n openshift-image-registry deployment.apps/image-registry -p '{"spec": {"template": {"spec": {"nodeSelector": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
 
               set +x
               rm -rf ~/.kube ~/.aws
