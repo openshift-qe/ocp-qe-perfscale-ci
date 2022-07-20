@@ -8,13 +8,14 @@ if (userId) {
 
 def RETURNSTATUS = "default"
 def output = ""
-
+def status = ""
 pipeline {
   agent none
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
+        booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc410',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
@@ -43,6 +44,7 @@ pipeline {
         string(name: 'SMALL_SCALE_CLIENTS_MIX', defaultValue: '1 20 80', description: 'Threads/route to use in the small scale scenario with mix termination')
         string(name: 'BASELINE_UUID', defaultValue:'', description: 'Baseline UUID used for comparison')
         string(name: 'COMPARISON_ALIASES', defaultValue:'',description: 'Benchmark-comparison aliases, e.g. 4.10.z 4.11.0-0.nightly-xxxx')
+        booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -72,7 +74,13 @@ pipeline {
       steps{
         script{
           if(params.SCALE_UP.toInteger() > 0) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL)]
+            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', 
+              parameters: [
+                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), 
+                string(name: 'WORKER_COUNT', value: SCALE_UP), 
+                string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), 
+                booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL)
+              ]
           }
         }
         deleteDir()
@@ -96,36 +104,58 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        script{
-          ansiColor('xterm') {
-            withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
-              RETURNSTATUS = sh(returnStatus: true, script: '''
-              # Get ENV VARS Supplied by the user to this job and store in .env_override
-              echo "$ENV_VARS" > .env_override
-              # Export those env vars so they could be used by CI Job
-              set -a && source .env_override && set +a
-              mkdir -p ~/.kube
-              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-              oc config view
-              oc projects
-              ls -ls ~/.kube/
-              env
-              cd workloads/router-perf-v2
-              set -o pipefail
-              ./ingress-performance.sh | tee "router-perf-v2.out"
-              rm -rf ~/.kube
-              ''')
+        script {
+          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+            RETURNSTATUS = sh(returnStatus: true, script: '''
+            # Get ENV VARS Supplied by the user to this job and store in .env_override
+            echo "$ENV_VARS" > .env_override
+            # Export those env vars so they could be used by CI Job
+            set -a && source .env_override && set +a
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            oc config view
+            oc projects
+            ls -ls ~/.kube/
+            env
+            cd workloads/router-perf-v2
+            ./ingress-performance.sh  | tee "ingress_router.out"
+            ''')
+            if (RETURNSTATUS.toInteger() == 0) {
+                status = "PASS"
+            } else { 
+                currentBuild.result = "FAILURE"
+                status = "Router perf FAIL"
             }
-            output = sh(returnStdout: true, script: 'cat workloads/router-perf-v2/router-perf-v2.out')
+            output = sh(returnStdout: true, script: 'cat workloads/router-perf-v2/ingress_router.out')
           }
         }
         script{
-          def status = "FAIL"
-          if( RETURNSTATUS.toString() == "0") {
-                status = "PASS"
-            }else {
-                currentBuild.result = "FAILURE"
+            if(params.CERBERUS_CHECK == true) {
+                cerberus_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cerberus',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
+                    ],
+                    propagate: false
+                def result = cerberus_job.result.toString()
+                println "cerberus result $result"
+                if( status == "PASS") {
+                    println "previous status = pass"
+                    if (cerberus_job.result.toString() != "SUCCESS") {
+                        status = "Cerberus check failed"
+                        currentBuild.result = "FAILURE"
+                    }
+                } else {
+                    println "previous test had already failed"
+                    if (cerberus_job.result.toString() != "SUCCESS") {
+                        status += ", Cerberus check failed"
+                        currentBuild.result = "FAILURE"
+                    }
+                }
             }
+         }
+        script{
           if(params.WRITE_TO_FILE == true){
             def parameter_to_pass = ""
             build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', 
