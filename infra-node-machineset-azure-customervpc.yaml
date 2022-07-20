@@ -31,7 +31,8 @@ items:
             node-role.kubernetes.io/infra: ""
         providerSpec:
           value:
-            apiVersion: azureproviderconfig.openshift.io/v1beta1
+            acceleratedNetworking: true
+            apiVersion: machine.openshift.io/v1beta1
             credentialsSecret:
               name: azure-cloud-credentials
               namespace: openshift-machine-api
@@ -96,7 +97,8 @@ items:
             node-role.kubernetes.io/infra: ""
         providerSpec:
           value:
-            apiVersion: azureproviderconfig.openshift.io/v1beta1
+            acceleratedNetworking: true
+            apiVersion: machine.openshift.io/v1beta1
             credentialsSecret:
               name: azure-cloud-credentials
               namespace: openshift-machine-api
@@ -120,7 +122,7 @@ items:
                 storageAccountType: ${OPENSHIFT_INFRA_NODE_VOLUME_TYPE}
               osType: Linux
             publicIP: false
-            publicLoadBalancer: ""
+            publicLoadBalancer: ${CLUSTER_NAME}
             resourceGroup: ${CLUSTER_NAME}-rg
             sshPrivateKey: ""
             sshPublicKey: ""
@@ -161,7 +163,8 @@ items:
             node-role.kubernetes.io/infra: ""
         providerSpec:
           value:
-            apiVersion: azureproviderconfig.openshift.io/v1beta1
+            acceleratedNetworking: true
+            apiVersion: machine.openshift.io/v1beta1
             credentialsSecret:
               name: azure-cloud-credentials
               namespace: openshift-machine-api
@@ -185,7 +188,7 @@ items:
                 storageAccountType: ${OPENSHIFT_INFRA_NODE_VOLUME_TYPE}
               osType: Linux
             publicIP: false
-            publicLoadBalancer: ""
+            publicLoadBalancer: ${CLUSTER_NAME}
             resourceGroup: ${CLUSTER_NAME}-rg
             sshPrivateKey: ""
             sshPublicKey: ""
