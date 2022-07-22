@@ -12,6 +12,7 @@ import argparse
 import requests
 import datetime
 import subprocess
+from elasticsearch import Elasticsearch
 
 
 # disable SSL warnings
@@ -31,7 +32,6 @@ RESULTS = {}
 DEBUG = False
 
 # query constants
-IS_RANGE = False
 START_TIME = None
 END_TIME = None
 STEP = None
@@ -43,33 +43,66 @@ JENKINS_BUILD = None
 JENKINS_SERVER = None
 UUID = None
 
+# elasticsearch constants
+ES_SERVER = 'https://search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com:443'
+DUMP = False
+
+
+def process_query(query, raw_data):
+	''' takes in a Prometheus query and its successful execution result
+		reformats data into format desired for Elasticsearch upload
+		returns dict object with post-processed data
+	'''
+
+	# intialize post-processed data object
+	clean_data = {
+		"metadata": {
+			"uuid": UUID,
+			"query": query
+		},
+		"values": []
+	}
+
+	try:
+		# add metadata artifacts from prometheus return object
+		for k, v in raw_data["data"]["result"][0]["metric"].items():
+			clean_data["metadata"][k] = v
+
+		# add value artifacts from prometheus return object
+		for data_point in raw_data["data"]["result"][0]["values"]:
+			clean_data["values"].append({"unix_timestamp": data_point[0], "value": data_point[1]})
+
+	except Exception as e:
+		logging.error(f"Error cleaning data from query {query}: {e}")
+		logging.error(f"raw_data: {raw_data}")
+		logging.error(f"Dumping partially-cleaned data to {DATA_DIR}/data.json")
+		dump_data_locally()
+		sys.exit(1)
+
+	# return cleaned data
+	return clean_data
+
 
 def run_query(query):
 	''' takes in a Prometheus query
-		executes either regular or range query based on global constants
+		executes a range query based on global constants
 		returns the JSON data delievered by Prometheus or an exception if the query fails
 	'''
 
 	# construct request
 	headers = {"Authorization": f"Bearer {TOKEN}"}
-	if IS_RANGE:
-		endpoint = f"{THANOS_URL}/api/v1/query_range"
-		params = {
-			'query': query,
-			'start': START_TIME,
-			'end': END_TIME,
-			'step': STEP
-		}
-	else:
-		endpoint = f"{THANOS_URL}/api/v1/query"
-		params = {
-			'query': query
-		}
+	endpoint = f"{THANOS_URL}/api/v1/query_range"
+	params = {
+		'query': query,
+		'start': START_TIME,
+		'end': END_TIME,
+		'step': STEP
+	}
 
 	# make request and return data
 	data = requests.get(endpoint, headers=headers, params=params, verify=False)
 	if data.status_code != 200:
-		raise Exception("Query to fetch Prometheus data failed. Try again using `--user-workloads` argument for Prometheus user workloads if you did not already.") 
+		raise Exception(f"Query to fetch Prometheus data failed: {data.reason}\nTry again using `--user-workloads` argument for Prometheus user workloads if you did not already.") 
 	return data.json()
 
 
@@ -104,16 +137,16 @@ def get_netobserv_env_info():
 	'''
 
 	# intialize info and base_commands objects
-	info = {}
+	info = {"uuid": UUID}
 	base_commands = {
-		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[0].metadata.labels.version}"', '-n', 'network-observability'],
+		"release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'network-observability'],
 		"flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"', '-n', 'network-observability'],
 		"loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"', '-n', 'network-observability'],
 		"agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"']
 	}
 
 	# collect data from cluster about netobserv operator and store in info dict
-	info = run_commands(base_commands)
+	info = run_commands(base_commands, info)
 
 	# get agent details based on detected agent (should be ebpf or ipfix)
 	agent = info["agent"]
@@ -130,41 +163,36 @@ def get_netobserv_env_info():
 	return info
 
 
-def get_benchmark_env_info():
-	''' gathers information about benchmark env
+def get_jenkins_env_info():
+	''' gathers information about Jenkins env
 	'''
 
 	# intialize info object
-	info = {}
+	info = {
+		"uuid": UUID,
+		"jenkins_job_name": JENKINS_JOB,
+		"jenkins_build_num": JENKINS_BUILD
+	}
 
-	# get passed or generated UUID
-	info['uuid'] = UUID
-
-	# collect data from Jenkins server if applicable
-	if JENKINS_SERVER is not None:
+	# collect data from Jenkins server
+	try:
 		raw_build_info = JENKINS_SERVER.get_build_info(JENKINS_JOB, JENKINS_BUILD)
-		raw_build_parameters = raw_build_info['actions'][1]['parameters']
+		logging.debug(f"Jenkins Raw Build Info: {raw_build_info}")
+		raw_build_parameters = raw_build_info['actions'][0]['parameters']
 		for param in raw_build_parameters:
 			del param['_class']
 		info['jenkins_job_params'] = raw_build_parameters
+	except Exception as e:
+		logging.error(f"Failed to collect Jenkins build parameter info: {e}")
 
 	# return all collected data
 	return info
 
 
-def main():
-
-	# get benchmark env data
-	RESULTS["benchmarkEnv"] = get_benchmark_env_info()
-
-	# get netobserv env data
-	RESULTS["netobservEnv"] = get_netobserv_env_info()
-
-	# get prometheus data
-	for entry in QUERIES:
-		metric_name = entry['metricName']
-		query = entry['query']
-		RESULTS[metric_name] = run_query(query)
+def dump_data_locally():
+	''' writes captured data in RESULTS dictionary to a JSON file
+		file is saved to 'data.json' in DATA_DIR system path
+	'''
 
 	# ensure data directory exists (create if not)
 	pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
@@ -173,8 +201,64 @@ def main():
 	with open(DATA_DIR + '/data.json', 'w') as data_file:
 		json.dump(RESULTS, data_file)
 
+	# return if no issues
+	return None
+
+
+def upload_data_to_elasticsearch():
+	''' uploads captured data in RESULTS dictionary to Elasticsearch
+	'''
+
+	# create Elasticsearch object and attempt index
+	es = Elasticsearch(
+		[ES_SERVER]
+	)
+	for item in RESULTS.items():
+		item = {item[0]:item[1]}
+		logging.debug(f"Uploading item {item} to Elasticsearch")
+		response = es.index(
+			index="netobserv-perf",
+			body=item
+		)
+		logging.debug(response['result'])
+
+	# return if no issues
+	return None
+
+
+def main():
+
+	# get jenkins env data if applicable
+	if JENKINS_SERVER is not None:
+		RESULTS["jenkinsEnv"] = get_jenkins_env_info()
+
+	# get netobserv env data
+	RESULTS["netobservEnv"] = get_netobserv_env_info()
+
+	# get prometheus data
+	for entry in QUERIES:
+		metric_name = entry['metricName']
+		query = entry['query']
+		raw_data = run_query(query)
+		clean_data = process_query(query, raw_data)
+		RESULTS[metric_name] = clean_data
+
+	# log success if no issues
+	logging.info(f"Data captured successfully")
+
+	# either dump data locally or upload it to Elasticsearch
+	if DUMP:
+		dump_data_locally()
+		logging.info(f"Data written to {DATA_DIR}/data.json")
+	else:
+		try:
+			upload_data_to_elasticsearch()
+			logging.info(f"Data uploaded to Elasticsearch")
+		except Exception as e:
+			logging.error(f"Error uploading to Elasticsearch server: {e}\nA local dump to {DATA_DIR}/data.json will be done instead")
+			dump_data_locally()
+
 	# exit if no issues
-	logging.info(f"Data captured successfully and written to {DATA_DIR}")
 	sys.exit(0)
 
 
@@ -185,14 +269,15 @@ if __name__ == '__main__':
 
 	# set customization flags
 	parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
-	parser.add_argument("--starttime", type=str, help='Start time for range query - must be used in conjuncture with --endtime and --step')
-	parser.add_argument("--endtime", type=str, help='End time for range query - must be used in conjuncture with --starttime and --step')
-	parser.add_argument("--step", type=str, help='Step time for range query - must be used in conjuncture with --starttime and --endtime')
+	parser.add_argument("--starttime", type=str, required=True, help='Start time for range query')
+	parser.add_argument("--endtime", type=str, required=True, help='End time for range query')
+	parser.add_argument("--step", type=str, default='10', help='Step time for range query')
 	parser.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
 	parser.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
 	parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
 	parser.add_argument("--yaml-file", type=str, default='netobserv-metrics.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv-metrics.yaml"')
 	parser.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
+	parser.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
 
 	# parse arguments
 	args = parser.parse_args()
@@ -210,19 +295,13 @@ if __name__ == '__main__':
 		logging.error("Could not connect to cluster - ensure all the Prerequisite steps in the README were followed")
 		sys.exit(1)
 
-	# check if range query arguments are valid and if so set constants
+	# log range query constants
 	START_TIME = args.starttime
 	END_TIME = args.endtime
 	STEP = args.step
-	if all(v is None for v in [START_TIME, END_TIME, STEP]):
-		IS_RANGE = False
-	elif any(v is None for v in [START_TIME, END_TIME, STEP]):
-		logging.error("START_TIME, END_TIME, and STEP must all be used together or not at all")
-		sys.exit(1)
-	else:
-		logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
-		logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
-		IS_RANGE = True
+	logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
+	logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
+	logging.info("Step is:           " + STEP)
 
 	# check if Jenkins arguments are valid and if so set constants
 	raw_jenkins_job = args.jenkins_job
@@ -276,6 +355,13 @@ if __name__ == '__main__':
 	if UUID is None:
 		UUID = str(uuid.uuid4())
 	logging.info(f"UUID: {UUID}")
+
+	# determine if data will be dumped locally or uploaded to Elasticsearch
+	DUMP = args.dump
+	if DUMP:
+		logging.info(f"Data will be dumped locally to {DATA_DIR}")
+	else:
+		logging.info(f"Data will be uploaded to Elasticsearch")
 
 	# begin main program execution
 	main()

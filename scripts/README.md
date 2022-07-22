@@ -56,8 +56,8 @@ You can update common parameters of flowcollector with the following commands:
 - **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]'`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
-- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]`
-- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]`
+- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]'`
+- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]'`
 
 ### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
@@ -68,24 +68,18 @@ $ tmpfile=$(mktemp); envsubst < scripts/uperf_pod2pod.yaml > $tmpfile && echo $t
 $ ripsaw benchmark run -f $tmpfile -t 7200
 ```
 
-## Testing with kube-burner
-You can use a [fork of the cloud-bulldozer e2e-benchmarking repo](https://github.com/memodi/e2e-benchmarking) maintained by [memodi](https://github.com/memodi) 
-in conjunction with the OCP QE PerfScale team's [kube-burner Jenkins job](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/) maintained by [paigerube14](https://github.com/paigerube14) to run kube-burner workload tests against NO-enabled clusters
+## Testing with Scale CI
+You can use the OCP QE PerfScale team's [scale-ci Jenkins jobs](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/) to run performance and scale tests against NO-enabled clusters
 
-### Prepping environment for kube-burner tests
+### Prepping environment for Scale CI tests
 Navigate to the `scripts/` directory of this repository and run `$ prep_kubeburner_workload`
 
-### Running kube-burner tests via Jenkins
-Navigate to the Jenkins job page and click on `Build with Parameters`. Ensure you set the following variables correctly before building:
-1. `ENV_VARS` should be set as such:
+### Running Scale CI tests via Jenkins
+Navigate to the Jenkins job page and click on `Build with Parameters`. You may want to include the following `ENV_VARS` prior to building:
 ```
-METRICS_PROFILE=metrics-profiles/netobserv-metrics.yaml
-THANOS_QUERIER_HOST <-- copy from local env which is set after running prep_kubeburner_workload step
-PROM_URL="https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
-PROM_USER_WORKLOAD="true"
+ERROR_ON_VERIFY=false
+MAX_WAIT_TIMEOUT=10m
 ```
-2. `E2E_BENCHMARKING_REPO` should be set to `https://github.com/memodi/e2e-benchmarking`
-3. `E2E_BENCHMARKING_REPO_BRANCH` should be set to `netobserv-trials`
 
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
