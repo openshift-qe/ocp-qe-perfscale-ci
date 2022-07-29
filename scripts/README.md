@@ -47,8 +47,8 @@ export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -
 ```
 2. From `ocp-qe-perfscale-ci/scripts`, run `$ envsubst '${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}' < netobserv-dittybopper.yaml.template > /tmp/netobserv-dittybopper.yaml`
 3. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/NetObserv_Metrics.json`
-5. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the `NetObserv_Metrics.json` in the `Dashboards` view.
+4. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ipfix.json` or `$ ./deploy.sh -t /tmp/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json` depending on your collector agent
+5. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
@@ -82,12 +82,23 @@ MAX_WAIT_TIMEOUT=10m
 ```
 
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
-The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus queries for collection and Elasticsearch servers for sharing. Queries are sourced from the `netobserv-metrics.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag. Raw JSON files are written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist.
+The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for sharing.
+
+Queries are sourced from the `netobserv_queries_ipfix.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files such as `netobserv_queries_ebpf.yaml`.
+
+Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
+
+If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
 
 ### Running the NOPE tool
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
 2. Install requirements with `pip install -r scripts/requirements.txt`
-3. Run the tool with `./scripts/nope.py`
+3. If you wish to upload to Elasticsearch, set the following environmental variables:
+```bash
+$ export ES_USERNAME=<elasticsearch username>
+$ export ES_PASSWORD=>elasticsearch password>
+```
+4. Run the tool with `./scripts/nope.py`
 
 To see all command line options available for the NOPE tool, you can run it with the `--help` argument.
 
