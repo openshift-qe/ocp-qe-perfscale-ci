@@ -5,6 +5,7 @@ import sys
 import json
 import yaml
 import uuid
+import time
 import urllib3
 import pathlib
 import jenkins
@@ -64,6 +65,8 @@ def process_query(metric_name, query, raw_data):
     try:
         for result in raw_data["data"]["result"]:
             for data_point in result["values"]:
+                metadata = result["metric"]
+                metadata["query"] = query
                 clean_data.append(
                     {
                         "uuid": UUID,
@@ -71,7 +74,7 @@ def process_query(metric_name, query, raw_data):
                         "data_type": "datapoint",
                         "unix_timestamp": data_point[0],
                         "value": float(data_point[1]),
-                        "metadata": result["metric"],
+                        "metadata": metadata
                     }
                 )
 
@@ -240,16 +243,20 @@ def upload_data_to_elasticsearch():
     es = Elasticsearch(
         [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
     )
+
+    start = time.time()
     for item in RESULTS['data']:			
         logging.debug(f"Uploading item {item} to Elasticsearch")
         response = es.index(
             index="netobserv-perf",
             body=item
         )
-        logging.debug(response['result'])
+        logging.debug(f"Response back was {response}")
+    end = time.time()
+    elapsed_time = end - start
 
-    # return if no issues
-    return None
+    # return elapsed time for upload if no issues
+    return elapsed_time
 
 
 def main():
@@ -279,8 +286,8 @@ def main():
         logging.info(f"Data written to {DATA_DIR}/data_{timestamp}.json")
     else:
         try:
-            upload_data_to_elasticsearch()
-            logging.info(f"Data uploaded to Elasticsearch")
+            elapsed_time = upload_data_to_elasticsearch()
+            logging.info(f"Elasticsearch upload completed in {elapsed_time} seconds")
         except Exception as e:
             logging.error(f"Error uploading to Elasticsearch server: {e}\nA local dump to {DATA_DIR}/data_{timestamp}.json will be done instead")
             dump_data_locally(timestamp)
