@@ -1,200 +1,214 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId ?: "memodi"
+def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
   currentBuild.displayName = userId
 }
 
 pipeline {
-  agent none
 
-  parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name:'JENKINS_AGENT', defaultValue:'goc48',description:
-        '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
-        4.y: oc4y || mac-installer || rhel8-installer-4y || <br/>
-            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-            for agents with go tools, use goc48, goc49 etc. <br/> 
-        '''
+    agent { label params.JENKINS_AGENT_LABEL }
+
+    options {
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    parameters {
+        string(
+            name: 'JENKINS_AGENT_LABEL',
+            defaultValue:'oc411',
+            description: 'Label of Jenkins agent to execute job'
         )
-
-        choice(name: 'Deploy_NetObserv', choices: ['OperatorHub', 'main', 'None'], description: '''Option to Deploy netobserv from main or OperatorHub release, select one.<br>
-            If none selected tests will run without NetObserv deployed <br/>''')
-
-        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/memodi/e2e-benchmarking', description:'You can change this to point to your fork if needed. Upstream is: https://github.com/cloud-bulldozer/e2e-benchmarking')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'netobserv-trials', description:'You can change this to point to a branch on your fork if needed. Change it to "master" if using upstream repo.')
-        choice(name: 'WORKLOAD_TYPE', choices: ['uperf', 'node-density-heavy'], description: 'Specify workload type')
-
-        // netobserv params
-        choice(name: 'FLOW_SAMPLING', choices: ['1', '100', '400'], description: 'Specify flow sampling rate')
-
-        // uperf-only params
-        separator(name: "UPERF_WORKLOAD", sectionHeader: "UPERF Job Options", separatorStyle: "border-width: 0",
-        sectionHeaderStyle: """
-				font-size: 20px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;""")
-
-        choice(name: 'TRAFFIC_TYPE', choices: ['stream', 'rr'], description: 'Specify type of traffic streaming or request response (uperf-only)')
-        choice(name: 'PROTOCOL', choices: ['tcp', 'udp'], description: 'protocol for traffic type; tcp or udp (uperf-only)')
-        choice(name: 'PACKET_SIZE', choices: ['1', '1024', '16384'], description: 'specify packet sizes (uperf-only)')
-        string(name: 'RUNTIME', defaultValue:'300', description:'Specify workload runtime duration')
-
-        // kube-burner params
-        separator(name: "NODE_DENSITY", sectionHeader: "Node Density Job Options", separatorStyle: "border-width: 0",
-        sectionHeaderStyle: """
-				font-size: 20px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;""")
-        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload. Should be the number of worker nodes on your cluster')
-        string(name: 'VARIABLE', defaultValue: '100', description: 'This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2 Read here for detail of each variable')
-
-        // TBA: http router params
-
-        
-        // cluster scale up and scale down
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
-        string(name: 'SCALE_DOWN', defaultValue: '0', description:
-        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
-        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+        string(
+            name: 'FLEXY_BUILD_NUMBER',
+            defaultValue: '',
+            description: 'Build number of Flexy job that installed the cluster'
+        )
+        separator(
+            name: 'NETOBSERV_CONFIG_OPTIONS',
+            sectionHeader: 'Network Observability Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        choice(
+            name: 'INSTALLATION_SOURCE',
+            choices: ['OperatorHub', 'Source', 'None'],
+            description: '''
+                Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
+                If None is selected the installation will be skipped<br/>
+            '''
+        )
+        booleanParam(
+            name: 'USER_WORKLOADS',
+            defaultValue: true,
+            description: 'Check this box to setup FLP service and create service-monitor'
+        )
+        choice(
+            name: 'COLLECTOR_AGENT',
+            choices: ['ipfix', 'ebpf'],
+            description: 'Collector agent Network Observability will use'
+        )
+        string(
+            name: 'FLOW_SAMPLING_RATE',
+            defaultValue: '100',
+            description: 'Rate at which to sample flows'
+        )
+        string(
+            name: 'CPU_LIMIT',
+            defaultValue: '1000m',
+            description: 'Note that 1000m = 1000 millicores, i.e. 1 core'
+        )
+        string(
+            name: 'MEMORY_LIMIT',
+            defaultValue: '500Mi',
+            description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
+        )
+        string(
+            name: 'REPLICAS',
+            defaultValue: '1',
+            description: 'Number of FLP replica pods'
         )
     }
 
-  stages {
-    stage('Run Perf tests'){
-      // agent { label params['JENKINS_AGENT'] }
-      agent {
-        kubernetes {
-        cloud 'PSI OCP-C1 agents'
-        yaml """\
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            labels:
-              label: ${params['JENKINS_AGENT']}
-          spec:
-            containers:
-            - name: "jnlp"
-              image: "docker-registry.upshift.redhat.com/aosqe/cucushift:${JENKINS_AGENT}"
-              resources:
-                requests:
-                  memory: "8Gi"
-                  cpu: "2"
-                limits:
-                  memory: "8Gi"
-                  cpu: "2"
-              imagePullPolicy: Always
-              workingDir: "/home/jenkins/ws"
-              tty: true
-          """.stripIndent()
+    stages {
+        stage('Validate job parameters') {
+            steps {
+                script {
+                    if (params.FLEXY_BUILD_NUMBER == '') {
+                        error "A Flexy build number must be specified"
+                    }
+                    println("Job params are valid - continuing execution...")
+                }
+            }
         }
-      }
+        stage('Get Flexy config and Netobserv scripts') {
+            steps {
+                copyArtifacts(
+                    fingerprintArtifacts: true, 
+                    projectName: 'ocp-common/Flexy-install',
+                    selector: specific(params.FLEXY_BUILD_NUMBER),
+                    target: 'flexy-artifacts'
+                )
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'netobserv-perf-tests' ]],
+                    userRemoteConfigs: [[url: 'https://github.com/openshift-qe/ocp-qe-perfscale-ci' ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
+                ])
+                script {
+                    buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
+                    currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
+                    currentBuild.description = "Copied artifacts from Flexy-install build <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a>"
+                    buildinfo.params.each { env.setProperty(it.key, it.value) }
+                    sh(returnStatus: true, script: '''
+                        mkdir -p ~/.kube
+                        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                    ''')
+                }
+            }
+        }
+        stage('Install Netobserv Operator') {
+            when {
+                expression { params.INSTALLATION_SOURCE != 'None' }
+            }
+            steps {
+                script {
+                    // attempt installation of Network Observability from selected source
+                    if (params.INSTALLATION_SOURCE == 'OperatorHub') {
+                        println "Installing Network Observability from OperatorHub..."
+                        returnCode = sh(returnStatus: true, script: '''
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            deploy_operatorhub_noo
+                        ''')
+                    }
+                    else {
+                        println "Installing Network Observability from Source..."
+                        returnCode = sh(returnStatus: true, script: '''
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            deploy_main_noo
+                        ''')
+                    }
+                    // fail pipeline if installation failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
+                    }
+                    else {
+                        println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
+                    }
+                }
+            }
+        }
+        stage('Setup FLP and service-monitor') {
+            when {
+                expression { params.USER_WORKLOADS == true }
+            }
+            steps {
+                script {
+                    // attempt setup of FLP service and creation of service-monitor
+                    println "Setting up FLP service and creating service-monitor..."
+                    returnCode = sh(returnStatus: true, script:  '''
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        populate_netobserv_metrics
+                    ''')
+                    // fail pipeline if setup failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error("Setting up FLP service and creating service-monitor failed :(")
+                    }
+                    else {
+                        println "Successfully set up FLP service and created service-monitor :)"
+                    }
+                }
+            }
+        }
+        stage('Update flowcollector params') {
+            environment {
+                COLLECTOR_AGENT = "${params.COLLECTOR_AGENT}"
+                FLOW_SAMPLING_RATE = "${params.FLOW_SAMPLING_RATE}"
+                CPU_LIMIT = "${params.CPU_LIMIT}"
+                MEMORY_LIMIT = "${params.MEMORY_LIMIT}"
+                REPLICAS = "${params.REPLICAS}"
+            }
+            steps {
+                script {
+                    // attempt updating common parameters of flowcollector
+                    println "Updating common parameters of flowcollector..."
+                    returnCode = sh(returnStatus: true, script: '''
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": $COLLECTOR_AGENT}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": $FLOW_SAMPLING_RATE}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "$CPU_LIMIT"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "$MEMORY_LIMIT"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": $REPLICAS}] -n network-observability"
+                    ''')
+                    // fail pipeline if setup failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error("Updating common parameters of flowcollector failed :(")
+                    }
+                    else {
+                        println "Successfully updated common parameters of flowcollector :)"
+                    }
+                }
+            }
+        }
+    }
 
-      environment{
-          EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
-      }
-      steps{
-        script{
-          if(params.SCALE_UP.toInteger() > 0) {
-            build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_UP), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
-          }
-        }
-        deleteDir()
-        
-        checkout([
-          $class: 'GitSCM', 
-          branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
-          doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]],
-          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
-        ])
-
-        checkout([
-          $class: 'GitSCM', 
-          branches: [[name: "netobserv-perf-tests" ]],
-          doGenerateSubmoduleConfigurations: false, 
-          userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
-        ])
-        
-        copyArtifacts(
-            filter: '', 
-            fingerprintArtifacts: true, 
-            projectName: 'ocp-common/Flexy-install', 
-            selector: specific(params.BUILD_NUMBER),
-            target: 'flexy-artifacts'
-        )
-        script {
-          buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
-          currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}-${params.WORKLOAD_TYPE}"
-          currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
-          buildinfo.params.each { env.setProperty(it.key, it.value) }
-        }
-        ansiColor('xterm') {
-          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
-            sh label: '', script: '''
-            # Get ENV VARS Supplied by the user to this job and store in .env_override
-            echo "$ENV_VARS" > .env_override
-            cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
-            export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
-            # Export those env vars so they could be used by CI Job
-            set -a && source .env_override && set +a
-            mkdir -p ~/.kube
-            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-            oc config view
-            oc projects
-            ls -ls ~/.kube/
-            env
-            ls -al
-            wget https://www.python.org/ftp/python/3.9.12/Python-3.9.12.tgz
-            tar -zxvf Python-3.9.12.tgz
-            cd Python-3.9.12
-            newdirname=~/.localpython
-            if [ -d "$newdirname" ]; then
-              echo "Directory already exists"
-            else
-              mkdir -p $newdirname
-              ./configure --prefix=$HOME/.localpython
-              make
-              make install
-            fi
-            /home/jenkins/.localpython/bin/python3 --version
-            python3 -m pip install virtualenv
-            python3 -m virtualenv venv3 -p $HOME/.localpython/bin/python3
-            source venv3/bin/activate
-            python --version
-            cd ..
-            cd ocp-qe-perfscale/scripts
-            ./run_workloads.sh
-            rm -rf ~/.kube
-            '''
-          }
-        }
-        script{
-        //  if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
-         if(params.SCALE_DOWN.toInteger() > 0) {
-           build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling', parameters: [string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)]
-           }
-        }
-
-      }
-      post {
+    post {
         always {
-          archiveArtifacts artifacts: 'ocp-qe-perfscale/scripts/flows.yaml, e2e-benchmarking/workloads/network-perf/ripsaw-uperf-crd.yaml', fingerprint: true
-          }
-      } // post
-    } // stage
-  } // stages
-} // pipeline
+            println "Post Section - Always"
+            archiveArtifacts(
+                artifacts: 'ocp-qe-perfscale-ci/data',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+        }
+        failure {
+            println "Post Section - Failure"
+        }
+    }
+}

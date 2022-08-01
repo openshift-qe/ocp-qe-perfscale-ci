@@ -4,17 +4,17 @@ CR=ripsaw-uperf-crd.yaml
 # run network-perf common.sh
 cd $NETWORK_PERF_DIR && source common.sh && cd -
 
-log "###############################################"
-log "Workload: ${WORKLOAD}"
-log "Network policy: ${NETWORK_POLICY}"
-log "Samples: ${SAMPLES}"
-log "Pairs: ${PAIRS}"
+echo "###############################################"
+echo "Workload: ${WORKLOAD}"
+echo "Network policy: ${NETWORK_POLICY}"
+echo "Samples: ${SAMPLES}"
+echo "Pairs: ${PAIRS}"
 if [[ ${SERVICEIP} == "true" && ${SERVICETYPE} == "metallb" ]]; then
-    log "Service type: ${SERVICETYPE}"
-    log "Address pool: ${ADDRESSPOOL}"
-    log "Service ETP: ${SERVICE_ET}"
+    echo "Service type: ${SERVICETYPE}"
+    echo "Address pool: ${ADDRESSPOOL}"
+    echo "Service ETP: ${SERVICE_ET}"
 fi
-log "###############################################"
+echo "###############################################"
 
 for pairs in ${PAIRS}; do
     export PAIRS=${pairs}
@@ -25,4 +25,4 @@ done
 
 remove_benchmark_operator ${OPERATOR_REPO} ${OPERATOR_BRANCH}
 
-log "Finished workload ${0}"
+echo "Finished workload ${0}"

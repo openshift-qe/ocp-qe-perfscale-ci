@@ -27,8 +27,8 @@ kube:admin
 3. Navigate to the parent directory of `ocp-qe-perfscale-ci` and run `export WORKSPACE=$PWD`
 4. Navigate to the `scripts/` directory of this repository and run the following commands:
 ```bash
-$ source netobserv.sh
 $ source common.sh
+$ source netobserv.sh
 ```
 
 ### Installing the Network Observability Operator
@@ -52,12 +52,12 @@ export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
-- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p '[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]'`
-- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]'`
+- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]"`
+- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
-- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]'`
-- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]'`
-- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p '[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]'`
+- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
+- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
+- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]"`
 
 ### Example simulating pod2pod network traffic
 1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
