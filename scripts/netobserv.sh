@@ -72,7 +72,7 @@ get_ipfix_collector_ip() {
 uninstall_operatorhub_netobserv() {
   oc delete flowcollector/cluster
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
-  oc delete csv/netobserv-operator.v0.1.3 -n network-observability
+  oc delete csv -l operators.coreos.com/netobserv-operator.network-observability
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc delete project network-observability
 }
