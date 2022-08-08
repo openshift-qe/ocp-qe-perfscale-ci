@@ -8,7 +8,7 @@ if [[ -z $NETWORK_VARIANT ]]; then
     exit 1
 fi
 
-log "running performance test for $NETWORK_VARIANT"
+echo "running performance test for $NETWORK_VARIANT"
 RIPSAW_UPERF_PATH=$PWD/ripsaw-uperf-crd.yaml
 run_perf_test_w_netobserv
 if [[ $NETWORK_VARIANT == "POD_NETWORK" ]]; then

@@ -1,14 +1,14 @@
 approvers:
 - mffiedler
-- qiliRedHat
 - memodi
 - nathan-weinberg
-reviewers:
-- jechen0648
-- qiliRedHat
-- mffiedler
 - paigerube14
-- rpattath
-- skordas
+reviewers:
+- mffiedler
 - memodi
 - nathan-weinberg
+- paigerube14
+- Amoghrd
+- qiliRedHat
+- skordas
+- rpattath
