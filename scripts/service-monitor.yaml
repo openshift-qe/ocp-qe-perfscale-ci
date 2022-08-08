@@ -7,9 +7,9 @@ metadata:
   namespace: network-observability
 spec:
   ports:
-  - port: 9090
+  - port: 9102
     protocol: TCP
-    targetPort: 9090
+    targetPort: 9102
     name: metrics
   selector:
     app: flowlogs-pipeline

@@ -76,3 +76,9 @@ uninstall_operatorhub_netobserv() {
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc delete project network-observability
 }
+
+populate_netobserv_metrics() {
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
+    echo "Added ServiceMonitor for NetObserv prometheus metrics"
+}

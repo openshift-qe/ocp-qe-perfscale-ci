@@ -27,7 +27,6 @@ kube:admin
 3. Navigate to the parent directory of `ocp-qe-perfscale-ci` and run `export WORKSPACE=$PWD`
 4. Navigate to the `scripts/` directory of this repository and run the following commands:
 ```bash
-$ source common.sh
 $ source netobserv.sh
 ```
 
@@ -70,9 +69,6 @@ $ ripsaw benchmark run -f $tmpfile -t 7200
 
 ## Testing with Scale CI
 You can use the OCP QE PerfScale team's [scale-ci Jenkins jobs](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/) to run performance and scale tests against NO-enabled clusters
-
-### Prepping environment for Scale CI tests
-Navigate to the `scripts/` directory of this repository and run `$ prep_kubeburner_workload`
 
 ### Running Scale CI tests via Jenkins
 Navigate to the Jenkins job page and click on `Build with Parameters`. You may want to include the following `ENV_VARS` prior to building:
