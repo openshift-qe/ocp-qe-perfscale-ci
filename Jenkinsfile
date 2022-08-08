@@ -95,8 +95,8 @@ pipeline {
                 )
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'netobserv-perf-tests' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/openshift-qe/ocp-qe-perfscale-ci' ]],
+                    branches: [[name: GIT_BRANCH ]],
+                    userRemoteConfigs: [[url: GIT_URL ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
                 ])
                 script {
