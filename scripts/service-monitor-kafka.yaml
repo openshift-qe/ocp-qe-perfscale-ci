@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: flowlogs-pipeline-transformer
+  name: flp
+  namespace: network-observability
+spec:
+  ports:
+  - port: 9102
+    protocol: TCP
+    targetPort: 9102
+    name: metrics
+  selector:
+    app: flowlogs-pipeline-transformer
+  type: ClusterIP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flowlogs-pipeline-transformer
+  namespace: network-observability
+spec:
+  endpoints:
+  - interval: 30s
+    port: metrics
+    scheme: http
+  namespaceSelector:
+    matchNames:
+    - network-observability
+  selector:
+    matchLabels:
+      app: flowlogs-pipeline-transformer
+
