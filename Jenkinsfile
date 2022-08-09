@@ -121,7 +121,6 @@ pipeline {
                     if (params.INSTALLATION_SOURCE == 'OperatorHub') {
                         println "Installing Network Observability from OperatorHub..."
                         returnCode = sh(returnStatus: true, script: '''
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_operatorhub_noo
                         ''')
@@ -129,7 +128,6 @@ pipeline {
                     else {
                         println "Installing Network Observability from Source..."
                         returnCode = sh(returnStatus: true, script: '''
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_main_noo
                         ''')
