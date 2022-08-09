@@ -79,28 +79,8 @@ pipeline {
           export PYTHONUNBUFFERED=1
           python -c "import cleanup; cleanup.delete_all_namespaces('$CI_TYPE')"
           if [ $UNINSTALL_BENCHMARK_OP == true ]; then
-              wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz
-              tar -zxvf Python-3.8.12.tgz
-              cd Python-3.8.12
-              newdirname=~/.localpython
-              if [ -d "$newdirname" ]; then
-                echo "Directory already exists"
-              else
-                mkdir -p $newdirname
-                ./configure --prefix=$HOME/.localpython
-                make
-                make install
-              fi
-              python_folder="bin/python3"
-              if [ -d "$newdirname/bin/python3" ]; then
-                echo "Directory python3 "
-              elif [ -d "$newdirname/bin/python3.8" ]; then
-                echo "Directory python3.8 "
-                python_folder="bin/python3.8"
-              fi
-              $HOME/.localpython/$python_folder --version
-              python3 -m pip install virtualenv --user
-              python3 -m virtualenv venv3 -p $HOME/.localpython/$python_folder
+              python3.9 -m pip install virtualenv
+              python3.9 -m virtualenv venv3
               source venv3/bin/activate
               python --version
               pip install -U "git+https://github.com/cloud-bulldozer/benchmark-operator.git/#egg=ripsaw-cli&subdirectory=cli"
