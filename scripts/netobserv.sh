@@ -3,7 +3,7 @@ deploy_operatorhub_noo() {
 
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
-  sleep 20
+  sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
@@ -75,4 +75,10 @@ uninstall_operatorhub_netobserv() {
   oc delete csv -l operators.coreos.com/netobserv-operator.network-observability
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc delete project network-observability
+}
+
+populate_netobserv_metrics() {
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
+    echo "Added ServiceMonitor for NetObserv prometheus metrics"
 }
