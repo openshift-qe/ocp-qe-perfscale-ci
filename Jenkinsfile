@@ -26,6 +26,43 @@ pipeline {
             description: 'Build number of Flexy job that installed the cluster'
         )
         separator(
+            name: 'CLUSTER_CONFIG_OPTIONS',
+            sectionHeader: 'OpenShift Cluster Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        string(
+            name: 'WORKER_COUNT',
+            defaultValue: '0',
+            description: '''
+                Total Worker count desired to scale the cluster to<br/>
+                If set to '0' no scaling will occur
+            '''
+        )
+        booleanParam(
+            name: 'INFRA_WORKLOAD_INSTALL',
+            defaultValue: false,
+            description: 'Install workload and infrastructure nodes even if less than 50 nodes'
+        )
+        booleanParam(
+            name: 'INSTALL_DITTYBOPPER',
+            defaultValue: true,
+            description: 'Value to install dittybopper dashboards to cluster'
+        )
+        string(
+            name: 'DITTYBOPPER_REPO',
+            defaultValue: 'https://github.com/cloud-bulldozer/performance-dashboards.git',
+            description: 'You can change this to point to your fork if needed'
+        )
+        string(
+            name: 'DITTYBOPPER_REPO_BRANCH',
+            defaultValue: 'master',
+            description: 'You can change this to point to a branch on your fork if needed'
+        )
+        separator(
             name: 'NETOBSERV_CONFIG_OPTIONS',
             sectionHeader: 'Network Observability Configuration Options',
             sectionHeaderStyle: '''
@@ -39,7 +76,7 @@ pipeline {
             choices: ['OperatorHub', 'Source', 'None'],
             description: '''
                 Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
-                If None is selected the installation will be skipped<br/>
+                If None is selected the installation will be skipped
             '''
         )
         booleanParam(
@@ -79,13 +116,13 @@ pipeline {
             steps {
                 script {
                     if (params.FLEXY_BUILD_NUMBER == '') {
-                        error "A Flexy build number must be specified"
+                        error 'A Flexy build number must be specified'
                     }
-                    println("Job params are valid - continuing execution...")
+                    println('Job params are valid - continuing execution...')
                 }
             }
         }
-        stage('Get Flexy config and Netobserv scripts') {
+        stage('Get Flexy cluster and Netobserv scripts') {
             steps {
                 copyArtifacts(
                     fingerprintArtifacts: true, 
@@ -100,14 +137,42 @@ pipeline {
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
                 ])
                 script {
-                    buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
+                    buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
                     currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
                     currentBuild.description = "Copied artifacts from Flexy-install build <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a>"
                     buildinfo.params.each { env.setProperty(it.key, it.value) }
-                    sh(returnStatus: true, script: '''
+                    sh(returnStatus: true, script: """
                         mkdir -p ~/.kube
                         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                    ''')
+                    """)
+                }
+            }
+        }
+        stage('Scale workers and install infra nodes') {
+            when {
+                expression { params.WORKER_COUNT != '0' }
+            }
+            steps {
+                script {
+                    scaleJob = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
+	                    string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                        string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+	                    string(name: 'WORKER_COUNT', value: params.WORKER_COUNT), 
+	                    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: params.INFRA_WORKLOAD_INSTALL),
+                        booleanParam(name: 'INSTALL_DITTYBOPPER', value: false),
+                    ]
+                    if (scaleJob.result != 'SUCCESS') {
+                        error 'Scale job failed :('
+                    }
+                    else {
+                        println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
+                        if (params.INFRA_WORKLOAD_INSTALL) {
+                            println 'Successfully installed infrastructure nodes :)'
+                        }
+                        sh(returnStatus: true, script: """
+                            oc get nodes
+                        """)
+                    }
                 }
             }
         }
@@ -119,18 +184,18 @@ pipeline {
                 script {
                     // attempt installation of Network Observability from selected source
                     if (params.INSTALLATION_SOURCE == 'OperatorHub') {
-                        println "Installing Network Observability from OperatorHub..."
-                        returnCode = sh(returnStatus: true, script: '''
+                        println 'Installing Network Observability from OperatorHub...'
+                        returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_operatorhub_noo
-                        ''')
+                        """)
                     }
                     else {
-                        println "Installing Network Observability from Source..."
-                        returnCode = sh(returnStatus: true, script: '''
+                        println 'Installing Network Observability from Source...'
+                        returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_main_noo
-                        ''')
+                        """)
                     }
                     // fail pipeline if installation failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
@@ -149,46 +214,73 @@ pipeline {
             steps {
                 script {
                     // attempt setup of FLP service and creation of service-monitor
-                    println "Setting up FLP service and creating service-monitor..."
-                    returnCode = sh(returnStatus: true, script:  '''
+                    println 'Setting up FLP service and creating service-monitor...'
+                    returnCode = sh(returnStatus: true, script:  """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         populate_netobserv_metrics
-                    ''')
+                    """)
                     // fail pipeline if setup failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
-                        error("Setting up FLP service and creating service-monitor failed :(")
+                        error('Setting up FLP service and creating service-monitor failed :(')
                     }
                     else {
-                        println "Successfully set up FLP service and created service-monitor :)"
+                        println 'Successfully set up FLP service and created service-monitor :)'
                     }
                 }
             }
         }
         stage('Update flowcollector params') {
-            environment {
-                COLLECTOR_AGENT = "${params.COLLECTOR_AGENT}"
-                FLOW_SAMPLING_RATE = "${params.FLOW_SAMPLING_RATE}"
-                CPU_LIMIT = "${params.CPU_LIMIT}"
-                MEMORY_LIMIT = "${params.MEMORY_LIMIT}"
-                REPLICAS = "${params.REPLICAS}"
-            }
             steps {
                 script {
                     // attempt updating common parameters of flowcollector
-                    println "Updating common parameters of flowcollector..."
-                    returnCode = sh(returnStatus: true, script: '''
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": $COLLECTOR_AGENT}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": $FLOW_SAMPLING_RATE}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "$CPU_LIMIT"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "$MEMORY_LIMIT"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": $REPLICAS}] -n network-observability"
-                    ''')
+                    println 'Updating common parameters of flowcollector...'
+                    returnCode = sh(returnStatus: true, script: """
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": ${params.COLLECTOR_AGENT}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": ${params.REPLICAS}}] -n network-observability"
+                    """)
                     // fail pipeline if setup failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
-                        error("Updating common parameters of flowcollector failed :(")
+                        error('Updating common parameters of flowcollector failed :(')
                     }
                     else {
-                        println "Successfully updated common parameters of flowcollector :)"
+                        println 'Successfully updated common parameters of flowcollector :)'
+                    }
+                }
+            }
+        }
+        stage('Install Dittybopper') {
+            when {
+                expression { params.INSTALL_DITTYBOPPER == true }
+            }
+            steps{
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: params.DITTYBOPPER_REPO_BRANCH ]],
+                    userRemoteConfigs: [[url: params.DITTYBOPPER_REPO ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'performance-dashboards']]
+                ])
+                script {
+                    // attempt installation of dittybopper
+                    if (params.COLLECTOR_AGENT == 'ipfix') {
+                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ipfix.json"
+                    }
+                    else {
+                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json"
+                    }
+                    returnCode = sh(returnStatus: true, script: """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        setup_dittybopper_template
+                        . $WORKSPACE/performance-dashboards/dittybopper/deploy.sh $DITTYBOPPER_PARAMS
+                    """)
+                    // fail pipeline if installation failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error('Installation of Dittybopper failed :(')
+                    }
+                    else {
+                        println 'Successfully installed Dittybopper :)'
                     }
                 }
             }
@@ -197,15 +289,15 @@ pipeline {
 
     post {
         always {
-            println "Post Section - Always"
+            println 'Post Section - Always'
             archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data',
+                artifacts: 'ocp-qe-perfscale-ci/data, ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
         }
         failure {
-            println "Post Section - Failure"
+            println 'Post Section - Failure'
         }
     }
 }

@@ -2,3 +2,4 @@ data/
 kubeconfig
 kubeadmin-password
 scripts/flows.yaml
+scripts/netobserv-dittybopper.yaml
