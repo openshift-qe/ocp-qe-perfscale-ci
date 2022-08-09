@@ -3,7 +3,7 @@ deploy_operatorhub_noo() {
 
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
-  sleep 20
+  sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
