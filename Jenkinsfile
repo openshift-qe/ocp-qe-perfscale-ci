@@ -151,7 +151,6 @@ pipeline {
                     // attempt setup of FLP service and creation of service-monitor
                     println "Setting up FLP service and creating service-monitor..."
                     returnCode = sh(returnStatus: true, script:  '''
-                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/common.sh
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         populate_netobserv_metrics
                     ''')
