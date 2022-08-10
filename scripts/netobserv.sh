@@ -12,7 +12,7 @@ deploy_operatorhub_noo() {
   curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector_versioned.yaml |  oc apply -f -
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
-    oc get deployment flowlogs-pipeline -n network-observability && break
+    oc get daemonset flowlogs-pipeline -n network-observability && break
     sleep 1
   done
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
