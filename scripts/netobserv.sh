@@ -9,11 +9,10 @@ deploy_operatorhub_noo() {
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
   done
-  envsubst <$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector_versioned.yaml >$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
+  curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector_versioned.yaml |  oc apply -f -
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
-    oc get deployment flowlogs-pipeline -n network-observability && break
+    oc get daemonset flowlogs-pipeline -n network-observability && break
     sleep 1
   done
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
@@ -30,8 +29,7 @@ deploy_main_noo() {
   echo $PATH
   cd ${NETOBSERV_DIR} && make deploy && cd -
   echo "deploying flowcollector"
-  envsubst <$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector.yaml >$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/flows.yaml
+  curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector.yaml | oc apply -f -
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
   echo "waiting 120 seconds before checking IPFIX collector IP in OVS"
   sleep 120
@@ -48,7 +46,7 @@ deploy_loki() {
 
 delete_flowcollector() {
   echo "deleting flowcollector"
-  oc delete -f $NETOBSERV_DIR/config/samples/flows_v1alpha1_flowcollector.yaml
+  oc delete flowcollector/cluster
   rm -rf $NETOBSERV_DIR
 }
 
