@@ -76,7 +76,16 @@ uninstall_operatorhub_netobserv() {
 }
 
 populate_netobserv_metrics() {
-    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
-    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
-    echo "Added ServiceMonitor for NetObserv prometheus metrics"
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
+  echo "Added ServiceMonitor for NetObserv prometheus metrics"
+}
+
+setup_dittybopper_template() {
+  sleep 20
+  oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
+  oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
+  export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
+  export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'`
+  envsubst "${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}" < $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml.template > $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml
 }
