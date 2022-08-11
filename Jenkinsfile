@@ -140,7 +140,7 @@ pipeline {
                 script {
                     buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
                     currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
-                    currentBuild.description = "Copied artifacts from Flexy-install build <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a>"
+                    currentBuild.description = "Copied artifacts from Flexy-install build <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a><br/>"
                     buildinfo.params.each { env.setProperty(it.key, it.value) }
                     sh(returnStatus: true, script: """
                         mkdir -p ~/.kube
@@ -167,6 +167,7 @@ pipeline {
                     }
                     else {
                         println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
+                        currentBuild.description += "<b>Scale Job: <a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                         if (params.INFRA_WORKLOAD_INSTALL) {
                             println 'Successfully installed infrastructure nodes :)'
                         }
