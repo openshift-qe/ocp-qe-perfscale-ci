@@ -39,7 +39,8 @@ pipeline {
             defaultValue: '0',
             description: '''
                 Total Worker count desired to scale the cluster to<br/>
-                If set to '0' no scaling will occur
+                If set to '0' no scaling will occur<br/>
+                You can also directly scale the cluster up (or down) yourself with <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cluster-workers-scaling/>this job</a>
             '''
         )
         booleanParam(
