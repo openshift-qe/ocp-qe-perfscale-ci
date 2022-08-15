@@ -40,18 +40,6 @@ pipeline {
           description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
         )
         string(
-          name: 'JENKINS_AGENT_LABEL',
-          defaultValue: 'oc45',
-          description: '''
-            scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
-            4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
-                e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-            3.11: ansible-2.6 <br/>
-            3.9~3.10: ansible-2.4 <br/>
-            3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
-          '''
-        )
-        string(
           name: 'VARIABLE',
           defaultValue: '1000', 
           description: '''
@@ -65,41 +53,104 @@ pipeline {
             Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
           '''
         )
-
-        separator(name: "NODE_DENSITY_JOB_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
-				font-size: 14px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of nodes to be used in your cluster for this workload. Should be the number of worker nodes on your cluster')
-
-        separator(name: "CONCURRENT_BUILDS_JOB_INFO", sectionHeader: "Concurrent Builds Job Options", sectionHeaderStyle: """
-				font-size: 14px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
-        string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
-        string(name: "COMPARISON_CONFIG", defaultValue: "clusterVersion.json podLatency.json podCPU-avg.json podCPU-max.json podMemory-avg.json podMemory-max.json", description: 'Json files of what data to output into a google sheet')
-        booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')
-        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
-
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
-        string(name: 'SCALE_DOWN', defaultValue: '0', description:
-        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
-        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+        separator(
+          name: "NODE_DENSITY_JOB_INFO",
+          sectionHeader: "Node Density Job Options",
+          sectionHeaderStyle: """
+            font-size: 14px;
+            font-weight: bold;
+            font-family: 'Orienta', sans-serif;
+          """
         )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+        string(
+          name: 'NODE_COUNT',
+          defaultValue: '3',
+          description: 'Number of nodes to be used in your cluster for this workload. Should be the number of worker nodes on your cluster'
+        )
+        separator(
+          name: "CONCURRENT_BUILDS_JOB_INFO",
+          sectionHeader: "Concurrent Builds Job Options",
+          sectionHeaderStyle: """
+            font-size: 14px;
+            font-weight: bold;
+            font-family: 'Orienta', sans-serif;
+          """
+        )
+        string(
+          name: 'BUILD_LIST',
+          defaultValue: "1 8 15 30 45 60 75",
+          description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list'
+        )
+        string(
+          name: 'APP_LIST',
+          defaultValue: 'cakephp eap django nodejs',
+          description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time'
+        )
+        string(
+          name: "COMPARISON_CONFIG",
+          defaultValue: "clusterVersion.json podLatency.json podCPU-avg.json podCPU-max.json podMemory-avg.json podMemory-max.json",
+          description: 'JSON files of what data to output into a google sheet'
+        )
+        booleanParam(
+          name: 'GEN_CSV',
+          defaultValue: true,
+          description: 'Boolean to create a google sheet with comparison data'
+        )
+        string(
+          name: 'JENKINS_AGENT_LABEL',
+          defaultValue: 'oc45',
+          description: '''
+            scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
+            4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+                e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+            3.11: ansible-2.6 <br/>
+            3.9~3.10: ansible-2.4 <br/>
+            3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+          '''
+        )
+        text(
+          name: 'ENV_VARS',
+          defaultValue: '',
+          description: '''
+            Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line.<br>
+            e.g.<br>
+            SOMEVAR1='env-test'<br>
+            SOMEVAR2='env2-test'<br>
+            ...<br>
+            SOMEVARn='envn-test'<br>
+          '''
+        )
+        booleanParam(
+          name: 'INFRA_WORKLOAD_INSTALL',
+          defaultValue: false,
+          description: '''
+            Install workload and infrastructure nodes even if less than 50 nodes.<br>
+            Checking this parameter box is valid only when SCALE_UP is greater than 0.
+          '''
+        )
+        string(
+          name: 'SCALE_UP',
+          defaultValue: '0',
+          description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
+        )
+        string(
+          name: 'SCALE_DOWN',
+          defaultValue: '0',
+          description: '''
+            If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
+            if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.
+          '''
+        )
+        string(
+          name: 'E2E_BENCHMARKING_REPO',
+          defaultValue: 'https://github.com/cloud-bulldozer/e2e-benchmarking',
+          description: 'You can change this to point to your fork if needed.'
+        )
+        string(
+          name: 'E2E_BENCHMARKING_REPO_BRANCH',
+          defaultValue: 'master',
+          description: 'You can change this to point to a branch on your fork if needed.'
+        )
     }
 
   stages {
