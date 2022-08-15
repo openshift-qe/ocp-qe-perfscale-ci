@@ -13,7 +13,7 @@
 
 # 4. network-observability pods memory usage
 - query: sum(container_memory_working_set_bytes{namespace="network-observability-privileged",container="",}) by (container, pod, namespace, node )
-  metricName: ebpfmemoryUsage
+  metricName: ebpfMemoryUsage
 
 # 5. loki-store PVC usage averaging over 5 mins period
 - query: avg_over_time(kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[5m])

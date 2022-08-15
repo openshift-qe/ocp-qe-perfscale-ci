@@ -31,9 +31,6 @@ deploy_main_noo() {
   echo "deploying flowcollector"
   curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector.yaml | oc apply -f -
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
-  echo "waiting 120 seconds before checking IPFIX collector IP in OVS"
-  sleep 120
-  get_ipfix_collector_ip
   deploy_loki
 }
 

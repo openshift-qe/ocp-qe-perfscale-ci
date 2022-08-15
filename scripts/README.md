@@ -40,17 +40,17 @@ Navigate to the `scripts/` directory of this repository and run `$ populate_neto
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
-- **IPFix sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": <value>}]"`
+- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": < ebpf | ipfix >}]"`
+- **Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
 - **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
-- **Changing collector agent:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": < ipfix | ebpf >}]"`
 
 ### Using Dittybopper
 1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
 2. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ipfix.json` or `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json` depending on your collector agent
+3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_<collector agent>.json`
 4. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
 
 ### Example simulating pod2pod network traffic
@@ -75,7 +75,7 @@ MAX_WAIT_TIMEOUT=10m
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for sharing.
 
-Queries are sourced from the `netobserv_queries_ipfix.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files such as `netobserv_queries_ebpf.yaml`.
+Queries are sourced from the `netobserv_queries_ebpf.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files such as `netobserv_queries_ipfix.yaml`.
 
 Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
 

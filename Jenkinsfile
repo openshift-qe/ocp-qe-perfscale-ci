@@ -87,7 +87,7 @@ pipeline {
         )
         choice(
             name: 'COLLECTOR_AGENT',
-            choices: ['ipfix', 'ebpf'],
+            choices: ['ebpf', 'ipfix'],
             description: 'Collector agent Network Observability will use'
         )
         string(
@@ -167,7 +167,7 @@ pipeline {
                     }
                     else {
                         println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
-                        currentBuild.description += "<b>Scale Job: <a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
+                        currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                         if (params.INFRA_WORKLOAD_INSTALL) {
                             println 'Successfully installed infrastructure nodes :)'
                         }
@@ -238,7 +238,7 @@ pipeline {
                     println 'Updating common parameters of flowcollector...'
                     returnCode = sh(returnStatus: true, script: """
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": ${params.COLLECTOR_AGENT}}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ipfix/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/${params.COLLECTOR_AGENT}/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": ${params.REPLICAS}}] -n network-observability"
@@ -257,7 +257,7 @@ pipeline {
             when {
                 expression { params.INSTALL_DITTYBOPPER == true }
             }
-            steps{
+            steps {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: params.DITTYBOPPER_REPO_BRANCH ]],
@@ -266,12 +266,7 @@ pipeline {
                 ])
                 script {
                     // attempt installation of dittybopper
-                    if (params.COLLECTOR_AGENT == 'ipfix') {
-                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ipfix.json"
-                    }
-                    else {
-                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json"
-                    }
+                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_${params.COLLECTOR_AGENT}.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
