@@ -14,32 +14,57 @@ pipeline {
   agent none
 
   parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        choice(choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds"], name: 'WORKLOAD', description: '''Type of kube-burner job to run''')
-        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results>write-scale-ci-results</a>)')
-        booleanParam(name: 'CLEANUP', defaultValue: false, description: 'Cleanup namespaces (and all sub-objects) created from workload')
-        booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
-
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
-        '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
-        4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
-            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-        3.11: ansible-2.6 <br/>
-        3.9~3.10: ansible-2.4 <br/>
-        3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
-        '''
+        string(
+          name: 'BUILD_NUMBER',
+          defaultValue: '',
+          description: 'Build number of job that has installed the cluster.'
         )
-        string(name: 'VARIABLE', defaultValue: '1000', description: '''This variable configures parameter needed for each type of workload. By default 1000. <br>
+        choice(
+          name: 'WORKLOAD',
+          choices: ["cluster-density", "node-density", "node-density-heavy", "pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds"],
+          description: 'Type of kube-burner job to run'
+        )
+        booleanParam(
+          name: 'WRITE_TO_FILE',
+          defaultValue: false,
+          description: 'Value to write to google sheet (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results>write-scale-ci-results</a>)'
+        )
+        booleanParam(
+          name: 'CLEANUP',
+          defaultValue: false,
+          description: 'Cleanup namespaces (and all sub-objects) created from workload (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/benchmark-cleaner/>benchmark-cleaner</a>)'
+        )
+        booleanParam(
+          name: 'CERBERUS_CHECK',
+          defaultValue: false,
+          description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
+        )
+        string(
+          name: 'JENKINS_AGENT_LABEL',
+          defaultValue: 'oc45',
+          description: '''
+            scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
+            4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+                e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+            3.11: ansible-2.6 <br/>
+            3.9~3.10: ansible-2.4 <br/>
+            3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+          '''
+        )
+        string(
+          name: 'VARIABLE',
+          defaultValue: '1000', 
+          description: '''
+            This variable configures parameter needed for each type of workload. By default 1000.<br>
             pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
-            cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration). <br>
-            max-namespaces: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.  <br>
-            max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace.  <br>
-            node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node. <br>
-            node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2 <br>
-            Read <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>here</a> for details about each variable
-            ''')
+            cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
+            max-namespaces: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
+            max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace.<br>
+            node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node.<br>
+            node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
+            Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
+          '''
+        )
 
         separator(name: "NODE_DENSITY_JOB_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
 				font-size: 14px;
