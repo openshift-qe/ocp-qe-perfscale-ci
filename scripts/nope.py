@@ -161,6 +161,7 @@ def get_netobserv_env_info():
 
     # get agent details based on detected agent (should be ebpf or ipfix)
     agent = info["agent"]
+    logging.debug(f"Found collector agent {agent}")
     agent_commands = {
         "sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.sampling}}"'],
         "cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheActiveTimeout}}"'],
@@ -305,7 +306,7 @@ if __name__ == '__main__':
     parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
 
     # set prometheus flags
-    parser.add_argument("--yaml-file", type=str, default='netobserv_queries_ipfix.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ipfix.yaml"')
+    parser.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
     parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
     parser.add_argument("--starttime", type=str, required=True, help='Start time for range query')
     parser.add_argument("--endtime", type=str, required=True, help='End time for range query')
