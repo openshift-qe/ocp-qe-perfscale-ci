@@ -52,18 +52,6 @@ add_go_path() {
   export PATH=$PATH:/usr/local/go/bin
 }
 
-get_ipfix_collector_ip() {
-  ovnkubePods=$(oc get pods -l app=ovnkube-node -n openshift-ovn-kubernetes -o jsonpath='{.items[*].metadata.name}')
-  for podName in $ovnkubePods; do
-    OVS_IPFIX_COLLECTOR_IP=$(oc get pod/$podName -n openshift-ovn-kubernetes -o jsonpath='{.spec.containers[*].env[?(@.name=="IPFIX_COLLECTORS")].value}')
-    if [[ -z "$OVS_IPFIX_COLLECTOR_IP" ]]; then
-      echo "IPFIX collector IP is not configured in OVS"
-      exit 1
-    fi
-    echo "$OVS_IPFIX_COLLECTOR_IP is configured for $podName"
-  done
-}
-
 uninstall_operatorhub_netobserv() {
   oc delete flowcollector/cluster
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml

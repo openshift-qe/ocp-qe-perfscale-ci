@@ -159,7 +159,7 @@ def get_netobserv_env_info():
     # collect data from cluster about netobserv operator and store in info dict
     info = run_commands(base_commands, info)
 
-    # get agent details based on detected agent (should be ebpf or ipfix)
+    # get agent details based on detected agent
     agent = info["agent"]
     logging.debug(f"Found collector agent {agent}")
     agent_commands = {

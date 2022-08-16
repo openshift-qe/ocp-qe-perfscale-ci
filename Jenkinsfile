@@ -85,11 +85,6 @@ pipeline {
             defaultValue: true,
             description: 'Check this box to setup FLP service and create service-monitor'
         )
-        choice(
-            name: 'COLLECTOR_AGENT',
-            choices: ['ebpf', 'ipfix'],
-            description: 'Collector agent Network Observability will use'
-        )
         string(
             name: 'FLOW_SAMPLING_RATE',
             defaultValue: '100',
@@ -237,8 +232,8 @@ pipeline {
                     // attempt updating common parameters of flowcollector
                     println 'Updating common parameters of flowcollector...'
                     returnCode = sh(returnStatus: true, script: """
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": ${params.COLLECTOR_AGENT}}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/${params.COLLECTOR_AGENT}/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": "ebpf"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": ${params.REPLICAS}}] -n network-observability"
@@ -266,7 +261,7 @@ pipeline {
                 ])
                 script {
                     // attempt installation of dittybopper
-                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_${params.COLLECTOR_AGENT}.json"
+                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
