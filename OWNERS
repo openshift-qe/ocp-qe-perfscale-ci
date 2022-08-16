@@ -1,9 +1,14 @@
 approvers:
-- kedark3
 - mffiedler
+- qiliRedHat
+- paigerube14
+- nathan-weinberg
 reviewers:
-- kedark3
+- jechen0648
+- qiliRedHat
 - mffiedler
 - paigerube14
 - rpattath
 - skordas
+- memodi
+- nathan-weinberg
