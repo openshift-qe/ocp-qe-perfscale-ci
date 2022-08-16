@@ -127,6 +127,11 @@ pipeline {
             set -a && source .env_override && set +a
             mkdir -p ~/.kube
             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            #Auto get proxy address for private and disconnected cluster
+            if [ -f $WORKSPACE/flexy-artifacts/workdir/install-dir/client_proxy_setting.sh ];then
+                   cp $WORKSPACE/flexy-artifacts/workdir/install-dir/client_proxy_setting.sh ~/client_proxy_setting.sh
+                   source ~/client_proxy_setting.sh
+            fi
             oc config view
             oc projects
             ls -ls ~/.kube/
@@ -278,7 +283,11 @@ pipeline {
             set -a && source .env_override && set +a
             mkdir -p ~/.kube
             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-
+            #Auto get proxy address for private and disconnected cluster
+            if [ -f $WORKSPACE/flexy-artifacts/workdir/install-dir/client_proxy_setting.sh ];then
+                   cp $WORKSPACE/flexy-artifacts/workdir/install-dir/client_proxy_setting.sh ~/client_proxy_setting.sh
+                   source ~/client_proxy_setting.sh
+            fi
             oc config view
             oc projects
             ls -ls ~/.kube/
@@ -299,6 +308,10 @@ pipeline {
             elif [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
               export AMI_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.ami.id}}')
               export AZURE_LOCATION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.location}}')
+              export NETWORK_RESOURCE_GROUP=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.networkResourceGroup}}')
+              export ENABLE_PUBLICIP=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.publicIP}}')
+              export VNET=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.vnet}}')
+              export SUBNET=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.subnet}}')
               envsubst < infra-node-machineset-azure.yaml | oc apply -f -
               envsubst < workload-node-machineset-azure.yaml | oc apply -f -
             elif [[ $(echo $VARIABLES_LOCATION | grep gcp -c) > 0 ]]; then

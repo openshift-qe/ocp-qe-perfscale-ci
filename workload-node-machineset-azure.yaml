@@ -46,20 +46,20 @@ spec:
           metadata:
             creationTimestamp: null
           natRule: null
-          networkResourceGroup: ""
+          networkResourceGroup: ${NETWORK_RESOURCE_GROUP}
           osDisk:
             diskSizeGB: ${OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE}
             managedDisk:
               storageAccountType: ${OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE}
             osType: Linux
-          publicIP: true
+          publicIP: ${ENABLE_PUBLICIP}
           publicLoadBalancer: ""
           resourceGroup: ${CLUSTER_NAME}-rg
           sshPrivateKey: ""
           sshPublicKey: ""
-          subnet: ${CLUSTER_NAME}-worker-subnet
+          subnet: ${SUBNET}
           userDataSecret:
             name: worker-user-data
           vmSize: ${OPENSHIFT_WORKLOAD_NODE_VM_SIZE}
-          vnet: ${CLUSTER_NAME}-vnet
+          vnet: ${VNET}
           zone: "1"
