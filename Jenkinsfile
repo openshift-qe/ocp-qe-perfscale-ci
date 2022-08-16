@@ -232,6 +232,7 @@ pipeline {
                     // attempt updating common parameters of flowcollector
                     println 'Updating common parameters of flowcollector...'
                     returnCode = sh(returnStatus: true, script: """
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": "ebpf"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
