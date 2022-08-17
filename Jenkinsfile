@@ -35,14 +35,19 @@ pipeline {
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
                For OPENSHIFT_PROMETHEUS_STORAGE_CLASS and OPENSHIFT_ALERTMANAGER_STORAGE_CLASS, use `oc get storageclass` to get them on your cluster.<br>
                e.g.<b>for AWS:</b><br>
+               <b>AMD/Standard Architecture:</b> <br>
+                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge<br>
+                OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge<br>
+               <b>ARM64 Architecture:</b> <br>
+                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m6g.12xlarge <br>
+                OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m6g.8xlarge<br>
+               <b>Both Architectures also need:</b> <br>
                OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          <br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          <br>
-               OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge<br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_IOPS=0         <br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2       <br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500       <br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge<br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      <br>
                e.g. <b>for Azure:</b><br>
