@@ -26,65 +26,138 @@ pipeline{
     agent any
 
     parameters {
-        separator(name: "PRE_BUILT_FLEXY_ENV", sectionHeader: "Pre Built Flexy", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+      separator(
+        name: "PRE_BUILT_FLEXY_ENV", 
+        sectionHeader: "Pre Built Flexy", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;
+        """
+      )
+      string(
+        name: 'BUILD_NUMBER', 
+        defaultValue: '', 
+        description: 'Build number of job that has installed the cluster.'
+      )
 
-        separator(name: "BUILD_FLEXY_COMMON_PARAMS", sectionHeader: "Build Flexy Parameters Common", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'OCP_PREFIX', defaultValue: '', description: 'Name of ocp cluster you want to build')
-        string(name: 'OCP_VERSION', defaultValue: '', description: 'Build version to install the cluster.')
-        separator(name: "BUILD_FLEXY_FROM_PROFILE", sectionHeader: "Build Flexy From Profile", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'CI_PROFILE', defaultValue: '', description: """Name of ci profile to build for the cluster you want to build <br>
-            You'll give the name of the file (under the specific version) without `.install.yaml`
-        """)
-        choice(choices: ['extra-small','small','medium',''], name: 'PROFILE_SCALE_SIZE', description: """Set scale size to set number of workers to add and define size of masters and workers. <br>
+      separator(
+        name: "BUILD_FLEXY_COMMON_PARAMS", 
+        sectionHeader: "Build Flexy Parameters Common", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;
+        """
+      )
+      string(
+        name: 'OCP_PREFIX', 
+        defaultValue: '', 
+        description: 'Name of ocp cluster you want to build'
+      )
+      string(
+        name: 'OCP_VERSION',
+        defaultValue: '', 
+        description: 'Build version to install the cluster.'
+      )
+      separator(
+        name: "BUILD_FLEXY_FROM_PROFILE", 
+        sectionHeader: "Build Flexy From Profile", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;
+        """
+      )
+      string(
+        name: 'CI_PROFILE', 
+        defaultValue: '', 
+        description: """Name of ci profile to build for the cluster you want to build <br>
+          You'll give the name of the file (under the specific version) without `.install.yaml`
+        """
+      )
+      choice(
+        choices: ['extra-small','small','medium',''], 
+        name: 'PROFILE_SCALE_SIZE', 
+        description: """Set scale size to set number of workers to add and define size of masters and workers. <br>
         For information about size definitions see <a href="https://gitlab.cee.redhat.com/aosqe/ci-profiles/-/blob/master/scale-ci/4.11/02_IPI-on-AWS.install.yaml#L10"> here </a> (will need ot look at your specific profile) <br>
-        set Size of cluster to scale to; will be ignored if SCALE_UP is set""")
-        separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        choice(choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere', 'ash'], name: 'CLOUD_TYPE', description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
-        Will be ignored if BUILD_NUMBER is set''')
-        choice(choices: ['','ovn', 'sdn'], name: 'NETWORK_TYPE', description: 'Network type, will be ignored if BUILD_NUMBER is set')
-        choice(choices: ['','ipi', 'upi', 'sno'], name: 'INSTALL_TYPE', description: '''Type of installation (set to SNO for sno cluster type),  <br/>
-        will be ignored if BUILD_NUMBER is set''')
-        string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of master nodes in your cluster to create.')
-        string(name: "WORKER_COUNT", defaultValue: '3', description: 'Number of worker nodes in your cluster to create.')
-
+        set Size of cluster to scale to; will be ignored if SCALE_UP is set"""
+      )
+      separator(
+        name: "BUILD_FLEXY", 
+        sectionHeader: "Build Flexy Parameters", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;
+        """
+      )
+      choice(
+        choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere', 'ash'], 
+        name: 'CLOUD_TYPE',
+        description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
+          Will be ignored if BUILD_NUMBER is set'''
+        )
+      choice(
+        choices: ['','ovn', 'sdn'], 
+        name: 'NETWORK_TYPE', 
+        description: 'Network type, will be ignored if BUILD_NUMBER is set'
+      )
+      choice(
+        choices: ['','ipi', 'upi', 'sno'], 
+        name: 'INSTALL_TYPE', 
+        description: '''Type of installation (set to SNO for sno cluster type),  <br/>
+          will be ignored if BUILD_NUMBER is set'''
+      )
+      string(
+        name: 'MASTER_COUNT', 
+        defaultValue: '3', 
+        description: 'Number of master nodes in your cluster to create.'
+      )
+      string(
+        name: "WORKER_COUNT", 
+        defaultValue: '3', 
+        description: 'Number of worker nodes in your cluster to create.'
+      )
         separator(name: "SCALE_UP_JOB_INFO", sectionHeader: "Scale Up Job Options", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
 			""")
-	    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', defaultValue: false, description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.')
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
-        string(name: 'SCALE_DOWN', defaultValue: '0', description:
+	    booleanParam(
+        name: 'INFRA_WORKLOAD_INSTALL', 
+        defaultValue: false, 
+        description: 'Install workload and infrastructure nodes even if less than 50 nodes. <br> Checking this parameter box is valid only when SCALE_UP is greater than 0.'
+      )
+      string(
+        name: 'SCALE_UP', 
+        defaultValue: '0', 
+        description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
+      )
+      string(name: 'SCALE_DOWN', 
+        defaultValue: '0', 
+        description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
         if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
-        )
-        separator(name: "SCALE_CI_JOB_INFO", sectionHeader: "Scale-CI Job Options", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        choice(choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","concurrent-builds","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test"], name: 'CI_TYPE', description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
-        Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored ''')
-
-
-        string(name: 'VARIABLE', defaultValue: '1000', description: '''
+      )
+      separator(
+        name: "SCALE_CI_JOB_INFO", 
+        sectionHeader: "Scale-CI Job Options", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      choice(
+        choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","concurrent-builds","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test"], 
+        name: 'CI_TYPE', 
+        description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
+          Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
+      )
+      string(
+        name: 'VARIABLE', 
+        defaultValue: '1000', 
+        description: '''
         This variable configures parameter needed for each type of workload. By default 1000. <br>
         pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable. <br>
         cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration). <br>
@@ -94,53 +167,132 @@ pipeline{
         node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2 <br>
         Read here for detail of each variable: <br>
         https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md <br>
-        ''')
+        '''
+      )
 
-        separator(name: "NODE_DENSITY_JOB_INFO", sectionHeader: "Node Density Job Options", sectionHeaderStyle: """
-				font-size: 14px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'NODE_COUNT', defaultValue: '3', description: 'Number of worker nodes to be used in your cluster for this workload.')
-        separator(name: "CONCURRENT_BUILDS_JOB_INFO", sectionHeader: "Concurrent Builds Job Options", sectionHeaderStyle: """
-				font-size: 14px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'BUILD_LIST', defaultValue: "1 8 15 30 45 60 75", description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list')
-        string(name: 'APP_LIST', defaultValue: 'cakephp eap django nodejs', description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time')
-        separator(name: "NETWORK_PERF_INFO", sectionHeader: "Network-Perf Job Options", sectionHeaderStyle: """
-				font-size: 14px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        choice(choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'], name: 'WORKLOAD_TYPE', description: 'Workload type')
-        booleanParam(name: "NETWORK_POLICY", defaultValue: false, description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods")
+      separator(
+        name: "NODE_DENSITY_JOB_INFO", 
+        sectionHeader: "Node Density Job Options", 
+        sectionHeaderStyle: """
+          font-size: 14px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      string(
+        name: 'NODE_COUNT', 
+        defaultValue: '3', 
+        description: 'Number of worker nodes to be used in your cluster for this workload.'
+      )
+      separator(
+        name: "CONCURRENT_BUILDS_JOB_INFO", 
+        sectionHeader: "Concurrent Builds Job Options", 
+        sectionHeaderStyle: """
+          font-size: 14px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      string(
+        name: 'BUILD_LIST',
+        defaultValue: "1 8 15 30 45 60 75", 
+        description: 'Number of concurrent builds to run at a time; will run 2 iterations of each number in this list'
+      )
+      string(
+        name: 'APP_LIST', 
+        defaultValue: 'cakephp eap django nodejs', 
+        description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time'
+      )
+      separator(
+        name: "NETWORK_PERF_INFO", 
+        sectionHeader: "Network-Perf Job Options", 
+        sectionHeaderStyle: """
+          font-size: 14px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      choice(
+        choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'],
+        name: 'WORKLOAD_TYPE',
+        description: 'Workload type'
+      )
+      booleanParam(
+        name: "NETWORK_POLICY",
+        defaultValue: false,
+        description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods"
+      )
 
-        separator(name: "UPGRADE_INFO", sectionHeader: "Upgrade Options", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
-        string(name: 'UPGRADE_VERSION', description: 'This variable sets the version number you want to upgrade your OpenShift cluster to (can list multiple by separating with comma, no spaces).')
-        booleanParam(name: 'EUS_UPGRADE', defaultValue: false, description: '''This variable will perform an EUS type upgrade <br>
-        See "https://docs.google.com/document/d/1396VAUFLmhj8ePt9NfJl0mfHD7pUT7ii30AO7jhDp0g/edit#heading=h.bv3v69eaalsw" for how to run
-        ''')
-        choice(choices: ['fast', 'eus', 'candidate', 'stable'], name: 'EUS_CHANNEL', description: 'EUS Channel type, will be ignored if EUS_UPGRADE is not set to true')
+      separator(
+        name: "UPGRADE_INFO",
+        sectionHeader: "Upgrade Options",
+        sectionHeaderStyle: """
+        font-size: 18px;
+        font-weight: bold;
+        font-family: 'Orienta', sans-serif;"""
+      )
+      string(
+        name: 'UPGRADE_VERSION',
+        description: 'This variable sets the version number you want to upgrade your OpenShift cluster to (can list multiple by separating with comma, no spaces).'
+      )
+      booleanParam(
+        name: 'EUS_UPGRADE',
+        defaultValue: false,
+        description: '''This variable will perform an EUS type upgrade <br>
+        See "https://docs.google.com/document/d/1396VAUFLmhj8ePt9NfJl0mfHD7pUT7ii30AO7jhDp0g/edit#heading=h.bv3v69eaalsw" for how to run'''
+      )
+      choice(
+        choices: ['fast', 'eus', 'candidate', 'stable'], 
+        name: 'EUS_CHANNEL',
+        description: 'EUS Channel type, will be ignored if EUS_UPGRADE is not set to true'
+      )
 
-        booleanParam(name: 'ENABLE_FORCE', defaultValue: true, description: 'This variable will force the upgrade or not')
-        booleanParam(name: 'SCALE', defaultValue: false, description: 'This variable will scale the cluster up one node at the end up the upgrade')
-        string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
+      booleanParam(
+        name: 'ENABLE_FORCE', 
+        defaultValue: true,
+        description: 'This variable will force the upgrade or not'
+      )
+      booleanParam(
+        name: 'SCALE', 
+        defaultValue: false, 
+        description: 'This variable will scale the cluster up one node at the end up the upgrade'
+      )
+      string(
+        name: 'MAX_UNAVAILABLE',
+        defaultValue: "1",
+        description: 'This variable will set the max number of unavailable nodes during the upgrade'
+      )
 
-        separator(name: "GENERAL_BUILD_INFO", sectionHeader: "General Options", sectionHeaderStyle: """
-				font-size: 18px;
-				font-weight: bold;
-				font-family: 'Orienta', sans-serif;
-			""")
+      separator(
+        name: "GENERAL_BUILD_INFO",
+        sectionHeader: "General Options",
+        sectionHeaderStyle: """
+        font-size: 18px;
+        font-weight: bold;
+        font-family: 'Orienta', sans-serif;"""
+      )
 
-        booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp4.prod.psi.redhat.com/job/scale-ci/job/paige-e2e-multibranch/job/write-to_sheet)')
-        booleanParam(name: 'DESTROY_WHEN_DONE', defaultValue: 'False', description: 'If you want to destroy the cluster created at the end of your run ')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+      booleanParam(
+        name: 'WRITE_TO_FILE',
+        defaultValue: false,
+        description: 'Value to write to google sheet (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results>write-scale-ci-results</a>)'
+      )
+      booleanParam(
+        name: 'CLEANUP',
+        defaultValue: false,
+        description: 'Cleanup namespaces (and all sub-objects) created from workload (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/benchmark-cleaner/>benchmark-cleaner</a>)'
+      )
+      booleanParam(
+        name: 'CERBERUS_CHECK',
+        defaultValue: false,
+        description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
+      )
+      booleanParam(
+        name: 'DESTROY_WHEN_DONE', 
+        defaultValue: 'False', 
+        description: 'If you want to destroy the cluster created at the end of your run '
+      )
+      string(
+        name:'JENKINS_AGENT_LABEL',
+        defaultValue:'oc45',
+        description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -149,22 +301,40 @@ pipeline{
         3.9~3.10: ansible-2.4 <br/>
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
-        )
-        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-        string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
-        string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
+      )
+      text(
+        name: 'ENV_VARS', 
+        defaultValue: '', 
+        description:'''<p>
+          Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+          e.g.<br>
+          SOMEVAR1='env-test'<br>
+          SOMEVAR2='env2-test'<br>
+          ...<br>
+          SOMEVARn='envn-test'<br>
+          </p>'''
+      )
+      string(
+        name: 'E2E_BENCHMARKING_REPO',
+        defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking',
+        description:'You can change this to point to your fork if needed.'
+      )
+      string(
+        name: 'E2E_BENCHMARKING_REPO_BRANCH',
+        defaultValue:'master',
+        description:'You can change this to point to a branch on your fork if needed.'
+      )
+      string(
+        name: "CI_PROFILES_URL",
+        defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",
+        description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'"
+      )
+      string(
+        name: "CI_PROFILES_REPO_BRANCH",
+        defaultValue: "master",
+        description: "Branch of ci-profiles repo to checkout"
+      )
     }
-
 
     stages{
         stage("Build Flexy Clusters") {
@@ -261,11 +431,26 @@ pipeline{
                         selector: specific(params.BUILD_NUMBER),
                         target: 'flexy-artifacts'
                        )
-                        installData = readYaml(file: "flexy-artifacts/workdir/install-dir/cluster_info.yaml")
-                        VERSION = installData.INSTALLER.VERSION
-                        currentBuild.description = """
-                            <b>Using Pre-Built Flexy</b> <br/>
-                        """
+                       sh "echo 'ls flexy-artifacts/workdir/install-dir'"
+                       if (fileExists("flexy-artifacts/workdir/install-dir/cluster_info.yaml")) {
+                         println('cluster_info.yaml')
+                          installData = readYaml(file: "flexy-artifacts/workdir/install-dir/cluster_info.yaml")
+                          VERSION = installData.INSTALLER.VERSION
+                          currentBuild.description = """
+                              <b>Using Pre-Built Flexy</b> <br/>
+                          """
+                       } else if (fileExists("flexy-artifacts/workdir/install-dir/cluster_info.json")) {
+                          installData = readJSON file: "flexy-artifacts/workdir/install-dir/cluster_info.json"
+                          println "json version $installData"
+                          VERSION = installData.INSTALLER.VERSION
+                          currentBuild.description = """
+                              <b>Using Pre-Built Flexy</b> <br/>
+                          """
+                        
+                       } else {
+                         println "unknown version"
+                          VERSION = "Unknown Version"
+                       }
 
                         if (params.BUILD_NUMBER != "") {
                             build_string = params.BUILD_NUMBER
@@ -285,7 +470,7 @@ pipeline{
                         target: 'flexy-artifacts'
                        )
                     if (fileExists("flexy-artifacts/workdir/install-dir/client_proxy_setting.sh")) {
-                     println "yes"
+                     println "client proxy set"
                      proxy_settings = sh returnStdout: true, script: 'cat flexy-artifacts/workdir/install-dir/client_proxy_setting.sh'
                      proxy_settings = proxy_settings.replace('export ', '')
                     }
@@ -333,6 +518,7 @@ pipeline{
                         string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
                         string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
                         text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+                        booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
                         string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                         string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
                     ]
@@ -344,6 +530,7 @@ pipeline{
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
                             booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
                        ]
@@ -355,6 +542,7 @@ pipeline{
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
                             booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
                        ]
@@ -366,6 +554,7 @@ pipeline{
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
                             booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
