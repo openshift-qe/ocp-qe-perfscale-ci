@@ -63,7 +63,6 @@ populate_netobserv_metrics() {
   else
     oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
   fi
-
   echo "Added ServiceMonitor for NetObserv prometheus metrics"
 }
 
@@ -82,7 +81,6 @@ deploy_lokistack() {
   # create s3 secret for loki
   $WORKSPACE/ocp-qe-perfscale-ci/scripts/deploy-loki-aws-secret.sh
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
-
   if [[ "${LOKISTACK_SIZE}" == "1x.extra-small" ]]; then
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   elif [[ "${LOKISTACK_SIZE}" == "1x.small" ]]; then
@@ -92,7 +90,6 @@ deploy_lokistack() {
   else
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   fi
-
   oc apply -f $LokiStack_CONFIG
   sleep 10
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
