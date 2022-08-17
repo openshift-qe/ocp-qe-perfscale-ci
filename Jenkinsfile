@@ -1,11 +1,29 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
+def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
+def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
+
+if (userCause) {
+  userId = userCause.getUserId()
+} else if (upstreamCause) {
+  def upstreamJob = Jenkins.getInstance().getItemByFullName(upstreamCause.getUpstreamProject(), hudson.model.Job.class)
+  if (upstreamJob) {
+    def upstreamBuild = upstreamJob.getBuildByNumber(upstreamCause.getUpstreamBuild())
+    if (upstreamBuild) {
+      def realUpstreamCause = upstreamBuild.getCause(Cause.UserIdCause)
+      if (realUpstreamCause) {
+        userId = realUpstreamCause.getUserId()
+      }
+    }
+  }
+}
 if (userId) {
   currentBuild.displayName = userId
-}
+} 
 
+
+println "user id $userId"
 def RETURNSTATUS = "default"
 def output = ""
 def status = "FAIL"
@@ -14,40 +32,85 @@ pipeline {
   agent none
 
   parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'SCALE_UP', defaultValue: '0', description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.')
-        string(name: 'SCALE_DOWN', defaultValue: '0', description:
-        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
-        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
-        )
-        choice(choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'], name: 'WORKLOAD_TYPE', description: 'Workload type')
-        booleanParam(name: "NETWORK_POLICY", defaultValue: false, description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods")
-        booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')        
-        booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
-        booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc410',description:
+    string(
+      name: 'BUILD_NUMBER', 
+      defaultValue: '', 
+      description: 'Build number of job that has installed the cluster.'
+    )
+    string(
+      name: 'SCALE_UP', 
+      defaultValue: '0', 
+      description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
+    )
+    string(
+      name: 'SCALE_DOWN', 
+      defaultValue: '0', 
+      description:
+      '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
+      if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+    )
+    choice(
+      choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'], 
+      name: 'WORKLOAD_TYPE', 
+      description: 'Workload type'
+    )
+    booleanParam(
+      name: "NETWORK_POLICY", 
+      defaultValue: false, 
+      description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods"
+    )
+    booleanParam(
+      name: 'GEN_CSV', 
+      defaultValue: true, 
+      description: 'Boolean to create a google sheet with comparison data'
+    )        
+    booleanParam(
+      name: 'WRITE_TO_FILE', 
+      defaultValue: false, 
+      description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)'
+    )
+    booleanParam(
+      name: 'CERBERUS_CHECK', 
+      defaultValue: false, 
+      description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
+    )
+    string(
+      name:'JENKINS_AGENT_LABEL',
+      defaultValue:'oc410',
+      description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
+        isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
             e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
         3.11: ansible-2.6 <br/>
         3.9~3.10: ansible-2.4 <br/>
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
-        )
-        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-    }
+    )
+    text(
+      name: 'ENV_VARS', 
+      defaultValue: '', 
+      description:'''<p>
+        Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+        e.g.<br>
+        SOMEVAR1='env-test'<br>
+        SOMEVAR2='env2-test'<br>
+        ...<br>
+        SOMEVARn='envn-test'<br>
+        </p>'''
+    )
+    string(
+      name: 'E2E_BENCHMARKING_REPO', 
+      defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', 
+      description:'You can change this to point to your fork if needed.'
+    )
+    string(
+      name: 'E2E_BENCHMARKING_REPO_BRANCH', 
+      defaultValue:'master', 
+      description:'You can change this to point to a branch on your fork if needed.'
+    )
+  }
 
   stages {
     stage('Run Network Pod Perf Tests'){
@@ -124,6 +187,7 @@ pipeline {
                     parameters: [
                         string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                         string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                     ],
                     propagate: false
