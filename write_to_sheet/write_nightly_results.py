@@ -5,7 +5,7 @@ from datetime import datetime
 from pytz import timezone
 import write_helper
 
-def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, ran_jobs, failed_jobs, status, env_vars_file):
+def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, ran_jobs, failed_jobs, status, env_vars_file, nightly_type):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -39,6 +39,9 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, ran_jobs, faile
     # ws.insert_row(row, index, "USER_ENTERED")
     latest_version = cluster_version.split('.')
     print('cluster verison list ' + str(latest_version))
-    ws = sheet.worksheet(str(latest_version[0]) + "." + str(latest_version[1]))
+    if nightly_type == "nightly-scale":
+        ws = sheet.worksheet(str(latest_version[0]) + "." + str(latest_version[1]))
+    elif nightly_type == "nightly-longrun":
+        ws = sheet.worksheet(str(latest_version[0]) + "." + str(latest_version[1]) + "longrun")
     ws.insert_row(row, index, "USER_ENTERED")
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", "124927", "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/scale-nightly-regression/198/console", "['cluster-denstity'.'pod-density']", "['pod-density']", "TEST","env.out")
