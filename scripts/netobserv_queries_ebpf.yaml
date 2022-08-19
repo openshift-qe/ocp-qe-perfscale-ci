@@ -3,26 +3,31 @@
 - query: pod:container_cpu_usage:sum{namespace="network-observability"}
   metricName: cpuUsage
 
-# 2. network-observability-privileged pods CPU usage
+# 2. eBPF pods CPU usage
 - query: pod:container_cpu_usage:sum{namespace="network-observability-privileged"}
   metricName: ebpfCpuUsage
 
-# 3. network-observability pods memory usage
+# 3. network-observability pods memory usage (Working Set)
 - query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
-  metricName: memoryUsage
+  metricName: memoryUsageWorkingSet
 
-# 4. network-observability pods memory usage
+# 4. network-observability pods memory usage (RSS)
+- query: sum(container_memory_rss{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsageRSS
+
+# 5. eBPF pods memory usage (RSS)
+- query: sum(container_memory_rss{namespace="network-observability-privileged",container="",}) by (container, pod, namespace, node )
+  metricName: ebpfMemoryUsageRSS
+
+# 6. eBPF pods memory usage (Working Set)
 - query: sum(container_memory_working_set_bytes{namespace="network-observability-privileged",container="",}) by (container, pod, namespace, node )
-  metricName: ebpfMemoryUsage
+  metricName: ebpfMemoryUsageWorkingSet
 
-# 5. loki-store PVC usage averaging over 5 mins period
-- query: avg_over_time(kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[5m])
+# 7. lokistack PVC usage averaging over 5 mins period
+- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="openshift-operators-redhat"}[5m]))
   metricName: lokiStorageUsage
 
-# 4. Number of flows processed by ingester per minute aggregated by FLP pods.
+# 8. Number of flows processed by ingester per minute aggregated by FLP pods.
 - query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
-# 6. Number of bytes for flows per minute aggregated by FLP pods.
-- query: sum(rate(flow_traffic_summary_size_bytes_sum[1m])*60) by (pod)
-  metricName: nBytes

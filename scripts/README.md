@@ -10,7 +10,7 @@ Multiple workloads are run to generate traffic for the cluster:
 Below are the metrics that are collected as part of the tests:
 * CPU usage of pods in network-observability NS
 * Memory usage of pods in network-observability NS
-* Disk usage for PVC=loki-store
+* Disk usage for PVC usage of LokiStack
 * Number of NetFlows processed
 * Flow Processing time summary for 0.9 quantile
 * Total sum of number of bytes 
@@ -25,15 +25,11 @@ $ oc whoami
 kube:admin
 ```
 3. Navigate to the parent directory of `ocp-qe-perfscale-ci` and run `export WORKSPACE=$PWD`
-4. Navigate to the `scripts/` directory of this repository and run the following commands:
-```bash
-$ source netobserv.sh
-```
 
 ### Installing the Network Observability Operator
 There are two methods you can use to install the operator:
-- To install from Operator Hub, navigate to the `scripts/` directory and run `$ deploy_operatorhub_noo`
-- To install from Source, navigate to the `scripts/` directory and run `$ deploy_main_noo`
+- To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
+- To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
 
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
@@ -95,3 +91,21 @@ To see all command line options available for the NOPE tool, you can run it with
 ## Fetching metrics using touchstone 
 NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as:
 `$ touchstone_compare/bin/touchstone_compare --database elasticsearch -url <elasticsearch instance:port> -u <run uuid> --config=scripts/netobserv_touchstone.json`
+
+## Creating LokiStack using Loki Operator
+It is recommended to use Loki operator to create a Loki Stack for Network Observability. Following steps can be performed to create lokiStack:
+1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` NS
+2. Create a AWS secret for S3 bucket to be used for lokiStack, use script `$ ./deploy-loki-aws-secret.sh` to create s3-secret. By default it is setup to use `netobserv-loki` S3 bucket.
+3. Multiple sizes of LokiStack are supported and configes are added here, depending upon the LokiStack size high end machine types are required for the cluster:
+    * lokistack-1x-exsmall.yaml - Extra small T-shirt size LokiStack.
+        - Requirements: Can be run on `t2.micro` machines.
+        - Recommendation: For demos, development and feature testing. We should not use for scale/performance testing.
+    * lokistack-1x-small.yaml - Small T-shirt size LokiStack
+        - Requirements: `m5.4xlarge` machines.
+        - Recommendations: Scale/Performance testing.
+    * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
+        - Requirments: `m5.8xlarge` machines.
+        - Recommendations: Large scale performance testing.
+
+    Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
+4. LokiStack should be created under `openshift-operators-redhat` NS

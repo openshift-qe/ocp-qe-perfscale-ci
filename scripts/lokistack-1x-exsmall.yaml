@@ -1,0 +1,19 @@
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: lokistack
+  namespace: openshift-operators-redhat
+spec:
+  tenants:
+    mode: openshift-logging
+  managementState: Managed
+  replicationFactor: 1
+  storage:
+    schemas:
+      - effectiveDate: '2020-10-11'
+        version: v11
+    secret:
+      name: s3-secret
+      type: s3
+  size: 1x.extra-small
+  storageClassName: gp2

@@ -1,0 +1,82 @@
+apiVersion: flows.netobserv.io/v1alpha1
+kind: FlowCollector
+metadata:
+  name: cluster
+spec:
+  namespace: "network-observability"
+  agent: ebpf
+  ipfix:
+    cacheActiveTimeout: 20s
+    cacheMaxFlows: 400
+    sampling: 400
+  ebpf:
+    image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
+    imagePullPolicy: IfNotPresent
+    sampling: 0
+    cacheActiveTimeout: 5s
+    cacheMaxFlows: 1000
+    interfaces: []
+    excludeInterfaces: ["lo"]
+    logLevel: info
+    privileged: false
+  flowlogsPipeline:
+    kind: DaemonSet
+#    kind: Deployment
+#    replicas: 1
+    port: 2055
+    image: 'quay.io/netobserv/flowlogs-pipeline:main'
+    imagePullPolicy: IfNotPresent
+    logLevel: info
+    enableKubeProbes: true
+    healthPort: 8080
+    prometheusPort: 9102
+    ignoreMetrics: []
+    dropUnusedFields: true
+  kafka:
+    enable: false
+    address: "kafka-cluster-kafka-bootstrap.network-observability"
+    topic: "network-flows"
+    tls:
+      enable: false
+      caCert:
+        type: secret
+        name: kafka-cluster-cluster-ca-cert
+        certFile: ca.crt
+      userCert:
+        type: secret
+        name: flp-kafka
+        certFile: user.crt
+        certKey: user.key
+  loki:
+    url: https://lokistack-distributor-http.openshift-operators-redhat.svc:3100/
+    querierUrl: https://lokistack-querier-http.openshift-operators-redhat.svc:3100/
+    batchWait: 1s
+    batchSize: 102400
+    minBackoff: 1s
+    maxBackoff: 300s
+    maxRetries: 10
+    staticLabels:
+      app: netobserv-flowcollector
+    tls:
+      enable: true
+      caCert:
+        type: configmap
+        name: openshift-service-ca.crt
+        certFile: service-ca.crt
+      insecureSkipVerify: true
+  consolePlugin:
+    register: true
+    image: 'quay.io/netobserv/network-observability-console-plugin:main'
+    imagePullPolicy: IfNotPresent
+    port: 9001
+    logLevel: info
+    portNaming:
+      enable: true
+      portNames:
+        "3100": loki
+  clusterNetworkOperator:
+    namespace: "openshift-network-operator"
+  ovnKubernetes:
+    namespace: "ovn-kubernetes"
+    daemonSetName: "ovnkube-node"
+    containerName: "ovnkube-node"

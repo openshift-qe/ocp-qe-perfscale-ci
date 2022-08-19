@@ -7,30 +7,18 @@
 - query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
   metricName: memoryUsage
 
-# 3. loki-store PVC usage averaging over 5 mins period
-- query: avg_over_time(kubelet_volume_stats_used_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[5m])
-  metricName: lokiStorageUsage
+# 3. network-observability pods memory usage (Working Set)
+- query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsageWorkingSet
 
-# 4. Number of netflows processed per minute aggregated by FLP pods
-- query: sum(rate(flow_process_nf_count[1m])*60) by (pod)
+# 4. network-observability pods memory usage (RSS)
+- query: sum(container_memory_rss{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsageRSS
+
+# 5. Number of flows processed by ingester per minute aggregated by FLP pods.
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
-# 5. Flow processing time in microseconds for 90% quantile.
-- query: flow_summary_processing_time_us{quantile="0.9"}
-  metricName: FlowProcessingTime
-
-# 6. Number of bytes for flows per minute aggregated by FLP pods.
-- query: sum(rate(flow_traffic_summary_size_bytes_sum[1m])*60) by (pod)
-  metricName: nBytes
-
-# 7. Number of flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
-  metricName: nFlowLogsProcessed
-
-# 8. Number of packets processed per minute aggregated by FLP pods
-- query: sum(rate(flow_traffic_packets[1m])*60) by (pod)
-  metricName: nPacketsProcessedPerMinute
-
-# 9. Rate of increase/decrease of loki-store usage per second over each minute
-- query: deriv(kubelet_volume_stats_available_bytes{namespace="network-observability", persistentvolumeclaim="loki-store"}[1m])
-  metricName: lokiStoreRate
+# 6. loki-store PVC usage averaging over 5 mins period
+- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="openshift-operators-redhat"}[5m]))
+  metricName: lokiStorageUsage
