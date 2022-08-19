@@ -17,7 +17,7 @@ pipeline {
     choice(choices: ["conc_jobs","large_network_policy"], name: 'TEST_CASE',description:'''<p>
                     Select the test case you want to run.<br>
                     This job will search the TEST_CASE.sh file under svt repo <a href="https://github.com/openshift/svt/blob/master/perfscale_regression_ci/scripts">perfscale_regression_ci/scripts</a> folder and sub folders<br>
-                    If SCRIPT is specified TEST_CASER will be overwritten.
+                    If SCRIPT is specified TEST_CASE will be overwritten.
                     </p>''')
     string(name: 'SCRIPT', defaultValue: '', description: '''<p>
                   Relative path to the script of the TEST_CASE under <a href="https://github.com/openshift/svt">svt repo</a>.<br>
@@ -35,8 +35,8 @@ pipeline {
                   Repository to get regression test scripts and artifacts.<br>
                   You can change this to point to your fork if needed.
                   </p>''')
-    string(name: 'SVT_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your branch if needed.')
-    string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:'')
+    string(name: 'SVT_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+    string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:'')
     text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
