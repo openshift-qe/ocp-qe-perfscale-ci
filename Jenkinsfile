@@ -29,7 +29,7 @@ def output = ""
 def cerberus_job = ""
 def status = "FAIL"
 pipeline {
-    agent none
+    agent { label params['JENKINS_AGENT_LABEL'] }
 
     parameters {
         string(
@@ -173,7 +173,6 @@ pipeline {
 
     stages {
         stage('Run Kube-Burner Test'){
-            agent { label params['JENKINS_AGENT_LABEL'] }
             environment{
                 EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
             }
@@ -326,6 +325,19 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            println 'Post Section - Always'
+            archiveArtifacts(
+                artifacts: 'workloads/kube-burner/kube-burner.out',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+        }
+        failure {
+            println 'Post Section - Failure'
         }
     }
 }
