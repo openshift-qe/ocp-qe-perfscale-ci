@@ -1,11 +1,27 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
+def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
+def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
+
+if (userCause) {
+  userId = userCause.getUserId()
+} else if (upstreamCause) {
+  def upstreamJob = Jenkins.getInstance().getItemByFullName(upstreamCause.getUpstreamProject(), hudson.model.Job.class)
+  if (upstreamJob) {
+    def upstreamBuild = upstreamJob.getBuildByNumber(upstreamCause.getUpstreamBuild())
+    if (upstreamBuild) {
+      def realUpstreamCause = upstreamBuild.getCause(Cause.UserIdCause)
+      if (realUpstreamCause) {
+        userId = realUpstreamCause.getUserId()
+      }
+    }
+  }
+}
 if (userId) {
   currentBuild.displayName = userId
 }
-
+println "user id $userId"
 def RETURNSTATUS = "default"
 def output = ""
 def status = ""
@@ -16,15 +32,10 @@ pipeline {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: false, description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)')
         booleanParam(name: 'CERBERUS_CHECK', defaultValue: false, description: 'Check cluster health status  pass ')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc410',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
         '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
- isn't stable<br>
-        4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
-            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-        3.11: ansible-2.6 <br/>
-        3.9~3.10: ansible-2.4 <br/>
-        3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen isn't stable<br>
+        4.y: oc4y e.g, for 4.12, use oc412
         '''
         )
         string(name: 'ES_SERVER', defaultValue:'', description:'Make sure to include OCP-QE ES server, talk to Mike Fiedler or Kedar Kulkarni')
@@ -37,11 +48,11 @@ pipeline {
         string(name: 'NODE_SELECTOR', defaultValue:'{node-role.kubernetes.io/workload: }', description:'Node selector of the mb client')
         string(name: 'LARGE_SCALE_THRESHOLD', defaultValue:'24', description: 'Number of worker nodes required to consider a large scale scenario')
         string(name: 'LARGE_SCALE_ROUTES', defaultValue: '500', description: 'Number of routes of each termination to create in the large scale scenario')
-        string(name: 'LARGE_SCALE_CLIENTS', defaultValue: '1 20 80', description: 'Threads/route to use in the large scale scenario')
-        string(name: 'LARGE_SCALE_CLIENTS_MIX', defaultValue:'1 10 20', description: 'Threads/route to use in the large scale scenario with mix termination')
+        string(name: 'LARGE_SCALE_CLIENTS', defaultValue: '1 20', description: 'Threads/route to use in the large scale scenario')
+        string(name: 'LARGE_SCALE_CLIENTS_MIX', defaultValue:'1 10', description: 'Threads/route to use in the large scale scenario with mix termination')
         string(name: 'SMALL_SCALE_ROUTES', defaultValue: '100', description:'Number of routes of each termination to create in the small scale scenario')
-        string(name: 'SMALL_SCALE_CLIENTS', defaultValue: '1 40 200', description: 'Threads/route to use in the small scale scenario')
-        string(name: 'SMALL_SCALE_CLIENTS_MIX', defaultValue: '1 20 80', description: 'Threads/route to use in the small scale scenario with mix termination')
+        string(name: 'SMALL_SCALE_CLIENTS', defaultValue: '1 100', description: 'Threads/route to use in the small scale scenario')
+        string(name: 'SMALL_SCALE_CLIENTS_MIX', defaultValue: '1 50', description: 'Threads/route to use in the small scale scenario with mix termination')
         string(name: 'BASELINE_UUID', defaultValue:'', description: 'Baseline UUID used for comparison')
         string(name: 'COMPARISON_ALIASES', defaultValue:'',description: 'Benchmark-comparison aliases, e.g. 4.10.z 4.11.0-0.nightly-xxxx')
         booleanParam(name: 'GEN_CSV', defaultValue: true, description: 'Boolean to create a google sheet with comparison data')
@@ -135,6 +146,7 @@ pipeline {
                     parameters: [
                         string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                         string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                        string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                     ],
                     propagate: false
