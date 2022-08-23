@@ -78,7 +78,7 @@ deploy_lokistack() {
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
   if [[ "${LokiStack_Size}" == "1x.extra-small" ]]; then
-    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   elif [[ "${LokiStack_Size}" == "1x.small" ]]; then
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
   elif [[ "${LokiStack_Size}" == "1x.medium" ]]; then
