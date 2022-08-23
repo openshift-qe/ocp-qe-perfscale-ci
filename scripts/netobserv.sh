@@ -76,7 +76,16 @@ deploy_lokistack() {
   # create s3 secret for loki
   $WORKSPACE/ocp-qe-perfscale-ci/scripts/deploy-loki-aws-secret.sh
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
+
+  if [[ "${LokiStack_Size}" == "1x.extra-small" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
+  elif [[ "${LokiStack_Size}" == "1x.small" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
+  elif [[ "${LokiStack_Size}" == "1x.medium" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-medium.yaml
+  fi
+
+  oc apply -f $LokiStack_CONFIG
   sleep 10
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
 }

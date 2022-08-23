@@ -79,6 +79,16 @@ pipeline {
                 If None is selected the installation will be skipped
             '''
         )
+        choice(
+            name: 'LokiStack_Size',
+            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            description: '''
+                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
+                1x.extra-small -  Nodes size < m5.4xlarge<br/>
+                1x.small - Nodes size >= m5.4xlarge<br/>
+                1x.medium - Nodes size >= m5.8xlarge<br/>
+            '''
+        )
         booleanParam(
             name: 'USER_WORKLOADS',
             defaultValue: true,
