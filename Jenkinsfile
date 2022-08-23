@@ -80,7 +80,7 @@ pipeline {
             '''
         )
         choice(
-            name: 'LokiStack_Size',
+            name: 'LOKISTACK_SIZE',
             choices: ['1x.extra-small', '1x.small', '1x.medium'],
             description: '''
                 Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
