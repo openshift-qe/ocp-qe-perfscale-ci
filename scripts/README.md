@@ -30,6 +30,7 @@ kube:admin
 There are two methods you can use to install the operator:
 - To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
 - To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
+
 ### Creating LokiStack using Loki Operator
 It is recommended to use Loki operator to create a Loki Stack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
 1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` NS
