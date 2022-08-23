@@ -198,7 +198,6 @@ pipeline {
                                 region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
                                 output = text" > ~/.aws/config
                             """)
-                            
                             if (returnCode.toInteger() != 0) {
                                 error("Failed to set up aws creds")
                             }

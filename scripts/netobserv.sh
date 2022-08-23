@@ -83,6 +83,8 @@ deploy_lokistack() {
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
   elif [[ "${LokiStack_Size}" == "1x.medium" ]]; then
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-medium.yaml
+  else
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   fi
 
   oc apply -f $LokiStack_CONFIG
