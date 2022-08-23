@@ -3,11 +3,10 @@
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
-  currentBuild.displayName = userId
+    currentBuild.displayName = userId
 }
 
 pipeline {
-
     agent { label params.JENKINS_AGENT_LABEL }
 
     options {
@@ -80,6 +79,16 @@ pipeline {
                 If None is selected the installation will be skipped
             '''
         )
+        choice(
+            name: 'LOKISTACK_SIZE',
+            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            description: '''
+                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
+                1x.extra-small - Nodes size < m5.4xlarge<br/>
+                1x.small - Nodes size >= m5.4xlarge<br/>
+                1x.medium - Nodes size >= m5.8xlarge<br/>
+            '''
+        )
         booleanParam(
             name: 'USER_WORKLOADS',
             defaultValue: true,
@@ -121,7 +130,7 @@ pipeline {
         stage('Get Flexy cluster and Netobserv scripts') {
             steps {
                 copyArtifacts(
-                    fingerprintArtifacts: true, 
+                    fingerprintArtifacts: true,
                     projectName: 'ocp-common/Flexy-install',
                     selector: specific(params.FLEXY_BUILD_NUMBER),
                     target: 'flexy-artifacts'
@@ -151,10 +160,10 @@ pipeline {
             steps {
                 script {
                     scaleJob = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
-	                    string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                        string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                         string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-	                    string(name: 'WORKER_COUNT', value: params.WORKER_COUNT), 
-	                    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: params.INFRA_WORKLOAD_INSTALL),
+                        string(name: 'WORKER_COUNT', value: params.WORKER_COUNT),
+                        booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: params.INFRA_WORKLOAD_INSTALL),
                         booleanParam(name: 'INSTALL_DITTYBOPPER', value: false),
                     ]
                     if (scaleJob.result != 'SUCCESS') {
@@ -166,9 +175,9 @@ pipeline {
                         if (params.INFRA_WORKLOAD_INSTALL) {
                             println 'Successfully installed infrastructure nodes :)'
                         }
-                        sh(returnStatus: true, script: """
+                        sh(returnStatus: true, script: '''
                             oc get nodes
-                        """)
+                        ''')
                     }
                 }
             }
@@ -178,20 +187,41 @@ pipeline {
                 expression { params.INSTALLATION_SOURCE != 'None' }
             }
             steps {
+                // setup aws creds for loki
+                ansiColor('xterm') {
+                    withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
+                        script {
+                            returnCode = sh(returnStatus: true, script: """
+                                mkdir -p ~/.aws
+                                cp -f $OCP_AWS ~/.aws/credentials
+                                echo "[profile default]
+                                region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
+                                output = text" > ~/.aws/config
+                            """)
+                            if (returnCode.toInteger() != 0) {
+                                error("Failed to set up aws creds")
+                            }
+                            else {
+                                println "Successfully setup aws creds"
+                            }   
+                        }                     
+                    }
+                }
                 script {
                     // attempt installation of Network Observability from selected source
                     if (params.INSTALLATION_SOURCE == 'OperatorHub') {
                         println 'Installing Network Observability from OperatorHub...'
                         returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            deploy_operatorhub_noo
+                            deploy_netobserv
                         """)
                     }
                     else {
                         println 'Installing Network Observability from Source...'
                         returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            deploy_main_noo
+                            deploy_main_catalogsource
+                            deploy_netobserv
                         """)
                     }
                     // fail pipeline if installation failed, continue otherwise

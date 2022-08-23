@@ -1,37 +1,37 @@
-deploy_operatorhub_noo() {
-  oc new-project network-observability
+if [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
+  NOO_SUBSCRIPTION=$WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-released-subscription.yaml
+  FLOWCOLLECTOR=$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector_versioned_lokistack.yaml
+elif [[ "${INSTALLATION_SOURCE}" == "Source" ]]; then
+  NOO_SUBSCRIPTION=$WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-main-subscription.yaml
+  FLOWCOLLECTOR=$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector_lokistack.yaml
+fi
 
+deploy_netobserv() {
+  oc new-project network-observability || true
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
+  oc apply -f $NOO_SUBSCRIPTION
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
   done
-  curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector_versioned.yaml |  oc apply -f -
+  oc apply -f $FLOWCOLLECTOR
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
     oc get daemonset flowlogs-pipeline -n network-observability && break
     sleep 1
   done
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
-
-  deploy_loki
+  deploy_lokistack
 }
 
-deploy_main_noo() {
+deploy_main_catalogsource() {
   echo "deploying network-observability operator and flowcollector CR"
-  git clone https://github.com/netobserv/network-observability-operator.git
-  export NETOBSERV_DIR=${PWD}/network-observability-operator
-  add_go_path
-  echo $(go version)
-  echo $PATH
-  cd ${NETOBSERV_DIR} && make deploy && cd -
-  echo "deploying flowcollector"
-  curl -LsS https://raw.githubusercontent.com/netobserv/network-observability-operator/main/config/samples/flows_v1alpha1_flowcollector.yaml | oc apply -f -
-  oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
-  deploy_loki
+  # creating catalog source from the main bundle
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-catalogsource.yaml
+  sleep 10
+  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
 }
 
 deploy_loki() {
@@ -47,14 +47,9 @@ delete_flowcollector() {
   rm -rf $NETOBSERV_DIR
 }
 
-add_go_path() {
-  echo "adding go bin to PATH"
-  export PATH=$PATH:/usr/local/go/bin
-}
-
-uninstall_operatorhub_netobserv() {
+uninstall__netobserv() {
   oc delete flowcollector/cluster
-  oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-subscription.yaml
+  oc delete -f $NOO_SUBSCRIPTION
   oc delete csv -l operators.coreos.com/netobserv-operator.network-observability
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc delete project network-observability
@@ -71,6 +66,28 @@ setup_dittybopper_template() {
   oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
   oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
   export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
-  export THANOS_URL=https://`oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'`
-  envsubst "${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}" < $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml.template > $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml
+  export THANOS_URL=https://$(oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host')
+  envsubst "${PROMETHEUS_USER_WORKLOAD_BEARER} ${THANOS_URL}" <$WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml.template >$WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml
+}
+
+deploy_lokistack() {
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/loki-subscription.yaml -n openshift-operators-redhat
+  sleep 30
+  # create s3 secret for loki
+  $WORKSPACE/ocp-qe-perfscale-ci/scripts/deploy-loki-aws-secret.sh
+  oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
+
+  if [[ "${LOKISTACK_SIZE}" == "1x.extra-small" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
+  elif [[ "${LOKISTACK_SIZE}" == "1x.small" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-small.yaml
+  elif [[ "${LOKISTACK_SIZE}" == "1x.medium" ]]; then
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-medium.yaml
+  else
+    LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
+  fi
+
+  oc apply -f $LokiStack_CONFIG
+  sleep 10
+  oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
 }
