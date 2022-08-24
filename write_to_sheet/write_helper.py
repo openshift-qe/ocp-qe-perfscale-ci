@@ -68,14 +68,9 @@ def get_pod_latencies(uuid="",creation_time=""):
     return ["", "", "", ""]
 
 def get_oc_version():
-    return_code, cluster_version_str = run("oc get clusterversion -o json")
+    return_code, cluster_version_str = run("oc get clusterversion --no-headers | awk '{print $2}'")
     if return_code == 0:
-        cluster_version_json = json.loads(cluster_version_str)
-        for item in cluster_version_json['items']:
-            for status in item['status']['conditions']:
-                if status['type'] == "Progressing":
-                    version = status['message'].split(" ")[-1]
-                    return version
+        return cluster_version_str
     else:
         print("Error getting clusterversion")
 
