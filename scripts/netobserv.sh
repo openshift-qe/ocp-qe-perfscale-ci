@@ -1,3 +1,5 @@
+NAMESPACE=${1:-network-observability}
+
 if [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
   NOO_SUBSCRIPTION=$WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-released-subscription.yaml
   FLOWCOLLECTOR=$WORKSPACE/ocp-qe-perfscale-ci/scripts/flows_v1alpha1_flowcollector_versioned_lokistack.yaml
@@ -7,11 +9,11 @@ elif [[ "${INSTALLATION_SOURCE}" == "Source" ]]; then
 fi
 
 deploy_netobserv() {
-  oc new-project network-observability || true
+  oc new-project ${NAMESPACE} || true
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $NOO_SUBSCRIPTION
   sleep 30
-  oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n network-observability
+  oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n ${NAMESPACE}
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
@@ -19,10 +21,10 @@ deploy_netobserv() {
   oc apply -f $FLOWCOLLECTOR
   echo "====> Waiting for flowlogs-pipeline pod to be ready"
   while :; do
-    oc get daemonset flowlogs-pipeline -n network-observability && break
+    oc get daemonset flowlogs-pipeline -n ${NAMESPACE} && break
     sleep 1
   done
-  oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n network-observability
+  oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n ${NAMESPACE}
   deploy_lokistack
 }
 
@@ -37,22 +39,21 @@ deploy_main_catalogsource() {
 deploy_loki() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/loki-storage-1.yaml
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/loki-storage-2.yaml
-  oc wait --timeout=120s --for=condition=ready pod -l app=loki -n network-observability
+  oc wait --timeout=120s --for=condition=ready pod -l app=loki -n ${NAMESPACE}
   echo "loki is deployed"
 }
 
 delete_flowcollector() {
   echo "deleting flowcollector"
   oc delete flowcollector/cluster
-  rm -rf $NETOBSERV_DIR
 }
 
 uninstall__netobserv() {
   oc delete flowcollector/cluster
   oc delete -f $NOO_SUBSCRIPTION
-  oc delete csv -l operators.coreos.com/netobserv-operator.network-observability
+  oc delete csv -l operators.coreos.com/netobserv-operator.${NAMESPACE}
   oc delete -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
-  oc delete project network-observability
+  oc delete project ${NAMESPACE}
 }
 
 populate_netobserv_metrics() {
@@ -90,4 +91,13 @@ deploy_lokistack() {
   oc apply -f $LokiStack_CONFIG
   sleep 10
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
+}
+
+deploy_kafka() {
+  kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+  kubectl apply -f "https://strimzi.io/install/latest?namespace="${NAMESPACE} -n ${NAMESPACE}
+  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n ${NAMESPACE}
+  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" -n ${NAMESPACE}
+  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/topic.yaml" -n ${NAMESPACE}
+  kubectl wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
 }
