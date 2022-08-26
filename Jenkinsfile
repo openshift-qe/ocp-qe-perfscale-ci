@@ -308,4 +308,17 @@ pipeline {
             }
         }
     }
+    post {
+        always {
+            println 'Post Section - Always'
+            archiveArtifacts(
+                artifacts: 'workloads/router-perf-v2/ingress_router.out',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+        }
+        failure {
+            println 'Post Section - Failure'
+        }
+    }
 }
