@@ -90,11 +90,6 @@ pipeline {
             '''
         )
         booleanParam(
-            name: 'ENABLE_KAFKA',
-            defaultValue: false,
-            description: 'Check this box to setup Kafka for NetObserv'
-        )
-        booleanParam(
             name: 'USER_WORKLOADS',
             defaultValue: true,
             description: 'Check this box to setup FLP service and create service-monitor'
@@ -118,6 +113,11 @@ pipeline {
             name: 'REPLICAS',
             defaultValue: '1',
             description: 'Number of FLP replica pods'
+        )
+        booleanParam(
+            name: 'ENABLE_KAFKA',
+            defaultValue: false,
+            description: 'Check this box to setup Kafka for NetObserv'
         )
     }
 
