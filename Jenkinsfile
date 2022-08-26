@@ -90,6 +90,11 @@ pipeline {
             '''
         )
         booleanParam(
+            name: 'ENABLE_KAFKA',
+            defaultValue: false,
+            description: 'Check this box to setup Kafka for NetObserv'
+        )
+        booleanParam(
             name: 'USER_WORKLOADS',
             defaultValue: true,
             description: 'Check this box to setup FLP service and create service-monitor'
@@ -274,6 +279,24 @@ pipeline {
                     }
                     else {
                         println 'Successfully updated common parameters of flowcollector :)'
+                    }
+                    println "Checking if Kafka needs to be enabled.."
+                    if (env.ENABLE_KAFKA == "true") {
+                        returnCode = sh(returnStatus: true, script:"""
+                            echo "Enabling Kafka in flowcollector"
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/kafka/enable", "value": "true"}] -n network-observability"
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            deploy_kafka
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Failed to enable Kafka in flowcollector')
+                        }
+                        else {
+                            println 'Successfully enabled Kafka with flowcollector'
+                        }
+                    }
+                    else {
+                        println "Skipping Kafka deploy"
                     }
                 }
             }
