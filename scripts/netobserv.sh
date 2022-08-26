@@ -58,7 +58,12 @@ uninstall__netobserv() {
 
 populate_netobserv_metrics() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/cluster-monitoring-config.yaml
-  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
+  if [[ "${ENABLE_KAFKA}" == "true" ]]; then
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor-kafka.yaml
+  else
+    oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/service-monitor.yaml
+  fi
+
   echo "Added ServiceMonitor for NetObserv prometheus metrics"
 }
 
