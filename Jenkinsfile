@@ -76,8 +76,8 @@ pipeline {
         )
         string(
             name: 'CERBERUS_REPO_BRANCH',
-            defaultValue:'main', 
-            description:'You can change this to point to a branch on your fork if needed.'
+            defaultValue: 'main', 
+            description: 'You can change this to point to a branch on your fork if needed.'
         )
      }
 
