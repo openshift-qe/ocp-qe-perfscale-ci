@@ -43,8 +43,8 @@ pipeline {
             description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above"
         )
         string(
-            name:'JENKINS_AGENT_LABEL',
-            defaultValue:'oc411',
+            name: 'JENKINS_AGENT_LABEL',
+            defaultValue: 'oc411',
             description:
             '''
             scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
