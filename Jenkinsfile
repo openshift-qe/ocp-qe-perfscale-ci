@@ -182,10 +182,16 @@ pipeline{
                          install_type_desc = "${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}"
                         }
 
+                        def ci_registry = "registry.ci.openshift.org/ocp/release"
+                        if (params.CI_PROFILE.contains('ARM'))
+                        {
+                            ci_registry = "registry.ci.openshift.org/ocp-arm64/release-arm64"
+                        }
+
                         install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
                             string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
                             string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
-                            value: "${extra_launcher_vars}installer_payload_image: 'registry.ci.openshift.org/ocp/release:${VERSION}'"),
+                            value: "${extra_launcher_vars}installer_payload_image: '${ci_registry}:${VERSION}'"),
                             text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
