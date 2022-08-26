@@ -71,8 +71,8 @@ pipeline {
         )
         string(
             name: 'CERBERUS_REPO',
-            defaultValue:'https://github.com/redhat-chaos/cerberus',
-            description:'You can change this to point to your fork if needed.'
+            defaultValue: 'https://github.com/redhat-chaos/cerberus',
+            description: 'You can change this to point to your fork if needed.'
         )
         string(
             name: 'CERBERUS_REPO_BRANCH',
