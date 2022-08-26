@@ -48,7 +48,7 @@ delete_flowcollector() {
   oc delete flowcollector/cluster
 }
 
-uninstall__netobserv() {
+uninstall_netobserv() {
   oc delete flowcollector/cluster
   oc delete -f $NOO_SUBSCRIPTION
   oc delete csv -l operators.coreos.com/netobserv-operator.${NAMESPACE}
