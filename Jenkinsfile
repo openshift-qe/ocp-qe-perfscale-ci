@@ -10,36 +10,75 @@ def RETURNSTATUS = "default"
 def output = ""
 def status = "FAIL"
 pipeline {
-  agent none
-  parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'CERBERUS_ITERATIONS', defaultValue: '', description: 'Number of iterations to run of cerberus.')
-        booleanParam(name: 'CERBERUS_DAEMON_MODE', defaultValue: false, description: 'This variable will set cerberus to run forever (only way to stop is abort job)')
-        booleanParam(name: 'INSPECT_COMPONENTS', defaultValue: false,  description: 'This variable will set cerberus to inspect failing components')
-        string(name: "CERBERUS_WATCH_NAMESPACES", defaultValue: "[openshift-etcd, openshift-apiserver, openshift-kube-apiserver, openshift-monitoring, openshift-kube-controller-manager, openshift-machine-api, openshift-kube-scheduler, openshift-ingress, openshift-sdn]", description: "Which specific namespaces you want to watch any failing components, use [^.*\$] if you want to watch all namespaces")
-        string(name: "CERBERUS_IGNORE_PODS", defaultValue: "[^installer*]", description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above")
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:
-        '''
-        scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
-        4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
-            e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-        3.11: ansible-2.6 <br/>
-        3.9~3.10: ansible-2.4 <br/>
-        3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
-        '''
+    agent none
+    parameters {
+        string(
+            name: 'BUILD_NUMBER', 
+            defaultValue: '', 
+            description: 'Build number of job that has installed the cluster.'
         )
-       text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               See https://github.com/cloud-bulldozer/kraken-hub/blob/main/docs/cerberus.md for list of variables to pass <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-       string(name: 'CERBERUS_REPO', defaultValue:'https://github.com/redhat-chaos/cerberus', description:'You can change this to point to your fork if needed.')
-       string(name: 'CERBERUS_REPO_BRANCH', defaultValue:'main', description:'You can change this to point to a branch on your fork if needed.')
+        string(
+            name: 'CERBERUS_ITERATIONS', 
+            defaultValue: '', 
+            description: 'Number of iterations to run of cerberus.'
+        )
+        booleanParam(
+            name: 'CERBERUS_DAEMON_MODE', 
+            defaultValue: false, 
+            description: 'This variable will set cerberus to run forever (only way to stop is abort job)'
+        )
+        booleanParam(
+            name: 'INSPECT_COMPONENTS', 
+            defaultValue: false, 
+            description: 'This variable will set cerberus to inspect failing components'
+        )
+        string(
+            name: "CERBERUS_WATCH_NAMESPACES", 
+            defaultValue: "[openshift-etcd, openshift-apiserver, openshift-kube-apiserver, openshift-monitoring, openshift-kube-controller-manager, openshift-machine-api, openshift-kube-scheduler, openshift-ingress, openshift-sdn]",
+            description: "Which specific namespaces you want to watch any failing components, use [^.*\$] if you want to watch all namespaces"
+        )
+        string(
+            name: "CERBERUS_IGNORE_PODS",
+            defaultValue: "[^installer*]", 
+            description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above"
+        )
+        string(
+            name: 'JENKINS_AGENT_LABEL',
+            defaultValue: 'oc411',
+            description:
+            '''
+            scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
+            4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+                e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+            3.11: ansible-2.6 <br/>
+            3.9~3.10: ansible-2.4 <br/>
+            3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+            '''
+        )
+        text(
+            name: 'ENV_VARS', 
+            defaultValue: '', 
+            description:'''<p>
+              Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+              See https://github.com/cloud-bulldozer/kraken-hub/blob/main/docs/cerberus.md for list of variables to pass <br>
+              e.g.<br>
+              SOMEVAR1='env-test'<br>
+              SOMEVAR2='env2-test'<br>
+              ...<br>
+              SOMEVARn='envn-test'<br>
+              </p>
+            '''
+        )
+        string(
+            name: 'CERBERUS_REPO',
+            defaultValue: 'https://github.com/redhat-chaos/cerberus',
+            description: 'You can change this to point to your fork if needed.'
+        )
+        string(
+            name: 'CERBERUS_REPO_BRANCH',
+            defaultValue: 'main', 
+            description: 'You can change this to point to a branch on your fork if needed.'
+        )
      }
 
   stages {
@@ -78,6 +117,14 @@ pipeline {
           mkdir -p ~/.kube
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           export CERBERUS_KUBECONFIG=~/.kube/config
+          project_count=$(oc get project | wc -l)
+          if [[ $project_count -ge 250 ]]; then 
+              export CERBERUS_CORES=.1
+          elif [[ $project_count -gt 100 ]]; then 
+              export CERBERUS_CORES=.3
+          else  
+              export CERBERUS_CORES=.5
+          fi
           env
           wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/cerberus.yaml.template
           envsubst <cerberus.yaml.template > cerberus.yaml
