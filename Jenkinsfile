@@ -61,6 +61,8 @@ pipeline{
                SOMEVARn='envn-test'<br>
                </p>'''
             )
+        choice(choices: ['openshift-qe','openshift-qe-lrc'], name: 'ACCOUNT', description: '''The account to install the cluster. For longrun cluster on AWS use openshift-qe-lrc.<br>
+            This will overwrite the BUSHSLICER_CONFIG in CI_PROFILE if specified.''')
         string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
         string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
     }
@@ -122,6 +124,11 @@ pipeline{
                         }
                         println "extra lanch vars ${extra_launcher_vars}"
                         println "env scale ${env.SCALE_UP}"
+
+                        def bushslicer_config = ""
+                        if (env.BUSHSLICER_CONFIG != null ) {
+                            bushslicer_config = env.BUSHSLICER_CONFIG
+                        }
 
                         install_type_desc = "${params.CI_PROFILE}"
                     }
@@ -188,11 +195,24 @@ pipeline{
                             ci_registry = "registry.ci.openshift.org/ocp-arm64/release-arm64"
                         }
 
+                        if (params.ACCOUNT == "openshift-qe-lrc") {
+                            bushslicer_config ='''
+services:
+  AWS-CI:
+    install_base_domain: qe-lrc.devcluster.openshift.com
+    awscred: config/credentials/lrc/.awscred
+    host_opts:
+      ssh_private_key: config/keys/openshift-qe.pem
+    config_opts:
+      region: us-east-2
+                            '''
+                        }
+
                         install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
                             string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
                             string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
                             value: "${extra_launcher_vars}installer_payload_image: '${ci_registry}:${VERSION}'"),
-                            text(name: "BUSHSLICER_CONFIG", value: ''),text(name: 'REPOSITORIES', value: '''
+                            text(name: "BUSHSLICER_CONFIG", value: "${bushslicer_config}"),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
 text(name: 'CREDENTIALS', value: '''
