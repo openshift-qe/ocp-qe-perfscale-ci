@@ -38,12 +38,19 @@ function scaleMachineSets(){
     worker_machine_sets=$(oc get --no-headers machinesets -n openshift-machine-api -l machine.openshift.io/cluster-api-machine-role!=infra,machine.openshift.io/cluster-api-machine-role!=workload | awk '{print $1}' )
     scale_num=$(echo $worker_machine_sets | wc -w | xargs)
     scale_size=$(($1/$scale_num))
+    first_machine=""
+    first_set=false
     set -x
     for machineset in $(echo $worker_machine_sets); do
         oc scale machinesets -n openshift-machine-api $machineset --replicas $scale_size
+        if [[ "$first_set" = false ]]; then
+            first_machine=$machineset
+            first_set=true
+        fi
     done
     if [[ $(($1%$scale_num)) != 0 ]]; then
-        oc scale machinesets -n openshift-machine-api $(echo $worker_machine_sets| head -1) --replicas $(($scale_size+$(($1%$scale_num))))
+        echo $first_machine
+        oc scale machinesets -n openshift-machine-api $first_machine --replicas $(($scale_size+$(($1%$scale_num))))
     fi
 }
 
