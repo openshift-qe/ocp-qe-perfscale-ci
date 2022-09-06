@@ -21,7 +21,9 @@ else if (upstreamCause) {
 }
 if (userId) {
     currentBuild.displayName = userId
-} 
+} else { 
+  userId = "prubenda"
+}
 
 println "user id $userId"
 def RETURNSTATUS = "default"
@@ -116,15 +118,15 @@ pipeline {
         )
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc45',
+            defaultValue: 'oc412',
             description: '''
-            scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
-            4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
-                e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
-            3.11: ansible-2.6 <br/>
-            3.9~3.10: ansible-2.4 <br/>
-            3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
-            '''
+              scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
+              4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
+                  e.g, for 4.8, use oc48 || mac-installer || rhel8-installer-48 <br/>
+              3.11: ansible-2.6 <br/>
+              3.9~3.10: ansible-2.4 <br/>
+              3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
+              '''
         )
         text(
             name: 'ENV_VARS',
