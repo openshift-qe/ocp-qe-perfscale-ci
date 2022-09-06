@@ -23,6 +23,26 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "nBytesProcessedPerMinute"
+                },
+                "buckets": [
+                    "metadata.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "nPacketsProcessedPerMinute"
                 },
                 "buckets": [
@@ -56,26 +76,6 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "FlowProcessingTime"
-                },
-                "buckets": [
-                    "metadata.pod.keyword"
-                ],
-                "aggregations": {
-                    "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
-                    ]
-                }
-            },
-            {
-                "filter": {
                     "metric_name.keyword": "cpuUsage"
                 },
                 "buckets": [
@@ -89,7 +89,46 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "memoryUsage"
+                    "metric_name.keyword": "memoryUsageRSS"
+                },
+                "buckets": [
+                    "metadata.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "memoryUsageWorkingSet"
+                },
+                "buckets": [
+                    "metadata.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfMemoryUsageRSS"
+                },
+                "buckets": [
+                    "metadata.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfMemoryUsageWorkingSet"
                 },
                 "buckets": [
                     "metadata.pod.keyword"

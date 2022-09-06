@@ -31,3 +31,11 @@
 - query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
+# 9. Number of bytes processed per minute.
+- query: sum(rate(netobserv_bandwidth_per_network_service_per_namespace[1m]))
+metricName: nBytesProcessedPerMinute
+
+# 10. Number of Loki records written per minute.
+- query: sum(loki_records_written)
+metricName: lokiRecordsWritten
+
