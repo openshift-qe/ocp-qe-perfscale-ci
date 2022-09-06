@@ -375,7 +375,11 @@ pipeline{
                         if(params.CI_PROFILE != "" ) {
 
                             // read data from CI profile install file
-                            installData = readYaml(file: "local-ci-profiles/scale-ci/4.10/${CI_PROFILE}.install.yaml")
+                            MAJOR_VERSION = params.OCP_VERSION.split("\\.")[0]
+                            MINOR_VERSION = params.OCP_VERSION.split("\\.")[1]
+
+
+                            installData = readYaml(file: "local-ci-profiles/scale-ci/$MAJOR_VERSION.$MINOR_VERSION/${CI_PROFILE}.install.yaml")
                             installData.install.flexy.each { env.setProperty(it.key, it.value) }
                             // loop through install data keys to make sure scale is one of them
                             def scale_profile_size = 0
