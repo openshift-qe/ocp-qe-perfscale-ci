@@ -292,6 +292,7 @@ def main():
         except Exception as e:
             logging.error(f"Error uploading to Elasticsearch server: {e}\nA local dump to {DATA_DIR}/data_{timestamp}.json will be done instead")
             dump_data_locally(timestamp)
+            # using exit code of 2 here so that Jenkins pipeline can unqiuely identify this error
             sys.exit(2)
 
     # exit if no issues
