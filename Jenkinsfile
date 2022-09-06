@@ -138,7 +138,7 @@ pipeline {
                 Workload to run on Netobserv-enabled cluster<br/>
                 Note that all options excluding "router-perf" and "None" will trigger "kube-burner" job<br/>
                 "router-perf" will trigger "router-perf" job and "None" will run no workload<br/>
-                For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing>here</a>
+                For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
         )
         string(
