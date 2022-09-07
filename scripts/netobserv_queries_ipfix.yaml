@@ -22,3 +22,12 @@
 # 6. loki-store PVC usage averaging over 5 mins period
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="openshift-operators-redhat"}[5m]))
   metricName: lokiStorageUsage
+
+# 7. Number of bytes processed per minute.
+- query: sum(rate(netobserv_bandwidth_per_network_service_per_namespace[1m]))
+metricName: nBytesProcessedPerMinute
+
+# 8. Number of Loki records written per minute.
+- query: sum(loki_records_written)
+metricName: lokiRecordsWritten
+
