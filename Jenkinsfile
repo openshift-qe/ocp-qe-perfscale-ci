@@ -175,12 +175,18 @@ pipeline {
         booleanParam(
             name: 'NOPE',
             defaultValue: true,
-            description: 'Check this box to run the NOPE tool after the workload completes'
+            description: '''
+                Check this box to run the NOPE tool after the workload completes<br/>
+                If the tool successfully uploads results to Elasticsearch, Touchstone will be run afterword
+            '''
         )
         booleanParam(
             name: 'NOPE_DUMP',
             defaultValue: false,
-            description: 'Check this box to dump data collected by the NOPE tool to a file instead of uploading to Elasticsearch'
+            description: '''
+                Check this box to dump data collected by the NOPE tool to a file instead of uploading to Elasticsearch<br/>
+                Touchstone will <b>not</b> be run if this box is checked
+            '''
         )
         booleanParam(
             name: 'NOPE_DEBUG',
@@ -462,13 +468,16 @@ pipeline {
                         }
                         returnCode = sh(returnStatus: true, script: """
                             python3.9 --version
-                            python3.9 -m pip --version
-                            python3.9 -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                            python3.9 $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file workload-artifacts/workloads/**/*.out
+                            python3.9 -m pip install virtualenv
+                            python3.9 -m virtualenv venv3
+                            source venv3/bin/activate
+                            python --version
+                            python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
+                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file workload-artifacts/workloads/**/*.out
                             export UUID=`jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
                             export STARTTIME=`jq -r '.starttime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
                             export ENDTIME=`jq -r '.endtime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
-                            python3.9 $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
                         if (returnCode.toInteger() == 2) {
@@ -479,6 +488,41 @@ pipeline {
                         }
                         else {
                             println 'Successfully ran NOPE tool :)'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Run Touchstone tool') {
+            when {
+                expression { params.NOPE == true && params.NOPE_DUMP == false && currentBuild.currentResult != "UNSTABLE" }
+            }
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'master' ]],
+                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/benchmark-comparison.git' ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'benchmark-comparison']]
+                ])
+                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
+                    script {
+                        returnCode = sh(returnStatus: true, script: """
+                            python3.9 --version
+                            python3.9 -m pip install virtualenv
+                            python3.9 -m virtualenv venv3
+                            source venv3/bin/activate
+                            python --version
+                            cd $WORKSPACE/benchmark-comparison
+                            python setup.py develop
+                            export UUID=`jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
+                            . $WORKSPACE/ocp-qe-perfscale-ci/scripts/touchstone.sh \$UUID
+                        """)
+                        // mark pipeline as unstable if Touchstone failed, continue otherwise
+                        if (returnCode.toInteger() != 0) {
+                            unstable('Touchstone tool failed - run locally with the given UUID to get run statistics :(')
+                        }
+                        else {
+                            println 'Successfully ran Touchstone tool :)'
                         }
                     }
                 }
