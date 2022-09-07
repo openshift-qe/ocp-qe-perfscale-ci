@@ -6,6 +6,7 @@ def status = "PASS"
 def VERSION = ""
 def FLEXY_BUILD_NUMBER = ""
 def install_type_desc = ""
+def bushslicer_config = ""
 
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
@@ -42,7 +43,7 @@ pipeline{
         will be ignored if BUILD_NUMBER is set''')
         string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of master nodes in your cluster to create.')
         string(name: "WORKER_COUNT", defaultValue: '3', description: 'Number of worker nodes in your cluster to create.')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -62,7 +63,7 @@ pipeline{
                </p>'''
             )
         choice(choices: ['openshift-qe','openshift-qe-lrc'], name: 'ACCOUNT', description: '''The account to install the cluster. For longrun cluster on AWS use openshift-qe-lrc.<br>
-            This will overwrite the BUSHSLICER_CONFIG in CI_PROFILE if specified.''')
+            The is not applicable if CI_PROFILE is used.''')
         string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
         string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
     }
@@ -125,7 +126,6 @@ pipeline{
                         println "extra lanch vars ${extra_launcher_vars}"
                         println "env scale ${env.SCALE_UP}"
 
-                        def bushslicer_config = ""
                         if (env.BUSHSLICER_CONFIG != null ) {
                             bushslicer_config = env.BUSHSLICER_CONFIG
                         }
@@ -133,7 +133,7 @@ pipeline{
                         install_type_desc = "${params.CI_PROFILE}"
                     }
                     else {
-                       def network_ending = ""
+                        def network_ending = ""
 
                         if (params.CLOUD_TYPE == "vsphere") {
                              network_ending = "-vmc7"
@@ -184,16 +184,9 @@ pipeline{
                             network_ending = "-ash_wwt"
                             custom_jenkins_label = "fedora-installer-wwt"
                         }
-                         var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
+                        var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
 
-                         install_type_desc = "${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}"
-                        }
-
-                        def ci_registry = "registry.ci.openshift.org/ocp/release"
-                        if (params.CI_PROFILE.contains('ARM'))
-                        {
-                            ci_registry = "registry.ci.openshift.org/ocp-arm64/release-arm64"
-                        }
+                        install_type_desc = "${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}"
 
                         if (params.ACCOUNT == "openshift-qe-lrc") {
                             bushslicer_config ='''
@@ -207,12 +200,19 @@ services:
       region: us-east-2
                             '''
                         }
+                    }
 
-                        install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
-                            string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
-                            string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
-                            value: "${extra_launcher_vars}installer_payload_image: '${ci_registry}:${VERSION}'"),
-                            text(name: "BUSHSLICER_CONFIG", value: "${bushslicer_config}"),text(name: 'REPOSITORIES', value: '''
+                    def ci_registry = "registry.ci.openshift.org/ocp/release"
+                    if (params.CI_PROFILE.contains('ARM'))
+                    {
+                        ci_registry = "registry.ci.openshift.org/ocp-arm64/release-arm64"
+                    }
+
+                    install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
+                        string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
+                        string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),text(name: "LAUNCHER_VARS",
+                        value: "${extra_launcher_vars}installer_payload_image: '${ci_registry}:${VERSION}'"),
+                        text(name: "BUSHSLICER_CONFIG", value: "${bushslicer_config}"),text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
 GIT_PRIVATE_TEMPLATES_URI=https://gitlab.cee.redhat.com/aosqe/flexy-templates.git'''),
 text(name: 'CREDENTIALS', value: '''
@@ -228,16 +228,16 @@ REG_CI_BUILDS=registry.ci.openshift.org
 GIT_FLEXY_SSH_KEY=e2f7029f-ab8d-4987-8950-39feb80d5fbd
 GIT_PRIVATE_SSH_KEY=1d2207b6-15c0-4cb0-913a-637788d12257
 REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
-                                ''' )
-                        ]
-                        currentBuild.result =  install.result
-                        FLEXY_BUILD_NUMBER = install.number.toString()
-                        if( install.result.toString()  != "SUCCESS") {
-                           println "installation failed"
-                           status = "Install failed"
+                            ''' )
+                    ]
+                    currentBuild.result =  install.result
+                    FLEXY_BUILD_NUMBER = install.number.toString()
+                    if( install.result.toString()  != "SUCCESS") {
+                        println "installation failed"
+                        status = "Install failed"
 
-                        }
-               }
+                    }
+                }
             }
         }
     }
@@ -250,7 +250,6 @@ REG_SVC_CI=9a9187c6-a54c-452a-866f-bea36caea6f9
                     "FLEXY_BUILD_NUMBER": "$FLEXY_BUILD_NUMBER"
                 }
                 """
-
             }
         }
     }
