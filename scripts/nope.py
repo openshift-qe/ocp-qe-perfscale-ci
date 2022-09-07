@@ -17,7 +17,8 @@ import subprocess
 from elasticsearch import Elasticsearch
 
 
-# disable SSL warnings
+# disable SSL and warnings
+os.environ['PYTHONHTTPSVERIFY'] = '0'
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # directory constants 
@@ -152,7 +153,6 @@ def get_netobserv_env_info():
     base_commands = {
         "release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'network-observability'],
         "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"', '-n', 'network-observability'],
-        "loki_pvc_cap": ['oc', 'get', 'pvc/loki-store', '-o', 'jsonpath="{.status.capacity.storage}"', '-n', 'network-observability'],
         "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"']
     }
 
@@ -196,7 +196,7 @@ def get_jenkins_env_info():
         build_actions = build_info['actions']
         build_parameters = None
         for action in build_actions:
-            if action['_class'] == 'hudson.model.ParametersAction':
+            if action.get('_class') == 'hudson.model.ParametersAction':
                 build_parameters = action['parameters']
                 break
         if build_parameters is None:
@@ -292,6 +292,8 @@ def main():
         except Exception as e:
             logging.error(f"Error uploading to Elasticsearch server: {e}\nA local dump to {DATA_DIR}/data_{timestamp}.json will be done instead")
             dump_data_locally(timestamp)
+            # using exit code of 2 here so that Jenkins pipeline can unqiuely identify this error
+            sys.exit(2)
 
     # exit if no issues
     sys.exit(0)
@@ -340,8 +342,8 @@ if __name__ == '__main__':
     START_TIME = args.starttime
     END_TIME = args.endtime
     STEP = args.step
-    logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
-    logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z on %m/%d/%Y'))
+    logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
+    logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
     logging.info("Step is:           " + STEP)
 
     # check if Jenkins arguments are valid and if so set constants
@@ -353,7 +355,7 @@ if __name__ == '__main__':
         logging.error("JENKINS_JOB and JENKINS_BUILD must all be used together or not at all")
         sys.exit(1)
     else:
-        JENKINS_JOB = f'scale-ci/e2e-benchmarking-multibranch-pipeline/{raw_jenkins_job}'
+        JENKINS_JOB = raw_jenkins_job
         JENKINS_BUILD = int(raw_jenkins_build)
         logging.info(f"Associating run with Jenkins job {JENKINS_JOB} build number {JENKINS_BUILD}")
         try:

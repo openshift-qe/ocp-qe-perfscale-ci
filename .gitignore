@@ -2,3 +2,4 @@ data/
 kubeconfig
 kubeadmin-password
 scripts/netobserv-dittybopper.yaml
+*.out

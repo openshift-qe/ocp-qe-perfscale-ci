@@ -48,6 +48,7 @@ It is recommended to use Loki operator to create a Loki Stack for Network Observ
 
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
 4. LokiStack should be created under `openshift-operators-redhat` NS
+
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
@@ -99,11 +100,14 @@ If no Elasticsearch server is available to be uploaded to, a raw JSON file will 
 3. If you wish to upload to Elasticsearch, set the following environmental variables:
 ```bash
 $ export ES_USERNAME=<elasticsearch username>
-$ export ES_PASSWORD=>elasticsearch password>
+$ export ES_PASSWORD=<elasticsearch password>
 ```
 4. Run the tool with `./scripts/nope.py`
 
 To see all command line options available for the NOPE tool, you can run it with the `--help` argument.
+
+### Mr. Sandman
+Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
 ## Fetching metrics using touchstone 
 NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run command as:
