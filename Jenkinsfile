@@ -78,6 +78,7 @@ pipeline {
             name: 'INSTALLATION_SOURCE',
             choices: ['OperatorHub', 'Source', 'None'],
             description: '''
+                Select Source until 0.1.5 NOO release since flowcollector has breaking changes<br/>
                 Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
                 If None is selected the installation will be skipped
             '''
@@ -341,11 +342,11 @@ pipeline {
                     // attempt updating common parameters of flowcollector
                     println 'Updating common parameters of flowcollector...'
                     returnCode = sh(returnStatus: true, script: """
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent", "value": "ebpf"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": ${params.REPLICAS}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "ebpf"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/replicas", "value": ${params.REPLICAS}}] -n network-observability"
                     """)
                     // fail pipeline if setup failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
