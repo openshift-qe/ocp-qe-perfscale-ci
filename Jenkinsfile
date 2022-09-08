@@ -4,6 +4,7 @@
 def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
 def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
 
+userId = "prubenda"
 if (userCause) {
     userId = userCause.getUserId()
 }
@@ -21,8 +22,6 @@ else if (upstreamCause) {
 }
 if (userId) {
     currentBuild.displayName = userId
-} else { 
-  userId = "prubenda"
 }
 
 println "user id $userId"
