@@ -78,7 +78,7 @@ pipeline {
             name: 'INSTALLATION_SOURCE',
             choices: ['OperatorHub', 'Source', 'None'],
             description: '''
-                Select Source until 0.1.5 NOO release since flowcollector has breaking changes<br/>
+                <b>Select Source until 0.1.5 NOO release since flowcollector has breaking changes</b><br/>
                 Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
                 If None is selected the installation will be skipped
             '''
