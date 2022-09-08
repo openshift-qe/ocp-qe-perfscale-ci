@@ -231,7 +231,7 @@ pipeline {
 
                             source venv3/bin/activate
                             python --version
-
+                            pip install pytimeparse futures
                             if [[ $WORKLOAD == "cluster-density" ]]; then
                             export JOB_ITERATIONS=$VARIABLE
                             elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
