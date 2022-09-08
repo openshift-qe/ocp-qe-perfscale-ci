@@ -118,13 +118,8 @@ pipeline {
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           export CERBERUS_KUBECONFIG=~/.kube/config
           project_count=$(oc get project | wc -l)
-          if [[ $project_count -ge 250 ]]; then 
-              export CERBERUS_CORES=.1
-          elif [[ $project_count -gt 100 ]]; then 
-              export CERBERUS_CORES=.3
-          else  
-              export CERBERUS_CORES=.5
-          fi
+          export CERBERUS_CORES=.05
+
           env
           wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/cerberus.yaml.template
           envsubst <cerberus.yaml.template > cerberus.yaml
