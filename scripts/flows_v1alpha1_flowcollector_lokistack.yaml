@@ -4,34 +4,46 @@ metadata:
   name: cluster
 spec:
   namespace: "network-observability"
-  agent: ebpf
-  ipfix:
-    cacheActiveTimeout: 20s
-    cacheMaxFlows: 400
-    sampling: 400
-  ebpf:
-    image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
-    imagePullPolicy: IfNotPresent
-    sampling: 0
-    cacheActiveTimeout: 5s
-    cacheMaxFlows: 1000
-    interfaces: []
-    excludeInterfaces: ["lo"]
-    logLevel: info
-    privileged: false
-  flowlogsPipeline:
+  agent:
+    type: EBPF
+    ipfix:
+      cacheActiveTimeout: 20s
+      cacheMaxFlows: 400
+      sampling: 400
+    ebpf:
+      image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
+      imagePullPolicy: IfNotPresent
+      sampling: 50
+      cacheActiveTimeout: 5s
+      cacheMaxFlows: 1000
+      interfaces: [ ]
+      excludeInterfaces: [ "lo" ]
+      logLevel: info
+      privileged: false
+      resources:
+        requests:
+          memory: 50Mi
+          cpu: 100m
+        limits:
+          memory: 100Mi
+  processor:
     kind: DaemonSet
-#    kind: Deployment
-#    replicas: 1
     port: 2055
     image: 'quay.io/netobserv/flowlogs-pipeline:main'
     imagePullPolicy: IfNotPresent
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
-    prometheusPort: 9102
+    prometheus:
+      port: 9102
     ignoreMetrics: []
     dropUnusedFields: true
+    resources:
+      requests:
+        memory: 100Mi
+        cpu: 100m
+      limits:
+        memory: 300Mi
   kafka:
     enable: false
     address: "kafka-cluster-kafka-bootstrap.network-observability"
