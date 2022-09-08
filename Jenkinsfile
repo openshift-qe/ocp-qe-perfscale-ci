@@ -113,11 +113,6 @@ pipeline {
             defaultValue: '500Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
         )
-        string(
-            name: 'REPLICAS',
-            defaultValue: '1',
-            description: 'Number of FLP replica pods'
-        )
         booleanParam(
             name: 'ENABLE_KAFKA',
             defaultValue: false,
@@ -342,11 +337,10 @@ pipeline {
                     // attempt updating common parameters of flowcollector
                     println 'Updating common parameters of flowcollector...'
                     returnCode = sh(returnStatus: true, script: """
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "ebpf"}] -n network-observability"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "EBPF"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n network-observability"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n network-observability"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/replicas", "value": ${params.REPLICAS}}] -n network-observability"
                     """)
                     // fail pipeline if setup failed, continue otherwise
                     if (returnCode.toInteger() != 0) {

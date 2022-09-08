@@ -28,8 +28,6 @@ spec:
           memory: 100Mi
   processor:
     kind: DaemonSet
-#    kind: Deployment
-#    replicas: 1
     port: 2055
     image: 'quay.io/netobserv/flowlogs-pipeline:main'
     imagePullPolicy: IfNotPresent
