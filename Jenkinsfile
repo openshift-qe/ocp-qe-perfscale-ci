@@ -21,6 +21,8 @@ else if (upstreamCause) {
 }
 if (userId) {
     currentBuild.displayName = userId
+} else { 
+  userId = "qili"
 }
 println "user id $userId"
 def RETURNSTATUS = "default"
@@ -28,7 +30,6 @@ def output = ""
 def status = ""
 pipeline {
     agent { label params['JENKINS_AGENT_LABEL'] }
-
     parameters {
         string(
             name: 'BUILD_NUMBER',
@@ -305,7 +306,7 @@ pipeline {
                             ]
                     }
                 }
-            }
+           }
         }
     }
     post {
