@@ -62,7 +62,7 @@ pipeline{
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        choice(choices: ['openshift-qe','openshift-qe-lrc'], name: 'ACCOUNT', description: '''The account to install the cluster. For longrun cluster on AWS use openshift-qe-lrc.<br>
+        choice(choices: ['openshift-qe','openshift-qe-lrc'], name: 'ACCOUNT', description: ''' This is ONLY for AWS cluster install. For longrun cluster on AWS use 'openshift-qe-lrc'.<br>
             The is not applicable if CI_PROFILE is used.''')
         string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
         string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
@@ -153,6 +153,18 @@ pipeline{
                             } else {
                             extra_launcher_vars = "vm_type_workers: 'm5.xlarge'\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
                             }
+                            if (params.ACCOUNT == "openshift-qe-lrc") {
+                                bushslicer_config ='''
+services:
+  AWS-CI:
+    install_base_domain: qe-lrc.devcluster.openshift.com
+    awscred: config/credentials/lrc/.awscred
+    host_opts:
+      ssh_private_key: config/keys/openshift-qe.pem
+    config_opts:
+      region: us-east-2
+                            '''
+                            }
                         }
                         else if (params.CLOUD_TYPE == "azure") {
                             extra_launcher_vars = "vm_type_workers: 'Standard_D8s_v3'\nregion: centralus\nnum_workers: " + WORKER_COUNT + "\nnum_masters: " + MASTER_COUNT + "\n"
@@ -187,19 +199,6 @@ pipeline{
                         var_loc = "private-templates/functionality-testing/aos-${major_v}_${minor_v}/${install_type_custom}-on-${custom_cloud_type}/versioned-installer${network_ending}"
 
                         install_type_desc = "${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}"
-
-                        if (params.ACCOUNT == "openshift-qe-lrc") {
-                            bushslicer_config ='''
-services:
-  AWS-CI:
-    install_base_domain: qe-lrc.devcluster.openshift.com
-    awscred: config/credentials/lrc/.awscred
-    host_opts:
-      ssh_private_key: config/keys/openshift-qe.pem
-    config_opts:
-      region: us-east-2
-                            '''
-                        }
                     }
 
                     def ci_registry = "registry.ci.openshift.org/ocp/release"
