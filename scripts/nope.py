@@ -152,20 +152,20 @@ def get_netobserv_env_info():
     }
     base_commands = {
         "release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'network-observability'],
-        "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.flowlogsPipeline.kind}"', '-n', 'network-observability'],
-        "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent}"']
+        "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.processor.kind}"', '-n', 'network-observability'],
+        "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent.type}"']
     }
 
     # collect data from cluster about netobserv operator and store in info dict
     info = run_commands(base_commands, info)
 
     # get agent details based on detected agent
-    agent = info["agent"]
+    agent = info["agent"].lower()
     logging.debug(f"Found collector agent {agent}")
     agent_commands = {
-        "sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.sampling}}"'],
-        "cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheActiveTimeout}}"'],
-        "cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.{agent}.cacheMaxFlows}}"']
+        "sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.sampling}}"'],
+        "cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheActiveTimeout}}"'],
+        "cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheMaxFlows}}"']
     }
 
     # collect data from cluster about agent and append to info dict
