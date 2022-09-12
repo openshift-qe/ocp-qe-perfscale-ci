@@ -440,7 +440,7 @@ pipeline {
         }
         stage('Run NOPE tool') {
             when {
-                expression { params.NOPE == true }
+                expression { params.WORKLOAD != 'None' && params.NOPE == true }
             }
             steps {
                 copyArtifacts(
@@ -490,7 +490,7 @@ pipeline {
         }
         stage('Run Touchstone tool') {
             when {
-                expression { params.NOPE == true && params.NOPE_DUMP == false && currentBuild.currentResult != "UNSTABLE" }
+                expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP == false && currentBuild.currentResult != "UNSTABLE" }
             }
             steps {
                 checkout([
