@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-LOKI_BUCKET_NAME=${1:-netobserv-loki}
+LOKI_BUCKET_NAME=${1:-netobserv-loki-ocpqe-perf}
 NAMESPACE=openshift-operators-redhat
 SECRETNAME="s3-secret"
 AWS_DEFAULT_REGION="us-east-2"
