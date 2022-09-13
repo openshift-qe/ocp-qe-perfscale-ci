@@ -1,6 +1,6 @@
 
 # 1. network-observability pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="network-observability"}
+- query: pod:container_cpu_usage:sum{namespace="network-observability"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability"}
   metricName: cpuUsage
 
 # 2. network-observability pods memory usage
@@ -16,7 +16,7 @@
   metricName: memoryUsageRSS
 
 # 5. Number of flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="network-observability"}
   metricName: nFlowsProcessedPerMinute
 
 # 6. loki-store PVC usage averaging over 5 mins period
