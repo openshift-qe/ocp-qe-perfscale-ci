@@ -12,7 +12,7 @@ deploy_netobserv() {
   oc new-project ${NAMESPACE} || true
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $NOO_SUBSCRIPTION
-  sleep 30
+  sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n ${NAMESPACE}
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
@@ -32,7 +32,7 @@ deploy_main_catalogsource() {
   echo "deploying network-observability operator and flowcollector CR"
   # creating catalog source from the main bundle
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-catalogsource.yaml
-  sleep 10
+  sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
 }
 
@@ -67,7 +67,7 @@ populate_netobserv_metrics() {
 }
 
 setup_dittybopper_template() {
-  sleep 20
+  sleep 30
   oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
   oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
   export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
@@ -91,7 +91,7 @@ deploy_lokistack() {
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   fi
   oc apply -f $LokiStack_CONFIG
-  sleep 10
+  sleep 30
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
 }
 
