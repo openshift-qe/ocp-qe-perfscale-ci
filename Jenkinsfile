@@ -304,17 +304,7 @@ pipeline {
                 }
 
                 script {
-                    // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
-                    if (params.SCALE_DOWN.toInteger() > 0) {
-                        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling',
-                            parameters: [
-                                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN),
-                                text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
-                            ]
-                    }
-                }
-
-                script {
+                    // if the build fails, cleaning and scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
                     if (params.CLEANUP == true) {
                         build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
                             parameters: [
@@ -325,6 +315,17 @@ pipeline {
                             propagate: false
                     }
                 }
+
+                script {
+                    if (params.SCALE_DOWN.toInteger() > 0) {
+                        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling',
+                            parameters: [
+                                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN),
+                                text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                            ]
+                    }
+                }
+
             }
         }
     }
