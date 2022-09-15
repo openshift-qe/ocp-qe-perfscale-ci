@@ -16,4 +16,4 @@ spec:
       name: s3-secret
       type: s3
   size: 1x.small
-  storageClassName: gp2
+  storageClassName: ${DEFAULT_SC}
