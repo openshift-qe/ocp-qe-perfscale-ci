@@ -1,10 +1,10 @@
 
 # 1. network-observability pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="network-observability"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability"}
+- query: pod:container_cpu_usage:sum{namespace="network-observability"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability", pod_ip!=""}
   metricName: cpuUsage
 
 # 2. eBPF pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="network-observability-privileged"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability-privileged"}
+- query: pod:container_cpu_usage:sum{namespace="network-observability-privileged"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability-privileged", pod_ip!=""}
   metricName: ebpfCpuUsage
 
 # 3. network-observability pods memory usage (Working Set)
@@ -28,7 +28,7 @@
   metricName: lokiStorageUsage
 
 # 8. Number of flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="network-observability"}
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="network-observability", pod_ip!=""}
   metricName: nFlowsProcessedPerMinute
 
 # 9. Number of bytes processed per minute.
