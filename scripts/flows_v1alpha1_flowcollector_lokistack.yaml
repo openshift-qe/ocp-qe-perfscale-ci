@@ -78,7 +78,7 @@ spec:
       insecureSkipVerify: true
   consolePlugin:
     register: true
-    image: 'quay.io/netobserv/netobserv-console-plugin:main'
+    image: 'quay.io/netobserv/network-observability-console-plugin:main'
     imagePullPolicy: IfNotPresent
     port: 9001
     logLevel: info

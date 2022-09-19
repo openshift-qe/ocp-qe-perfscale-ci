@@ -1,7 +1,0 @@
-[
-  {
-    "op": "REPLACE_CONSOLE_PLUGIN_OPS",
-    "path": "/spec/plugins",
-    "value": ["netobserv-plugin"]
-  }
-]
