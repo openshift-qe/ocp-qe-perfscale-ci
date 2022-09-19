@@ -4,7 +4,7 @@ metadata:
   labels:
     app: flowlogs-pipeline-transformer
   name: flp
-  namespace: network-observability
+  namespace: netobserv
 spec:
   ports:
   - port: 9102
@@ -19,7 +19,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: flowlogs-pipeline-transformer
-  namespace: network-observability
+  namespace: netobserv
 spec:
   endpoints:
   - interval: 30s

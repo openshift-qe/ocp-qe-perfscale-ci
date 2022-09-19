@@ -406,7 +406,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "pod:container_cpu_usage:sum{namespace=\"network-observability\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -619,7 +619,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"network-observability\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{pod}}",

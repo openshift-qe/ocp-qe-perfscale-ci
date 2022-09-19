@@ -3,7 +3,7 @@ kind: FlowCollector
 metadata:
   name: cluster
 spec:
-  namespace: "network-observability"
+  namespace: "netobserv"
   agent: ebpf
   ipfix:
     cacheActiveTimeout: 20s

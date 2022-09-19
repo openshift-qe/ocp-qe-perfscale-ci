@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: netobserv-operator
-  namespace: network-observability
+  namespace: netobserv
 spec:
   channel: alpha
   name: netobserv-operator

@@ -1,26 +1,26 @@
 
-# 1. network-observability pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="network-observability"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability", pod_ip!=""}
+# 1. netobserv pods CPU usage
+- query: pod:container_cpu_usage:sum{namespace="netobserv"} * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
   metricName: cpuUsage
 
 # 2. eBPF pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="network-observability-privileged"} * on (pod) group_left(node) kube_pod_info{namespace="network-observability-privileged", pod_ip!=""}
+- query: pod:container_cpu_usage:sum{namespace="netobserv-privileged"} * on (pod) group_left(node) kube_pod_info{namespace="netobserv-privileged", pod_ip!=""}
   metricName: ebpfCpuUsage
 
-# 3. network-observability pods memory usage (Working Set)
-- query: sum(container_memory_working_set_bytes{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+# 3. netobserv pods memory usage (Working Set)
+- query: sum(container_memory_working_set_bytes{namespace="netobserv",container="",}) by (container, pod, namespace, node )
   metricName: memoryUsageWorkingSet
 
-# 4. network-observability pods memory usage (RSS)
-- query: sum(container_memory_rss{namespace="network-observability",container="",}) by (container, pod, namespace, node )
+# 4. netobserv pods memory usage (RSS)
+- query: sum(container_memory_rss{namespace="netobserv",container="",}) by (container, pod, namespace, node )
   metricName: memoryUsageRSS
 
 # 5. eBPF pods memory usage (RSS)
-- query: sum(container_memory_rss{namespace="network-observability-privileged",container="",}) by (container, pod, namespace, node )
+- query: sum(container_memory_rss{namespace="netobserv-privileged",container="",}) by (container, pod, namespace, node )
   metricName: ebpfMemoryUsageRSS
 
 # 6. eBPF pods memory usage (Working Set)
-- query: sum(container_memory_working_set_bytes{namespace="network-observability-privileged",container="",}) by (container, pod, namespace, node )
+- query: sum(container_memory_working_set_bytes{namespace="netobserv-privileged",container="",}) by (container, pod, namespace, node )
   metricName: ebpfMemoryUsageWorkingSet
 
 # 7. lokistack PVC usage averaging over 5 mins period
@@ -28,7 +28,7 @@
   metricName: lokiStorageUsage
 
 # 8. Number of flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="network-observability", pod_ip!=""}
+- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
   metricName: nFlowsProcessedPerMinute
 
 # 9. Number of bytes processed per minute.

@@ -1,5 +1,5 @@
 # NetObserv Performance Scripts
-The purpose of the scripts in this directory is to measure [network-observability](https://github.com/netobserv/network-observability-operator) metrics performance
+The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance
 
 Multiple workloads are run to generate traffic for the cluster:
 1. uperf - pod-to-pod traffic generation.
@@ -9,7 +9,7 @@ Multiple workloads are run to generate traffic for the cluster:
 ## Metrics Collection
 Below are the metrics that are collected as part of the tests:
 * CPU usage of pods in network-observability NS
-* Memory usage of pods in network-observability NS
+* Memory usage of pods in netobserv NS
 * Disk usage for LokiStack PVCs
 * Number of NetFlows processed
 * Flow Processing time summary for 0.9 quantile
@@ -32,7 +32,7 @@ There are two methods you can use to install the operator:
 - To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
 
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki operator to create a Loki Stack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
+It is recommended to use Loki operator to create a Loki Stack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-netobserv-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
 1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` NS
 2. Create a AWS secret for S3 bucket to be used for lokiStack, use script `$ ./deploy-loki-aws-secret.sh` to create s3-secret. By default it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configes are added here, depending upon the LokiStack size high end machine types are required for the cluster:

@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: netobserv
-  namespace: network-observability
+  namespace: netobserv
 spec:
   targetNamespaces:
-  - network-observability
+  - netobserv
