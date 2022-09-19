@@ -1,4 +1,4 @@
-NAMESPACE=${1:-network-observability}
+NAMESPACE=${1:-netobserv}
 
 if [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
   NOO_SUBSCRIPTION=$WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-released-subscription.yaml
@@ -13,7 +13,7 @@ deploy_netobserv() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n ${NAMESPACE}
+  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n ${NAMESPACE}
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
@@ -29,7 +29,7 @@ deploy_netobserv() {
 }
 
 deploy_main_catalogsource() {
-  echo "deploying network-observability operator and flowcollector CR"
+  echo "deploying netobserv operator and flowcollector CR"
   # creating catalog source from the main bundle
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-catalogsource.yaml
   sleep 30

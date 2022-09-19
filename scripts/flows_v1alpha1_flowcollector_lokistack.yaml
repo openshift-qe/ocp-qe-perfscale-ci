@@ -3,7 +3,7 @@ kind: FlowCollector
 metadata:
   name: cluster
 spec:
-  namespace: "network-observability"
+  namespace: "netobserv"
   agent:
     type: EBPF
     ipfix:
@@ -46,7 +46,7 @@ spec:
         memory: 300Mi
   kafka:
     enable: false
-    address: "kafka-cluster-kafka-bootstrap.network-observability"
+    address: "kafka-cluster-kafka-bootstrap.netobserv"
     topic: "network-flows"
     tls:
       enable: false

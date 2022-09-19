@@ -151,8 +151,8 @@ def get_netobserv_env_info():
         "data_type": "metadata"
     }
     base_commands = {
-        "release": ['oc', 'get', 'pods', '-l', 'app=network-observability-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'network-observability'],
-        "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.processor.kind}"', '-n', 'network-observability'],
+        "release": ['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'netobserv'],
+        "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.processor.kind}"', '-n', 'netobserv'],
         "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent.type}"']
     }
 

@@ -1,5 +1,5 @@
 # NetObserv Performance Scripts
-The purpose of the scripts in this directory is to measure [network-observability](https://github.com/netobserv/network-observability-operator) metrics performance
+The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance
 
 Multiple workloads are run to generate traffic for the cluster:
 1. uperf - pod-to-pod traffic generation.
@@ -8,8 +8,8 @@ Multiple workloads are run to generate traffic for the cluster:
 
 ## Metrics Collection
 Below are the metrics that are collected as part of the tests:
-* CPU usage of pods in network-observability NS
-* Memory usage of pods in network-observability NS
+* CPU usage of pods in netobserv NS
+* Memory usage of pods in netobserv NS
 * Disk usage for LokiStack PVCs
 * Number of NetFlows processed
 * Flow Processing time summary for 0.9 quantile
