@@ -13,7 +13,7 @@ deploy_netobserv() {
   oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/operator_group.yaml
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app=network-observability-operator -n ${NAMESPACE}
+  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n ${NAMESPACE}
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1

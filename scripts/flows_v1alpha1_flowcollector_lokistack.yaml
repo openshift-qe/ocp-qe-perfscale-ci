@@ -46,7 +46,7 @@ spec:
         memory: 300Mi
   kafka:
     enable: false
-    address: "kafka-cluster-kafka-bootstrap.network-observability"
+    address: "kafka-cluster-kafka-bootstrap.netobserv"
     topic: "network-flows"
     tls:
       enable: false
@@ -78,7 +78,7 @@ spec:
       insecureSkipVerify: true
   consolePlugin:
     register: true
-    image: 'quay.io/netobserv/network-observability-console-plugin:main'
+    image: 'quay.io/netobserv/netobserv-console-plugin:main'
     imagePullPolicy: IfNotPresent
     port: 9001
     logLevel: info

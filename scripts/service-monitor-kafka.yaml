@@ -27,7 +27,7 @@ spec:
     scheme: http
   namespaceSelector:
     matchNames:
-    - network-observability
+    - netobserv
   selector:
     matchLabels:
       app: flowlogs-pipeline-transformer

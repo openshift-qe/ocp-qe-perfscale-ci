@@ -34,7 +34,7 @@ spec:
     dropUnusedFields: true
   kafka:
     enable: false
-    address: "kafka-cluster-kafka-bootstrap.network-observability"
+    address: "kafka-cluster-kafka-bootstrap.netobserv"
     topic: "network-flows"
     tls:
       enable: false
@@ -66,7 +66,7 @@ spec:
       insecureSkipVerify: true
   consolePlugin:
     register: true
-    image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.4'
+    image: 'quay.io/netobserv/netobserv-console-plugin:v0.1.4'
     imagePullPolicy: IfNotPresent
     port: 9001
     logLevel: info
