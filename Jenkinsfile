@@ -399,23 +399,23 @@ pipeline {
                 }
             }
         }
-        stage('Run workload and collect artifacts') {
+        stage('Run workload and Mr. Sandman') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
             steps {
                 script {
                     if (params.WORKLOAD == 'router-perf') {
-                        jobName = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
-                        workloadJob = build job: jobName, parameters: [
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
+                        workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false)
                         ]
                     }
                     else {
-                        jobName = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner'
-                        workloadJob = build job: jobName, parameters: [
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner'
+                        workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
                             booleanParam(name: 'CLEANUP', value: true),
@@ -430,11 +430,42 @@ pipeline {
                     }
                     else {
                         println "Successfully ran workload job :)"
-                        jobNum = "${workloadJob.getNumber()}"
-                        currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>$jobNum</a></b><br/>"
-                        env.JENKINS_JOB = jobName
-                        env.JENKINS_BUILD = jobNum
+                        // update build description with workload job link
+                        env.JENKINS_BUILD = "${workloadJob.getNumber()}"
+                        currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b><br/>"
                     }
+                }
+                copyArtifacts(
+                    fingerprintArtifacts: true, 
+                    projectName: env.JENKINS_JOB,
+                    selector: specific(env.JENKINS_BUILD),
+                    target: 'workload-artifacts'
+                )
+                script {
+                    // run Mr. Sandman
+                    returnCode = sh(returnStatus: true, script: """
+                        python3.9 --version
+                        python3.9 -m pip install virtualenv
+                        python3.9 -m virtualenv venv3
+                        source venv3/bin/activate
+                        python --version
+                        python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
+                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
+                    """)
+                    // fail pipeline if Mr. Sandman run failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error('Mr. Sandman tool failed :(')
+                    }
+                    else {
+                        println 'Successfully ran Mr. Sandman tool :)'
+                    }
+                    // update build description with UUID, STARTTIME, and ENDTIME
+                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
+                    env.STARTTIME = sh(returnStdout: true, script: "jq -r '.starttime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>STARTTIME:</b> ${env.STARTTIME}<br/>"
+                    env.ENDTIME = sh(returnStdout: true, script: "jq -r '.endtime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>ENDTIME:</b> ${env.ENDTIME}<br/>"
                 }
             }
         }
@@ -443,12 +474,6 @@ pipeline {
                 expression { params.WORKLOAD != 'None' && params.NOPE == true }
             }
             steps {
-                copyArtifacts(
-                    fingerprintArtifacts: true, 
-                    projectName: jobName,
-                    selector: specific(jobNum),
-                    target: 'workload-artifacts'
-                )
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         NOPE_ARGS = '--starttime $STARTTIME --endtime $ENDTIME --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
@@ -468,10 +493,6 @@ pipeline {
                             source venv3/bin/activate
                             python --version
                             python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file workload-artifacts/workloads/**/*.out
-                            export UUID=`jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
-                            export STARTTIME=`jq -r '.starttime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
-                            export ENDTIME=`jq -r '.endtime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
                             python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
