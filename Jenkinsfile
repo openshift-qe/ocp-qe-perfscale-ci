@@ -10,7 +10,7 @@ pipeline {
     agent { label params.JENKINS_AGENT_LABEL }
 
     options {
-        timeout(time: 3, unit: 'HOURS')
+        timeout(time: 6, unit: 'HOURS')
     }
 
     parameters {
