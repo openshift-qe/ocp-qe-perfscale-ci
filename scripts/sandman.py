@@ -30,25 +30,27 @@ def main():
     uuid_regex = 'UUID: (.*)\n'
 
     # capture and log strings representations of start and end times
-    start_stringtime = re.findall(starttime_regex, workload_logs)[0]
-    end_stringtime = re.findall(endtime_regex, workload_logs)[0]
+    starttime_string = re.findall(starttime_regex, workload_logs)[0]
+    endtime_string = re.findall(endtime_regex, workload_logs)[0]
     uuid = re.findall(uuid_regex, workload_logs)[-1]
-    print(f"start_stringtime: {start_stringtime}")
-    print(f"end_stringtime: {end_stringtime}")
     print(f"uuid: {uuid}")
+    print(f"starttime_string: {starttime_string}")
+    print(f"endtime_string: {endtime_string}")
 
     # convert string times to unix timestamps
     strptime_filter = '%b %d %H:%M:%S %Z %Y'
-    start_timestamp = int(datetime.datetime.strptime(start_stringtime, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
-    end_timestamp = int(datetime.datetime.strptime(end_stringtime, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
-    print(f"start_datetime: {start_timestamp}")
-    print(f"end_datetime: {end_timestamp}")
+    starttime_timestamp = int(datetime.datetime.strptime(starttime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
+    endtime_timestamp = int(datetime.datetime.strptime(endtime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
+    print(f"starttime_timestamp: {starttime_timestamp}")
+    print(f"endtime_timestamp: {endtime_timestamp}")
 
     # construct JSON of workload data
     workload_data = {
-        "starttime": str(start_timestamp),
-        "endtime": str(end_timestamp),
-        "uuid": str(uuid)
+        "uuid": str(uuid),
+        "starttime_string": str(starttime_string),
+        "endtime_string": str(endtime_string),
+        "starttime_timestamp": str(starttime_timestamp),
+        "endtime_timestamp": str(endtime_timestamp)
     }
 
     # ensure data directory exists (create if not)

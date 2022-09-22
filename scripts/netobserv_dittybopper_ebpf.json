@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1662502592853,
+  "iteration": 1663870823306,
   "links": [],
   "panels": [
     {
@@ -406,7 +406,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"$PodPrefix\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -619,7 +619,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\"}) by (container, pod, namespace, node )",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{pod}}",
@@ -699,6 +699,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -719,7 +721,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -975,6 +977,119 @@
         "x": 0,
         "y": 46
       },
+      "id": 48,
+      "panels": [],
+      "title": "Kafka PVC",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "hiddenSeries": false,
+      "id": 50,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\"}[5m]))",
+          "interval": "",
+          "legendFormat": "{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Kafka PVC Usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:141",
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:142",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 55
+      },
       "id": 36,
       "panels": [],
       "title": "LokiStack",
@@ -998,7 +1113,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 56
       },
       "hiddenSeries": false,
       "id": 30,
@@ -1097,7 +1212,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 47
+        "y": 56
       },
       "hiddenSeries": false,
       "id": 32,
@@ -1198,7 +1313,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 55
+        "y": 64
       },
       "hiddenSeries": false,
       "id": 34,
@@ -1297,7 +1412,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 55
+        "y": 64
       },
       "hiddenSeries": false,
       "id": 10,
@@ -1408,7 +1523,7 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "All"
           ],
@@ -1435,6 +1550,27 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": ".*",
+          "value": ".*"
+        },
+        "error": null,
+        "hide": 0,
+        "label": "podPrefix",
+        "name": "PodPrefix",
+        "options": [
+          {
+            "selected": true,
+            "text": ".*",
+            "value": ".*"
+          }
+        ],
+        "query": ".*",
+        "skipUrlSync": false,
+        "type": "textbox"
       }
     ]
   },
@@ -1446,5 +1582,5 @@
   "timezone": "",
   "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
-  "version": 4
+  "version": 8
 }
