@@ -399,7 +399,7 @@ pipeline {
                 }
             }
         }
-        stage('Run workload and Mr. Sandman') {
+        stage('Run Workload and Mr. Sandman') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
@@ -459,13 +459,22 @@ pipeline {
                     else {
                         println 'Successfully ran Mr. Sandman tool :)'
                     }
-                    // update build description with UUID, STARTTIME, and ENDTIME
+                    // update build description fields
+                    // UUID
                     env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                    env.STARTTIME = sh(returnStdout: true, script: "jq -r '.starttime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
-                    currentBuild.description += "<b>STARTTIME:</b> ${env.STARTTIME}<br/>"
-                    env.ENDTIME = sh(returnStdout: true, script: "jq -r '.endtime' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
-                    currentBuild.description += "<b>ENDTIME:</b> ${env.ENDTIME}<br/>"
+                    // STARTTIME_STRING is string rep of start time
+                    env.STARTTIME_STRING = sh(returnStdout: true, script: "jq -r '.starttime_string' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
+                    // ENDTIME_STRING is string rep of end time
+                    env.ENDTIME_STRING = sh(returnStdout: true, script: "jq -r '.endtime_string' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
+                    // STARTTIME_TIMESTAMP is unix timestamp of start time
+                    env.STARTTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.starttime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
+                    // ENDTIME_TIMESTAMP is unix timestamp of end time
+                    env.ENDTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.endtime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
+                    currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
                 }
             }
         }
@@ -476,7 +485,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
-                        NOPE_ARGS = '--starttime $STARTTIME --endtime $ENDTIME --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
                         if (params.USER_WORKLOADS == true) {
                             NOPE_ARGS += " --user-workloads"
                         }
