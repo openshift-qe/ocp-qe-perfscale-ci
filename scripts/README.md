@@ -106,6 +106,8 @@ $ export ES_PASSWORD=<elasticsearch password>
 
 To see all command line options available for the NOPE tool, you can run it with the `--help` argument.
 
+Note that if you are running the NOPE tool in Upload mode by passing the `--upload-file` flag all other flags will be ignored. You do not need to be connected to an OpenShift cluster if you are running in Upload mode.
+
 ### Mr. Sandman
 Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
