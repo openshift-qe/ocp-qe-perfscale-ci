@@ -178,7 +178,7 @@ pipeline {
           if (status != "PASS" && fileExists("inspect_data")) {
              archiveArtifacts artifacts: 'inspect_data/*,inspect_data/**', fingerprint: false
           }
-          if (fileExists("cerberus_jenkins/failed_pods")) {
+          if (fileExists("cerberus_jenkins/failed_pods/*")) {
              archiveArtifacts artifacts: 'cerberus_jenkins/failed_pods/*,cerberus_jenkins/failed_pods/**', fingerprint: false
           }
        }
