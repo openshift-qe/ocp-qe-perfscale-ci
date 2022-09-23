@@ -29,6 +29,8 @@ pipeline {
         text(name: 'JOB_OUTPUT', defaultValue: '', description:'This is the output that was run from the scale-ci job. This will be used to help get comparison sheets')
         string(name: 'RAN_JOBS', defaultValue: '', description:'These are all the tests from the nightly scale-ci regresion runs')
         string(name: 'FAILED_JOBS', defaultValue: '', description:'These are the failed tests from the nightly scale-ci regresion runs')
+        string(name: 'PROFILE', defaultValue: '', description:'The profile name that created the cluster')
+        string(name: 'PROFILE_SIZE', defaultValue: '', description:'The size of cluster that got created defined in the profile')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable
@@ -103,7 +105,7 @@ pipeline {
             elif [[ "${params.JOB}" == "upgrade" ]]; then
                 python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out')"
             elif [[ "${params.JOB}" == "nightly-scale" || "${params.JOB}" == "nightly-longrun" ]]; then
-                python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}')"
+                python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
             else
                 echo "else job"
                 printf '${params.JOB_OUTPUT}' >> output_file.out

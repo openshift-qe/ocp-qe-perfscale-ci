@@ -30,7 +30,7 @@ def get_benchmark_uuid():
                 n_time = datetime.utcnow()
                 to_time = calendar.timegm(n_time.timetuple()) * 1000
 
-                if "Dog8code!@search-ocp-qe-perf-scale-test" in item['spec']['elasticsearch']['url']:
+                if "search-ocp-qe-perf-scale-test" in item['spec']['elasticsearch']['url']:
                     data_source = "SVTQE-kube-burner"
                 return get_grafana_url(uuid, from_time, to_time)
             return ""
