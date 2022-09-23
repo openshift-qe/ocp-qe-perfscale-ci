@@ -31,6 +31,8 @@ def get_kube_burner_namespaces(workload):
 def get_namespace_list(workload):
     get_all_namespaces()
     if workload:
+        if workload == "pod-density":
+            workload = "node-density"
         get_kube_burner_namespaces(workload)
     global all_namespaces
     str_all_namespaces = '[' + ', '.join(all_namespaces) + ']'
