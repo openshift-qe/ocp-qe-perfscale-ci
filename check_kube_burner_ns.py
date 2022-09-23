@@ -20,7 +20,7 @@ def get_kube_burner_namespaces(workload):
         all_namespaces.append(n)
 
 def get_failed_pods(namespace): 
-    pod_names = invoke("oc get pods -n %s --no-headers | grep -v Running | awk '{print$1}'" % namespace)
+    pod_names = invoke("oc get pods -n %s --no-headers | grep -v Running | grep -v Completed  | awk '{print$1}'" % namespace)
     if pod_names:
         print('make namespace')
         invoke("mkdir failed_pods/" + str(namespace))
