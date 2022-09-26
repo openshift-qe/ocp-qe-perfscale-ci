@@ -38,6 +38,11 @@ pipeline {
             description: "Which specific namespaces you want to watch any failing components, use [^.*\$] if you want to watch all namespaces"
         )
         string(
+            name: "WORKLOAD",
+            defaultValue: "", 
+            description: "Specify the workload if you created more than 5000 pods in a namespace, will ignore the namespaces in cerberus check"
+        )
+        string(
             name: "CERBERUS_IGNORE_PODS",
             defaultValue: "[^installer*]", 
             description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above"
@@ -92,6 +97,19 @@ pipeline {
           doGenerateSubmoduleConfigurations: false,
           userRemoteConfigs: [[url: params.CERBERUS_REPO ]
          ]])
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: GIT_BRANCH ]],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [
+                [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                [$class: 'PruneStaleBranch'],
+                [$class: 'CleanCheckout'],
+                [$class: 'IgnoreNotifyCommit'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'cerberus_jenkins']
+            ],
+            userRemoteConfigs: [[url: GIT_URL ]]
+        ])
         copyArtifacts(
             filter: '',
             fingerprintArtifacts: true,
@@ -108,6 +126,7 @@ pipeline {
 
         script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
+          ls
           wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/env.sh
           source env.sh
           # Get ENV VARS Supplied by the user to this job and store in .env_override
@@ -117,23 +136,33 @@ pipeline {
           mkdir -p ~/.kube
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           export CERBERUS_KUBECONFIG=~/.kube/config
-          project_count=$(oc get project | wc -l)
+        
           export CERBERUS_CORES=.05
-
+          cd cerberus_jenkins
+          python3.9 --version
+          python3.9 -m venv venv3
+          source venv3/bin/activate
+          if [[ $CERBERUS_WATCH_NAMESPACES == '[^.*$]' ]]; then
+            ls
+            export CERBERUS_WATCH_NAMESPACES=$(python set_namespace_list.py -w $WORKLOAD)
+          fi
+          cd ..
           env
           wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/cerberus.yaml.template
           envsubst <cerberus.yaml.template > cerberus.yaml
-          python3 --version
-          python3 -m venv venv3
-          source venv3/bin/activate
+          
           pip --version
           pip install --upgrade pip
           pip install -U -r requirements.txt
+          export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
           python start_cerberus.py --config cerberus.yaml
           replaced_json=$(less -XF final_cerberus_info.json | sed "s/True/0/g" | sed "s/False/1/g" )
           value=${replaced_json#*:*:}   # remove prefix ending at second ":"
           final_health=${value%,*}  # remove suffix starting with ","
           echo "health $final_health"
+          cd cerberus_jenkins
+          python -c "import check_kube_burner_ns; check_kube_burner_ns.check_namespaces( '$WORKLOAD' )"
+          cd ..
           exit $final_health
 
           ''')
@@ -148,6 +177,9 @@ pipeline {
       script {
           if (status != "PASS" && fileExists("inspect_data")) {
              archiveArtifacts artifacts: 'inspect_data/*,inspect_data/**', fingerprint: false
+          }
+          if (fileExists("cerberus_jenkins/failed_pods/*")) {
+             archiveArtifacts artifacts: 'cerberus_jenkins/failed_pods/*,cerberus_jenkins/failed_pods/**', fingerprint: false
           }
        }
 
