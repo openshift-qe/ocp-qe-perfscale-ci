@@ -307,21 +307,21 @@ if __name__ == '__main__':
     # set logging flags
     parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
 
-    # set prometheus flags
-    parser.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
-    parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
-    parser.add_argument("--starttime", type=str, help='Start time for range query')
-    parser.add_argument("--endtime", type=str, help='End time for range query')
-    parser.add_argument("--step", type=str, default='10', help='Step time for range query')
+    # set standard mode flags
+    standard = parser.add_argument_group("Standard Mode", "Connect to an OCP cluster and gather data via Prometheus queries")
+    standard.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
+    standard.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
+    standard.add_argument("--starttime", type=str, help='Start time for range query')
+    standard.add_argument("--endtime", type=str, help='End time for range query')
+    standard.add_argument("--step", type=str, default='10', help='Step time for range query')
+    standard.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
+    standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
+    standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
+    standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
 
-    # set jenkins flags
-    parser.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
-    parser.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
-    parser.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
-
-    # set elasticsearch flags
-    parser.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
-    parser.add_argument("--upload-file", type=str, help='JSON file to upload to Elasticsearch. Must be in the "data" directory. Note this flag runs the NOPE tool in Upload mode and causes all flags other than --debug to be IGNORED.')
+    # set upload mode flags
+    upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
+    upload.add_argument("--upload-file", type=str, default='', help='JSON file to upload to Elasticsearch. Must be in the "data" directory. Note this flag runs the NOPE tool in Upload mode and causes all flags other than --debug to be IGNORED.')
 
     # parse arguments
     args = parser.parse_args()
