@@ -506,7 +506,7 @@ pipeline {
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
                         if (returnCode.toInteger() == 2) {
-                            unstable('NOPE tool ran, but Elasticsearch upload failed - check build artifacts for data :/')
+                            unstable('NOPE tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
                         }
                         else if (returnCode.toInteger() != 0) {
                             error('NOPE tool failed :(')

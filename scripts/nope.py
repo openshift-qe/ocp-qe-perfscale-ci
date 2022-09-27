@@ -51,7 +51,7 @@ ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1
 ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
 DUMP = False
-
+UPLOAD_FILE = ''
 
 def process_query(metric_name, query, raw_data):
     ''' takes in a Prometheus metric name, query and its successful execution result
@@ -307,20 +307,21 @@ if __name__ == '__main__':
     # set logging flags
     parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
 
-    # set prometheus flags
-    parser.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
-    parser.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
-    parser.add_argument("--starttime", type=str, required=True, help='Start time for range query')
-    parser.add_argument("--endtime", type=str, required=True, help='End time for range query')
-    parser.add_argument("--step", type=str, default='10', help='Step time for range query')
+    # set standard mode flags
+    standard = parser.add_argument_group("Standard Mode", "Connect to an OCP cluster and gather data via Prometheus queries")
+    standard.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
+    standard.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
+    standard.add_argument("--starttime", type=str, help='Start time for range query')
+    standard.add_argument("--endtime", type=str, help='End time for range query')
+    standard.add_argument("--step", type=str, default='10', help='Step time for range query')
+    standard.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
+    standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
+    standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
+    standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
 
-    # set jenkins flags
-    parser.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
-    parser.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
-    parser.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
-
-    # set elasticsearch flags
-    parser.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
+    # set upload mode flags
+    upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
+    upload.add_argument("--upload-file", type=str, default='', help='JSON file to upload to Elasticsearch. Must be in the "data" directory. Note this flag runs the NOPE tool in Upload mode and causes all flags other than --debug to be IGNORED.')
 
     # parse arguments
     args = parser.parse_args()
@@ -332,6 +333,25 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
+    # if running in upload mode - immediately load JSON, upload, and exit
+    UPLOAD_FILE = args.upload_file
+    if UPLOAD_FILE != '':
+        upload_file_path = DATA_DIR + '/' + UPLOAD_FILE
+        logging.info(f"Running NOPE tool in Upload mode - data from {upload_file_path} will be uploaded to Elasticsearch")
+
+        # read data json file
+        with open(upload_file_path) as json_file:
+            RESULTS = json.load(json_file)
+
+        # upload data to elasticsearch
+        try:
+            elapsed_time = upload_data_to_elasticsearch()
+            logging.info(f"Elasticsearch upload completed in {elapsed_time} seconds")
+            sys.exit(0)
+        except Exception as e:
+            logging.error(f"Error uploading to Elasticsearch server: {e}")
+            sys.exit(1)
+
     # sanity check that kubeconfig is set
     result = subprocess.run(['oc', 'whoami'], capture_output=True, text=True)
     if result.returncode != 0:
@@ -342,9 +362,13 @@ if __name__ == '__main__':
     START_TIME = args.starttime
     END_TIME = args.endtime
     STEP = args.step
-    logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
-    logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
-    logging.info("Step is:           " + STEP)
+    if START_TIME == '' or END_TIME == '':
+        logging.error("START_TIME and END_TIME are needed to proceed")
+        sys.exit(1)
+    else:
+        logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
+        logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
+        logging.info("Step is:           " + STEP)
 
     # check if Jenkins arguments are valid and if so set constants
     raw_jenkins_job = args.jenkins_job
