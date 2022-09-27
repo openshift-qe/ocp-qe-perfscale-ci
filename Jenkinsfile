@@ -84,6 +84,16 @@ pipeline {
             defaultValue: 'main', 
             description: 'You can change this to point to a branch on your fork if needed.'
         )
+        string(
+          name: 'KRAKEN_HUB_REPO',
+          defaultValue:'https://github.com/redhat-chaos/krkn-hub',
+          description:'You can change this to point to your fork if needed.'
+        )
+        string(
+          name: 'KRAKN_HUB_REPO_BRANCH', 
+          defaultValue:'main', 
+          description:'You can change this to point to a branch on your fork if needed.'
+        )
      }
 
   stages {
@@ -97,6 +107,19 @@ pipeline {
           doGenerateSubmoduleConfigurations: false,
           userRemoteConfigs: [[url: params.CERBERUS_REPO ]
          ]])
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: params.KRAKN_HUB_REPO_BRANCH ]],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [
+                [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                [$class: 'PruneStaleBranch'],
+                [$class: 'CleanCheckout'],
+                [$class: 'IgnoreNotifyCommit'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'kraken-hub']
+            ],
+            userRemoteConfigs: [[url: params.KRAKEN_HUB_REPO ]]
+        ])
         checkout([
             $class: 'GitSCM',
             branches: [[name: GIT_BRANCH ]],
@@ -127,12 +150,13 @@ pipeline {
         script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
           ls
-          wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/env.sh
+          cd kraken-hub/cerberus
           source env.sh
           # Get ENV VARS Supplied by the user to this job and store in .env_override
           echo "$ENV_VARS" > .env_override
           # Export those env vars so they could be used by CI Job
           set -a && source .env_override && set +a
+          cd ../..
           mkdir -p ~/.kube
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           export CERBERUS_KUBECONFIG=~/.kube/config
@@ -148,7 +172,7 @@ pipeline {
           fi
           cd ..
           env
-          wget https://raw.githubusercontent.com/redhat-chaos/krkn-hub/main/cerberus/cerberus.yaml.template
+          cp kraken-hub/cerberus/cerberus.yaml.template cerberus.yaml.template
           envsubst <cerberus.yaml.template > cerberus.yaml
           
           pip --version
