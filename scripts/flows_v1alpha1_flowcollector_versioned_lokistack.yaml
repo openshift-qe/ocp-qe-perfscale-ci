@@ -3,23 +3,24 @@ kind: FlowCollector
 metadata:
   name: cluster
 spec:
-  namespace: "netobserv"
-  agent: ebpf
-  ipfix:
-    cacheActiveTimeout: 20s
-    cacheMaxFlows: 400
-    sampling: 400
-  ebpf:
-    image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.1.2'
-    imagePullPolicy: IfNotPresent
-    sampling: 0
-    cacheActiveTimeout: 5s
-    cacheMaxFlows: 1000
-    interfaces: []
-    excludeInterfaces: ["lo"]
-    logLevel: info
-    privileged: false
-  flowlogsPipeline:
+  namespace: netobserv
+  agent:
+    type: EBPF
+    ipfix:
+      cacheActiveTimeout: 20s
+      cacheMaxFlows: 400
+      sampling: 400
+    ebpf:
+      image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.1.2'
+      imagePullPolicy: IfNotPresent
+      sampling: 50
+      cacheActiveTimeout: 5s
+      cacheMaxFlows: 1000
+      interfaces: []
+      excludeInterfaces: [ "lo" ]
+      logLevel: info
+      privileged: false
+  processor:
     kind: DaemonSet
 #    kind: Deployment
 #    replicas: 1
@@ -48,8 +49,7 @@ spec:
         certFile: user.crt
         certKey: user.key
   loki:
-    url: https://lokistack-distributor-http.openshift-operators-redhat.svc:3100/
-    querierUrl: https://lokistack-querier-http.openshift-operators-redhat.svc:3100/
+    url: 'http://loki.netobserv.svc:3100/'
     batchWait: 1s
     batchSize: 102400
     minBackoff: 1s
@@ -58,10 +58,10 @@ spec:
     staticLabels:
       app: netobserv-flowcollector
     tls:
-      enable: true
+      enable: false
       caCert:
         type: configmap
-        name: openshift-service-ca.crt
+        name: loki
         certFile: service-ca.crt
       insecureSkipVerify: true
   consolePlugin:
