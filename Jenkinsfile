@@ -617,7 +617,7 @@ pipeline{
                             string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE)
                        ]
                         currentBuild.description += """
-                            <b>Scale-Ci: </b> router-perf <br/>
+                            <b>Scale-Ci: </b> regression-test <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                         """
                    }else{
