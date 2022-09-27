@@ -149,7 +149,7 @@ pipeline{
           font-family: 'Orienta', sans-serif;"""
       )
       choice(
-        choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","concurrent-builds","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test"], 
+        choices: ["","cluster-density","pod-density","node-density","node-density-heavy","etcd-perf","max-namespaces","max-services","concurrent-builds","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
@@ -165,6 +165,7 @@ pipeline{
         max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace. <br>
         node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node. <br>
         node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2 <br>
+        regression-test: This will pass this value to PARAMETERS; Parameter or an array of parameters to pass to the TEST_CASE script <br>
         Read here for detail of each variable: <br>
         https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md <br>
         '''
@@ -200,6 +201,34 @@ pipeline{
         name: 'APP_LIST', 
         defaultValue: 'cakephp eap django nodejs', 
         description: 'Applications to build, will run each of the concurrent builds against each application. Best to run one application at a time'
+      )
+
+      separator(
+        name: "REGRESSION_TEST_JOB_INFO", 
+        sectionHeader: "Regression Test Job Options", 
+        sectionHeaderStyle: """
+          font-size: 14px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      choice(
+        choices: ["","conc_jobs","large_network_policy"], 
+        name: 'TEST_CASE',
+        description:'''<p>
+        Select the test case you want to run.<br>
+        This job will search the TEST_CASE.sh file under svt repo <a href="https://github.com/openshift/svt/blob/master/perfscale_regression_ci/scripts">perfscale_regression_ci/scripts</a> folder and sub folders<br>
+        If SCRIPT is specified TEST_CASE will be overwritten.
+        </p>'''
+      )
+      string(
+        name: 'SCRIPT',
+        defaultValue: '',
+        description: '''<p>
+        Relative path to the script of the TEST_CASE under <a href="https://github.com/openshift/svt">svt repo</a>.<br>
+        e.g.<br>
+        For large_network_policy test case: perfscale_regression_ci/scripts/network/large_network_policy.sh<br>
+        If TEST_CASE is specified, SCRIPT will overwrite the TEST_CASE.
+        </p>'''
       )
       separator(
         name: "NETWORK_PERF_INFO", 
@@ -321,6 +350,19 @@ pipeline{
       )
       string(
         name: 'E2E_BENCHMARKING_REPO_BRANCH',
+        defaultValue:'master',
+        description:'You can change this to point to a branch on your fork if needed.'
+      )
+      string(
+        name: 'SVT_REPO',
+        defaultValue:'https://github.com/openshift/svt',
+        description:'''<p>
+          Repository to get regression test scripts and artifacts.<br>
+          You can change this to point to your fork if needed.
+          </p>'''
+      )
+      string(
+        name: 'SVT_REPO_BRANCH',
         defaultValue:'master',
         description:'You can change this to point to a branch on your fork if needed.'
       )
@@ -567,7 +609,18 @@ pipeline{
                             <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                        """
-                    }else{
+                    } else if (params.CI_TYPE == "regression-test") {
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/regression-test",propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "SVT_REPO", value: SVT_REPO),
+                            string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
+                            string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE)
+                       ]
+                        currentBuild.description += """
+                            <b>Scale-Ci: </b> router-perf <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                        """
+                   }else{
                         println "No Scale-ci Job"
                         currentBuild.description += """
                             <b>No Scale-Ci Run</b><br/>
