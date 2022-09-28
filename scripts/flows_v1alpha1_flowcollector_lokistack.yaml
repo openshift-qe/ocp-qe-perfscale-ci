@@ -68,7 +68,8 @@ spec:
         certFile: user.crt
         certKey: user.key
   loki:
-    url: 'http://loki.netobserv.svc:3100/'
+    url: https://lokistack-distributor-http.openshift-operators-redhat.svc:3100/
+    querierUrl: https://lokistack-querier-http.openshift-operators-redhat.svc:3100/
     batchWait: 1s
     batchSize: 102400
     minBackoff: 1s
@@ -77,7 +78,7 @@ spec:
     staticLabels:
       app: netobserv-flowcollector
     tls:
-      enable: false
+      enable: true
       caCert:
         type: configmap
         name: openshift-service-ca.crt

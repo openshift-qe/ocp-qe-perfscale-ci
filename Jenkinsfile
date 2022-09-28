@@ -349,7 +349,7 @@ pipeline {
                     if (params.ENABLE_KAFKA == true) {
                         println "Enabling Kafka in flowcollector..."
                         returnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/kafka/enable", "value": "true"}] -n netobserv"
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}] -n netobserv"
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
                         """)

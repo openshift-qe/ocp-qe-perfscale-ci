@@ -100,10 +100,13 @@ deploy_lokistack() {
 }
 
 deploy_kafka() {
-  kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-  kubectl apply -f "https://strimzi.io/install/latest?namespace="${NAMESPACE} -n ${NAMESPACE}
-  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n ${NAMESPACE}
-  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" -n ${NAMESPACE}
-  kubectl apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/topic.yaml" -n ${NAMESPACE}
-  kubectl wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
+  oc create namespace ${NAMESPACE} --dry-run=client -o yaml | oc apply -f -
+  oc apply -f $WORKSPACE/ocp-qe-perfscale-ci/scripts/amq-streams/subscription.yaml
+  sleep 60
+  oc wait --timeout=180s --for=condition=ready pod -l name=amq-streams-cluster-operator -n openshift-operators
+  oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n ${NAMESPACE}
+  oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" -n ${NAMESPACE}
+  oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/topic.yaml" -n ${NAMESPACE}
+  oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
+  oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
