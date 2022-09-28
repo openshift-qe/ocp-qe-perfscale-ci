@@ -24,6 +24,8 @@ def get_all_namespaces():
 def get_kube_burner_namespaces(workload): 
     namespaces = invoke("oc get ns --no-headers -l kube-burner-job=%s | awk '{print$1}'" % workload)
     global all_namespaces
+    if "no resources" in namespaces.lower():
+        return
     for n in namespaces.split():
         all_namespaces.remove(n)
 

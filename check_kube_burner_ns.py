@@ -15,6 +15,8 @@ def invoke(command):
 
 def get_kube_burner_namespaces(workload): 
     namespaces = invoke("oc get ns --no-headers -l kube-burner-job=%s | awk '{print$1}'" % workload)
+    if "no resources" in namespaces.lower():
+        return
     global all_namespaces
     for n in namespaces.split():
         all_namespaces.append(n)
