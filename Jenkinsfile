@@ -409,6 +409,7 @@ pipeline {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                            booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false)
                         ]
@@ -419,6 +420,7 @@ pipeline {
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
                             booleanParam(name: 'CLEANUP', value: true),
+                            booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
                             booleanParam(name: 'GEN_CSV', value: false),

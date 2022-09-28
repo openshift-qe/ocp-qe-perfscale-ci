@@ -24,6 +24,7 @@ deploy_netobserv() {
     oc get daemonset flowlogs-pipeline -n ${NAMESPACE} && break
     sleep 1
   done
+  sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n ${NAMESPACE}
   deploy_lokistack
 }

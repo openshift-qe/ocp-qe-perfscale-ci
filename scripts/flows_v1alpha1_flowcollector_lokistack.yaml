@@ -3,13 +3,20 @@ kind: FlowCollector
 metadata:
   name: cluster
 spec:
-  namespace: "netobserv"
+  namespace: netobserv
+  deploymentModel: DIRECT
   agent:
     type: EBPF
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
       sampling: 400
+      clusterNetworkOperator:
+        namespace: openshift-network-operator
+      ovnKubernetes:
+        namespace: ovn-kubernetes
+        daemonSetName: ovnkube-node
+        containerName: ovnkube-node
     ebpf:
       image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
       imagePullPolicy: IfNotPresent
@@ -27,14 +34,14 @@ spec:
         limits:
           memory: 100Mi
   processor:
-    kind: DaemonSet
     port: 2055
     image: 'quay.io/netobserv/flowlogs-pipeline:main'
     imagePullPolicy: IfNotPresent
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
-    prometheus:
+    profilePort: 6060
+    metricsServer:
       port: 9102
     ignoreMetrics: []
     dropUnusedFields: true
@@ -44,10 +51,11 @@ spec:
         cpu: 100m
       limits:
         memory: 300Mi
+    kafkaConsumerReplicas: 3
+    kafkaConsumerAutoscaler: null
   kafka:
-    enable: false
     address: "kafka-cluster-kafka-bootstrap.netobserv"
-    topic: "network-flows"
+    topic: network-flows
     tls:
       enable: false
       caCert:
@@ -60,8 +68,7 @@ spec:
         certFile: user.crt
         certKey: user.key
   loki:
-    url: https://lokistack-distributor-http.openshift-operators-redhat.svc:3100/
-    querierUrl: https://lokistack-querier-http.openshift-operators-redhat.svc:3100/
+    url: 'http://loki.netobserv.svc:3100/'
     batchWait: 1s
     batchSize: 102400
     minBackoff: 1s
@@ -70,25 +77,19 @@ spec:
     staticLabels:
       app: netobserv-flowcollector
     tls:
-      enable: true
+      enable: false
       caCert:
         type: configmap
         name: openshift-service-ca.crt
         certFile: service-ca.crt
-      insecureSkipVerify: true
   consolePlugin:
     register: true
     image: 'quay.io/netobserv/network-observability-console-plugin:main'
     imagePullPolicy: IfNotPresent
     port: 9001
     logLevel: info
+    autoscaler: null
     portNaming:
       enable: true
       portNames:
         "3100": loki
-  clusterNetworkOperator:
-    namespace: "openshift-network-operator"
-  ovnKubernetes:
-    namespace: "ovn-kubernetes"
-    daemonSetName: "ovnkube-node"
-    containerName: "ovnkube-node"
