@@ -167,8 +167,9 @@ pipeline {
           python3.9 -m venv venv3
           source venv3/bin/activate
           if [[ $CERBERUS_WATCH_NAMESPACES == '[^.*$]' ]]; then
-            ls
-            export CERBERUS_WATCH_NAMESPACES=$(python set_namespace_list.py -w $WORKLOAD)
+            if [[ $WORKLOAD != "" ]]; then
+              export CERBERUS_WATCH_NAMESPACES=$(python set_namespace_list.py -w $WORKLOAD)
+            fi
           fi
           cd ..
           env
@@ -185,6 +186,7 @@ pipeline {
           final_health=${value%,*}  # remove suffix starting with ","
           echo "health $final_health"
           cd cerberus_jenkins
+          
           python -c "import check_kube_burner_ns; check_kube_burner_ns.check_namespaces( '$WORKLOAD' )"
           cd ..
           exit $final_health
