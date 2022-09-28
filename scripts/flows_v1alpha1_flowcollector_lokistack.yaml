@@ -3,7 +3,7 @@ kind: FlowCollector
 metadata:
   name: cluster
 spec:
-  namespace: "netobserv"
+  namespace: netobserv
   deploymentModel: DIRECT
   agent:
     type: EBPF
@@ -54,7 +54,6 @@ spec:
     kafkaConsumerReplicas: 3
     kafkaConsumerAutoscaler: null
   kafka:
-    enable: false
     address: "kafka-cluster-kafka-bootstrap.netobserv"
     topic: network-flows
     tls:

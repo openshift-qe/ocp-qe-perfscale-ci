@@ -152,24 +152,36 @@ def get_netobserv_env_info():
     }
     base_commands = {
         "release": ['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'netobserv'],
-        "flp_kind": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.processor.kind}"', '-n', 'netobserv'],
+        "deploymentModel": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.deploymentModel}"', '-n', 'netobserv'],
         "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent.type}"']
     }
 
     # collect data from cluster about netobserv operator and store in info dict
     info = run_commands(base_commands, info)
 
-    # get agent details based on detected agent
+    # get flp_kind data from kafka data
+    deploymentModel = info["deploymentModel"].lower()
+    logging.debug(f"Found deployment model {deploymentModel}")
+    if deploymentModel == 'kafka':
+        logging.debug("Kafka is enabled - flp_kind is 'Deployment'")
+        info["flp_kind"] = "Deployment"
+    else:
+        logging.debug("Kafka is disabled - flp_kind is 'DaemonSet'")
+        info["flp_kind"] = "DaemonSet"
+
+    # run any additional commands needed and append data to info dictionary
     agent = info["agent"].lower()
     logging.debug(f"Found collector agent {agent}")
-    agent_commands = {
+    additional_commands = {
         "sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.sampling}}"'],
         "cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheActiveTimeout}}"'],
         "cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheMaxFlows}}"']
     }
-
-    # collect data from cluster about agent and append to info dict
-    info = run_commands(agent_commands, info)
+    if deploymentModel == 'kafka':
+        additional_commands["kafka_replicas"] = ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.processor.kafkaConsumerReplicas}}"']
+    else:
+        info["kafka_replicas"] = "N/A"
+    info = run_commands(additional_commands, info)
 
     # return all collected data
     return info

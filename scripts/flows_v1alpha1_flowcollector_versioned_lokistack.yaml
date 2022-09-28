@@ -16,7 +16,7 @@ spec:
       sampling: 50
       cacheActiveTimeout: 5s
       cacheMaxFlows: 1000
-      interfaces: []
+      interfaces: [ ]
       excludeInterfaces: [ "lo" ]
       logLevel: info
       privileged: false
@@ -63,7 +63,6 @@ spec:
         type: configmap
         name: loki
         certFile: service-ca.crt
-      insecureSkipVerify: true
   consolePlugin:
     register: true
     image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.4'
