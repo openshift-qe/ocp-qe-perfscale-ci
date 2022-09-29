@@ -28,7 +28,9 @@ def delete_all_namespaces(job):
     print("job type " + str(job))
     if job.lower() == "pod-density":
         job = "node-density"
-    invoke("oc delete ns --wait=false -l kube-burner-job=" + job)
+    if job:
+        job = "=" + job
+    invoke("oc delete ns --wait=false -l kube-burner-job" + job)
     wait_for_all_deleted_ns(job)
 
 def wait_for_all_deleted_ns(job, wait_num=300):
@@ -46,4 +48,3 @@ def wait_for_all_deleted_ns(job, wait_num=300):
         time.sleep(10)
     invoke("oc get ns")
     return 0
-
