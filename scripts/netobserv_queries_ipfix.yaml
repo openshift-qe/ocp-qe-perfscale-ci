@@ -16,7 +16,7 @@
   metricName: memoryUsageRSS
 
 # 5. Number of flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
+- query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
   metricName: nFlowsProcessedPerMinute
 
 # 6. loki-store PVC usage averaging over 5 mins period
@@ -24,10 +24,10 @@
   metricName: lokiStorageUsage
 
 # 7. Number of bytes processed per minute.
-- query: sum(rate(netobserv_bandwidth_per_network_service_per_namespace[1m]))
+- query: sum(rate(netobserv_received_bytes_total[1m]))
   metricName: nBytesProcessedPerMinute
 
 # 8. Number of Loki records written per minute.
-- query: sum(loki_records_written)
+- query: sum(netobserv_records_written)
   metricName: lokiRecordsWritten
 

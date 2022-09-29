@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1663870823306,
+  "iteration": 1664472946541,
   "links": [],
   "panels": [
     {
@@ -83,13 +83,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m])*60)",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60)",
+          "hide": false,
           "interval": "",
           "legendFormat": "Total flows",
           "refId": "B"
@@ -188,13 +189,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m]))",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m]))",
           "interval": "",
           "legendFormat": "Flow processed/min",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(loki_records_written[1m]))",
+          "expr": "sum(rate(netobserv_records_written[1m]))",
           "interval": "",
           "legendFormat": "Flow Write/min",
           "refId": "B"
@@ -293,7 +294,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(netobserv_bandwidth_per_network_service_per_namespace[1m]))",
+          "expr": "sum(rate(netobserv_received_bytes_total[1m]))",
           "interval": "",
           "legendFormat": "Bytes/min",
           "refId": "A"
@@ -1523,7 +1524,7 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
@@ -1575,12 +1576,12 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
-  "version": 8
+  "version": 2
 }
