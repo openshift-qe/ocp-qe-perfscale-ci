@@ -107,7 +107,7 @@ pipeline {
         )
         string(
             name: "COMPARISON_CONFIG",
-            defaultValue: "clusterVersion.json podLatency.json podCPU-avg.json podCPU-max.json podMemory-avg.json podMemory-max.json",
+            defaultValue: "clusterVersion.json podLatency.json containerMetrics.json",
             description: 'JSON files of what data to output into a google sheet'
         )
         booleanParam(
