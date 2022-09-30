@@ -346,6 +346,8 @@ pipeline {
             oc config view
             oc projects
             ls -ls ~/.kube/
+            # Remove the folder to resolve OCPQE-12185
+            rm -rf performance-dashboards
             git clone --single-branch --branch $DITTYBOPPER_REPO_BRANCH --depth 1 $DITTYBOPPER_REPO
 
             pushd performance-dashboards/dittybopper
