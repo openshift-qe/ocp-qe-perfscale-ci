@@ -63,6 +63,7 @@ def process_query(metric_name, query, raw_data):
     clean_data = []
 
     # capture metadata and value artifacts from prometheus return object
+    # note that timestamp is multiplied by 1000 for compatability with ES date type
     try:
         for result in raw_data["data"]["result"]:
             for data_point in result["values"]:
@@ -73,6 +74,7 @@ def process_query(metric_name, query, raw_data):
                         "uuid": UUID,
                         "metric_name": metric_name,
                         "data_type": "datapoint",
+                        "timestamp": data_point[0] * 1000,
                         "unix_timestamp": data_point[0],
                         "value": float(data_point[1]),
                         "metadata": metadata
