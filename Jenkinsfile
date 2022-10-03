@@ -131,19 +131,19 @@ pipeline {
             name: 'TOPIC_PARTITIONS',
             choices: [6, 10, 24, 48],
             description: '''
-            Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
-            6 - default for non-perf testing environments<br/>
-            10 - Perf testing with worker nodes <= 20<br/>
-            24 - Perf testing with worker nodes <= 50<br/>
-            48 - Perf testing with worker nodes <= 100<br/>
+                Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
+                6 - default for non-perf testing environments<br/>
+                10 - Perf testing with worker nodes <= 20<br/>
+                24 - Perf testing with worker nodes <= 50<br/>
+                48 - Perf testing with worker nodes <= 100<br/>
             '''
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
             defaultValue: '3',
             description: '''
-            Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
-            3 - default for non-perf testing environments<br/>
+                Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
+                3 - default for non-perf testing environments<br/>
             '''
         )
         separator(
@@ -182,6 +182,11 @@ pipeline {
                 Only for node-density and node-density-heavy<br/>
                 Should be the number of worker nodes on your cluster (after scaling)
             '''
+        )
+        booleanParam(
+            name: 'GEN_CSV',
+            defaultValue: true,
+            description: 'Boolean to create a google sheet with comparison data'
         )
         separator(
             name: 'NOPE_CONFIG_OPTIONS',
@@ -225,7 +230,7 @@ pipeline {
         booleanParam(
             name: 'DELETE_S3_BUCKET',
             defaultValue: false,
-            description: 'Check this box to delete AWS S3 Bucket, also deletes lokistack, flowcollector and kafka'
+            description: 'Check this box to delete AWS S3 Bucket (also deletes lokistack, flowcollector and kafka)'
         )
     }
 
@@ -447,15 +452,18 @@ pipeline {
                 script {
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
+                        COMPARISON_CONFIG_FILES = 'mb-touchstone.json netobserv-touchstone.json'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false)
+                            string(name: 'COMPARISON_CONFIG', value: COMPARISON_CONFIG_FILES),
+                            booleanParam(name: 'GEN_CSV', value: params.GEN_CSV)
                         ]
                     }
                     else {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner'
+                        COMPARISON_CONFIG_FILES = 'clusterVersion.json podLatency.json containerMetrics.json netobserv-touchstone.json'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
@@ -463,7 +471,8 @@ pipeline {
                             booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
-                            booleanParam(name: 'GEN_CSV', value: false),
+                            string(name: 'COMPARISON_CONFIG', value: COMPARISON_CONFIG_FILES),
+                            booleanParam(name: 'GEN_CSV', value: params.GEN_CSV),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL)
                         ]
                     }
