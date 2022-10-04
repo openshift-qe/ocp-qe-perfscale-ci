@@ -260,10 +260,17 @@ def upload_data_to_elasticsearch():
     )
 
     start = time.time()
-    for item in RESULTS['data']:			
-        logging.debug(f"Uploading item {item} to Elasticsearch")
+    for item in RESULTS['data']:
+        metric_name = item.get('metric_name')
+        if metric_name == 'netobservEnv':
+            index = 'netobserv-perf-operator-metadata'
+        elif metric_name == 'jenkinsEnv':
+            index = 'netobserv-perf-jenkins-metadata'
+        else:
+            index = 'netobserv-perf'
+        logging.debug(f"Uploading item {item} to index {index} in Elasticsearch")
         response = es.index(
-            index="netobserv-perf",
+            index=index,
             body=item
         )
         logging.debug(f"Response back was {response}")

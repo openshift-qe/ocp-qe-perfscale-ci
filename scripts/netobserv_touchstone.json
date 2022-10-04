@@ -1,5 +1,29 @@
 {
     "elasticsearch": {
+        "metadata": {
+            "netobserv-perf-operator-metadata": {
+                "fields": [
+                    "agent",
+                    "cache_active_time",
+                    "cache_max_flows",
+                    "flp_kind",
+                    "release",
+                    "sampling"
+                ],
+                "additional_fields": [
+                    "metric_name"
+                ]
+            },
+            "netobserv-perf-jenkins-metadata": {
+                "fields": [
+                    "jenkins_build_num",
+                    "jenkins_job_name"
+                ],
+                "additional_fields": [
+                    "metric_name"
+                ]
+            }
+        },
         "netobserv-perf": [
             {
                 "filter": {
