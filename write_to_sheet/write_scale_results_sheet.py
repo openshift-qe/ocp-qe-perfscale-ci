@@ -13,24 +13,26 @@ import re
 
 data_source = "Development-AWS-ES_ripsaw-kube-burner"
 uuid = ""
-def get_benchmark_uuid():
-    return_code, benchmark_str = write_helper.run("oc get benchmark -n benchmark-operator -o json")
+def get_benchmark_uuid(env_vars_file):
+    return_code, namespace = write_helper.run("oc get ns -l kube-burner-uuid -o name --sort-by='.metadata.creationTimestamp' --no-headers | head -1")
+    print('namesapce ' + str(namespace))
+    return_code, namespace_str = write_helper.run("oc get " + namespace.strip() + " -o json")
+    print("namespace_str " + str(namespace_str))
     if return_code == 0:
-        benchmark_json = json.loads(benchmark_str)
-        for item in benchmark_json['items']:
-            if "uuid" in item['status']:
-                global uuid
-                uuid = item['status']['uuid']
-                #if mutliple not sure what to do
-                creation_time = item['metadata']['creationTimestamp']
-                # "2021-08-10T13:53:20Z"
-                d = datetime.strptime(creation_time[:-1], "%Y-%m-%dT%H:%M:%S")
-                from_time = calendar.timegm(d.timetuple()) * 1000
+        namespace_json = json.loads(namespace_str.strip())
+        if "kube-burner-uuid" in namespace_json['metadata']['labels']:
+            global uuid
+            uuid = namespace_json['metadata']['labels']['kube-burner-uuid']
+            #if mutliple not sure what to do
+            creation_time = namespace_json['metadata']['creationTimestamp']
+            # "2021-08-10T13:53:20Z"
+            d = datetime.strptime(creation_time[:-1], "%Y-%m-%dT%H:%M:%S")
+            from_time = calendar.timegm(d.timetuple()) * 1000
 
-                n_time = datetime.utcnow()
-                to_time = calendar.timegm(n_time.timetuple()) * 1000
-
-                if "search-ocp-qe-perf-scale-test" in item['spec']['elasticsearch']['url']:
+            n_time = datetime.utcnow()
+            to_time = calendar.timegm(n_time.timetuple()) * 1000
+            if "ES_SERVER" in env_vars_file: 
+                if "search-ocp-qe-perf-scale-test" in env_vars_file:
                     data_source = "SVTQE-kube-burner"
                 return get_grafana_url(uuid, from_time, to_time)
             return ""
@@ -79,15 +81,13 @@ def parse_output_for_starttime(job_output):
     with open(job_output, encoding='utf8', mode="r") as f:
         job_output_string = f.read()
 
-    split_output = job_output_string.split('Deploying benchmark')
+    split_output = job_output_string.split('Starting kube-burner')
 
     time_sub = split_output[0].split("\n")[-1]
     time_sub = re.sub("[ ]+", " ", time_sub)
-    time_sub = time_sub.split("[1m")[-1]
-    d = datetime.strptime(time_sub, "%a %b %d %H:%M:%S %Z %Y ")
-    print('d ' + str(d))
+    time_sub = time_sub.split('time"')[-1].split('"')[1]
+    d = datetime.strptime(time_sub, "%Y-%m-%d %H:%M:%S")
     date_string = d.strftime("%Y-%m-%dT%H:%M:%S%Z")
-    print('dte string' + str(date_string))
     return date_string
 
 def get_workload_params(job_type):
@@ -222,4 +222,3 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
 #get_metadata_uuid("node-density", "write_output.out")
 #write_to_sheet("/Users/prubenda/.secrets/perf_sheet_service_account.json", 99245, 323, 'node-density', "https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/kube-burner/323/", "FAIL","600,3", "write_output.out")
-
