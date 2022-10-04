@@ -1,4 +1,5 @@
 NAMESPACE=${1:-netobserv}
+export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
 if [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
   NOO_SUBSCRIPTION=$WORKSPACE/ocp-qe-perfscale-ci/scripts/noo-released-subscription.yaml
@@ -82,7 +83,6 @@ deploy_lokistack() {
   # create s3 secret for loki
   $WORKSPACE/ocp-qe-perfscale-ci/scripts/deploy-loki-aws-secret.sh
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
-  export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
   if [[ "${LOKISTACK_SIZE}" == "1x.extra-small" ]]; then
     LokiStack_CONFIG=$WORKSPACE/ocp-qe-perfscale-ci/scripts/lokistack-1x-exsmall.yaml
   elif [[ "${LOKISTACK_SIZE}" == "1x.small" ]]; then
@@ -105,7 +105,7 @@ deploy_kafka() {
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l name=amq-streams-cluster-operator -n openshift-operators
   oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n ${NAMESPACE}
-  oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" -n ${NAMESPACE}
+  curl -s -L "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" | envsubst | oc apply -n ${NAMESPACE} -f -
   oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/topic.yaml" -n ${NAMESPACE}
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
