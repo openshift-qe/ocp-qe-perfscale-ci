@@ -150,7 +150,8 @@ def get_netobserv_env_info():
     info = {
         "uuid": UUID,
         "metric_name": "netobservEnv",
-        "data_type": "metadata"
+        "data_type": "metadata",
+        "timestamp": int(START_TIME) * 1000,
     }
     base_commands = {
         "release": ['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'netobserv'],
@@ -199,6 +200,7 @@ def get_jenkins_env_info():
         "uuid": UUID,
         "metric_name": "jenkinsEnv",
         "data_type": "metadata",
+        "timestamp": int(START_TIME) * 1000,
         "jenkins_job_name": JENKINS_JOB,
         "jenkins_build_num": JENKINS_BUILD
     }
@@ -217,11 +219,10 @@ def get_jenkins_env_info():
             raise Exception("No build parameters could be found.")
         for param in build_parameters:
             del param['_class']
-            if param.get('value') == True:
-                param['value'] = 'true'
-            if param.get('value') == False:
-                param['value'] = 'false'
-        info['jenkins_job_params'] = build_parameters
+            if param.get('name') == 'WORKLOAD':
+                info['workload'] = str(param.get('value'))
+            if param.get('name') == 'VARIABLE':
+                info['variable'] = int(param.get('value'))
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
 

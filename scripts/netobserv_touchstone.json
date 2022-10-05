@@ -17,7 +17,9 @@
             "netobserv-perf-jenkins-metadata": {
                 "fields": [
                     "jenkins_build_num",
-                    "jenkins_job_name"
+                    "jenkins_job_name",
+                    "workload",
+                    "variable"
                 ],
                 "additional_fields": [
                     "metric_name"
