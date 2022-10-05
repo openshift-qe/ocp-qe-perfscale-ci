@@ -240,7 +240,7 @@ pipeline {
                             ls -ls ~/.kube/
                             env
                             cd workloads/router-perf-v2
-                            ./ingress-performance.sh  | tee "ingress_router.out"
+                            ./ingress-performance.sh |& tee "ingress_router.out"
                             '''
                         )
                         if (RETURNSTATUS.toInteger() == 0) {
