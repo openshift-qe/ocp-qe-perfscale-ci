@@ -170,7 +170,7 @@ pipeline {
 
             export WORKLOAD=$WORKLOAD_TYPE
             set -o pipefail
-            ./run.sh | tee "network-perf.out"
+            ./run.sh |& tee "network-perf.out"
             ''')
             output = sh(returnStdout: true, script: 'cat workloads/network-perf/network-perf.out')
             if (RETURNSTATUS.toInteger() == 0) {
