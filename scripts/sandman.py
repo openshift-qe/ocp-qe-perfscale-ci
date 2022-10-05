@@ -20,25 +20,27 @@ def main():
         workload_logs = out_file.read()
 
     # initialize regexs
-    base_regex = '([a-zA-z]{3}\s+\d+ \d+:\d+:\d+ [a-zA-z]{3} \d+).*'
     if "kube-burner" in WORKLOAD_OUT_FILE:
-        starttime_regex = base_regex + 'Deploying'
-        endtime_regex = base_regex + 'Indexing'
+        base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
+        starttime_regex = base_regex + 'Starting'
+        endtime_regex = base_regex + 'Exiting'
+        strptime_filter = '%Y-%m-%d %H:%M:%S'
     elif "ingress_router" in WORKLOAD_OUT_FILE:
+        base_regex = '([a-zA-z]{3}\s+\d+ \d+:\d+:\d+ [a-zA-z]{3} \d+).*'
         starttime_regex = base_regex + 'Testing'
         endtime_regex = base_regex + 'Enabling'
-    uuid_regex = 'UUID: (.*)\n'
+        strptime_filter = '%b %d %H:%M:%S %Z %Y'
+    uuid_regex = 'UUID: (.*)"'
 
     # capture and log strings representations of start and end times
     starttime_string = re.findall(starttime_regex, workload_logs)[0]
     endtime_string = re.findall(endtime_regex, workload_logs)[0]
-    uuid = re.findall(uuid_regex, workload_logs)[-1]
+    uuid = re.findall(uuid_regex, workload_logs)[0]
     print(f"uuid: {uuid}")
     print(f"starttime_string: {starttime_string}")
     print(f"endtime_string: {endtime_string}")
 
     # convert string times to unix timestamps
-    strptime_filter = '%b %d %H:%M:%S %Z %Y'
     starttime_timestamp = int(datetime.datetime.strptime(starttime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
     endtime_timestamp = int(datetime.datetime.strptime(endtime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
     print(f"starttime_timestamp: {starttime_timestamp}")
