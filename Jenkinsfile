@@ -46,6 +46,16 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
+    booleanParam(
+      name: 'CLEANUP',
+      defaultValue: false,
+      description: 'Cleanup namespaces (and all sub-objects) created from workload (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/benchmark-cleaner/>benchmark-cleaner</a>)'
+    )
+    booleanParam(
+      name: 'CERBERUS_CHECK',
+      defaultValue: false,
+      description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
+    )
   }
 
   stages {
@@ -92,7 +102,7 @@ pipeline {
               python3.9 -m virtualenv venv3
               source venv3/bin/activate
               python --version
-              # If SCRIPT is not specified, fine the script by the TEST_CASE.
+              # If SCRIPT is not specified, find the script by the TEST_CASE.
               if [[ $SCRIPT == "" ]]
               then
                 SCRIPT=$(find perfscale_regression_ci -name $TEST_CASE.sh)
@@ -111,6 +121,41 @@ pipeline {
             output = sh(returnStdout: true, script: 'cat $WORKSPACE/output.out')
             if (RETURNSTATUS.toInteger() != 0) {
               currentBuild.result = "FAILURE"
+            }
+        }
+        script {
+          if (params.CERBERUS_CHECK == true) {
+              cerberus_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cerberus',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                      string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
+                      string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
+                  ],
+                  propagate: false
+              if (status == "PASS") {
+                  if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                      status = "Cerberus check failed"
+                  }
+              }
+              else {
+                  if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                      status += "Cerberus check failed"
+                  }
+              }
+          }
+        }
+
+        script {
+            // if the build fails, cleaning and scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
+            if (params.CLEANUP == true) {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "UNINSTALL_BENCHMARK_OP", value: false),
+                        string(name: "CI_TYPE", value: "")
+                    ],
+                    propagate: false
             }
         }
       }
