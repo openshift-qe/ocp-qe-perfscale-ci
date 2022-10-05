@@ -244,7 +244,7 @@ pipeline {
                             export PODS_PER_NODE=$VARIABLE
                             fi
                             set -o pipefail
-                            ./run.sh | tee "kube-burner.out"
+                            ./run.sh |& tee "kube-burner.out"
                         ''')
                         output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
                         if (RETURNSTATUS.toInteger() == 0) {
