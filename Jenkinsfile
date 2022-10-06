@@ -61,6 +61,9 @@ pipeline {
   stages {
     stage('Run Regression Test'){
       agent { label params['JENKINS_AGENT_LABEL'] }
+      environment{
+        EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+      }
       steps{
         deleteDir()
 
@@ -87,12 +90,16 @@ pipeline {
         }
 
         script{
+          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
             RETURNSTATUS = sh(returnStatus: true, script: '''
               # Get ENV VARS Supplied by the user to this job and store in .env_override
               echo "$ENV_VARS" > .env_override
               # Export those env vars so they could be used by CI Job
               set -a && source .env_override && set +a
-              
+              cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
+              export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
+              export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
+             
               mkdir -p ~/.kube
               cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
               ls -ls ~/.kube/
@@ -122,6 +129,7 @@ pipeline {
             if (RETURNSTATUS.toInteger() != 0) {
               currentBuild.result = "FAILURE"
             }
+          }
         }
         script {
           if (params.CERBERUS_CHECK == true) {
