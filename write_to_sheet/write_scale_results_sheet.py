@@ -15,7 +15,7 @@ data_source = "Development-AWS-ES_ripsaw-kube-burner"
 uuid = ""
 def get_benchmark_uuid(env_vars_file):
     return_code, namespace = write_helper.run("oc get ns -l kube-burner-uuid -o name --sort-by='.metadata.creationTimestamp' --no-headers | head -1")
-    print('namesapce ' + str(namespace))
+    print('namespace ' + str(namespace))
     return_code, namespace_str = write_helper.run("oc get " + namespace.strip() + " -o json")
     print("namespace_str " + str(namespace_str))
     if return_code == 0:
