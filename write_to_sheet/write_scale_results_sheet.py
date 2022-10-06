@@ -23,7 +23,7 @@ def get_benchmark_uuid(env_vars_file):
         if "kube-burner-uuid" in namespace_json['metadata']['labels']:
             global uuid
             uuid = namespace_json['metadata']['labels']['kube-burner-uuid']
-            #if mutliple not sure what to do
+            #if multiple not sure what to do
             creation_time = namespace_json['metadata']['creationTimestamp']
             # "2021-08-10T13:53:20Z"
             d = datetime.strptime(creation_time[:-1], "%Y-%m-%dT%H:%M:%S")
