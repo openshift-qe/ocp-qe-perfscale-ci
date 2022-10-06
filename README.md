@@ -28,8 +28,7 @@ WRITE_TO_FILE: Boolean on whether to write results to Upgrade tab in Scale-Ci sh
 
 
 ### EUS Upgarde General Information
-
-Arm architecture types, will get versions from here
+For EUS_UPGRADE and arm architecture types, will get versions from here
 https://arm64.ocp.releases.ci.openshift.org/graph
 
 If non arm type, will use 
