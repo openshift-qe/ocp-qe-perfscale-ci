@@ -4,6 +4,7 @@
 def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
 def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
 
+userId = "prubenda"
 if (userCause) {
   userId = userCause.getUserId()
 } else if (upstreamCause) {
@@ -58,6 +59,11 @@ pipeline {
       name: "NETWORK_POLICY", 
       defaultValue: false, 
       description: "If enabled, benchmark-operator will create a network policy to allow ingress trafic in uperf server pods"
+    )
+    string(
+        name: "COMPARISON_CONFIG",
+        defaultValue: "uperf-touchstone-stream.json uperf-touchstone-rr.json uperf-touchstone-norm-ltcy.json uperf-touchstone-norm-ops.json",
+        description: 'JSON files of what data to output into a google sheet'
     )
     booleanParam(
       name: 'GEN_CSV', 
