@@ -138,6 +138,11 @@ pipeline {
             defaultValue: '',
             description: 'Benchmark-comparison aliases, e.g. 4.10.z 4.11.0-0.nightly-xxxx'
         )
+        string(
+            name: "COMPARISON_CONFIG",
+            defaultValue: "mb-touchstone.json",
+            description: 'JSON files of what data to output into a google sheet'
+        )
         booleanParam(
             name: 'GEN_CSV',
             defaultValue: true,
