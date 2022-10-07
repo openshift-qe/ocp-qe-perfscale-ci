@@ -1,10 +1,31 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
+def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
+def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
+
+userId = "prubenda"
+if (userCause) {
+    userId = userCause.getUserId()
+}
+else if (upstreamCause) {
+    def upstreamJob = Jenkins.getInstance().getItemByFullName(upstreamCause.getUpstreamProject(), hudson.model.Job.class)
+    if (upstreamJob) {
+        def upstreamBuild = upstreamJob.getBuildByNumber(upstreamCause.getUpstreamBuild())
+        if (upstreamBuild) {
+            def realUpstreamCause = upstreamBuild.getCause(Cause.UserIdCause)
+            if (realUpstreamCause) {
+                userId = realUpstreamCause.getUserId()
+            }
+        }
+    }
+}
+
 if (userId) {
   currentBuild.displayName = userId
 }
+
+println "user id $userId"
 
 def RETURNSTATUS = "default"
 def output = ""
