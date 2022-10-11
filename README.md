@@ -28,7 +28,8 @@ WRITE_TO_FILE: Boolean on whether to write results to Upgrade tab in Scale-Ci sh
 
 
 ### EUS Upgarde General Information
-For EUS_UPGRADE and arm architecture types, will get versions from here
+
+Arm architecture types, will get versions from here
 https://arm64.ocp.releases.ci.openshift.org/graph
 
 If non arm type, will use 
@@ -47,7 +48,7 @@ https://amd64.ocp.releases.ci.openshift.org/graph
 5. Perform upgrade using command
    1. z stream: 
    `oc adm upgrade --to $target_version_prefix" <optional --force>`
-   1. Nightly
+   2. Nightly
    `oc adm upgrade --to-image $target_sha --force --allow-explicit-upgrade"`
       1. Target_sha 
       2. Curl graph url above for your architeture type
