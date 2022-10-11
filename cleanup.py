@@ -17,12 +17,6 @@ def invoke(command):
     print("Status : ",  output)
     return 0, output
 
-def delete_all_benchmarks():
-    invoke("oc delete benchmark -n benchmark-operator --all")
-
-def delete_all_jobs():
-    invoke("oc delete jobs -n benchmark-operator --all")
-
 def delete_all_namespaces(job):
     # make sure all namespaces are gone
     print("job type " + str(job))

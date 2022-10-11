@@ -14,7 +14,6 @@ pipeline {
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: 'CI_TYPE', defaultValue: '', description: 'Type of job you ran and want to cleanup. Ex. node-density')
-        booleanParam(name: 'UNINSTALL_BENCHMARK_OP', defaultValue: false, description: 'This variable will uninstall the benchmark-operator if true')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
@@ -26,16 +25,14 @@ pipeline {
         '''
         )
        text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-        string(name: 'BENCHMARK_OP_REPO', defaultValue:'https://github.com/cloud-bulldozer/benchmark-operator.git', description:'You can change this to point to your fork if needed.')
-        string(name: 'BENCHMARK_OP_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
+            Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+            e.g.<br>
+            SOMEVAR1='env-test'<br>
+            SOMEVAR2='env2-test'<br>
+            ...<br>
+            SOMEVARn='envn-test'<br>
+            </p>'''
+        )
     }
 
   stages {
@@ -78,17 +75,6 @@ pipeline {
           echo "$OSTYPE"
           export PYTHONUNBUFFERED=1
           python -c "import cleanup; cleanup.delete_all_namespaces('$CI_TYPE')"
-          if [ $UNINSTALL_BENCHMARK_OP == true ]; then
-              python3.9 -m pip install virtualenv
-              python3.9 -m virtualenv venv3
-              source venv3/bin/activate
-              python --version
-              pip install -U "git+https://github.com/cloud-bulldozer/benchmark-operator.git/#egg=ripsaw-cli&subdirectory=cli"
-              ripsaw operator delete --repo=$BENCHMARK_OP_REPO --branch=$BENCHMARK_OP_REPO_BRANCH
-          else
-            python3 -c "import cleanup; cleanup.delete_all_jobs()"
-            python3 -c "import cleanup; cleanup.delete_all_benchmarks()"
-          fi
 
           ''')
         }
