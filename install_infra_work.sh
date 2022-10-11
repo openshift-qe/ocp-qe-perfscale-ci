@@ -173,6 +173,11 @@ else
 fi
 
 sleep 10 
+
+infra_nodes=$(oc get nodes -l 'node-role.kubernetes.io/infra=' --no-headers | awk '{print $1}' |  tr '\n' '|')
+infra_nodes=${infra_nodes:0:-1}
+
+echo "$infra_nodes"
 ## wait for monitoring pods to go running
 attempts=10
 retries=0
@@ -180,16 +185,22 @@ retries=0
 for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | awk '{print $1}'); do 
     ready_replicas=$(oc get statefulsets $statefulset -n openshift-monitoring -o jsonpath='{.status.availableReplicas}')
     wanted_replicas=2
-    infra_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep infra | grep $statefulset | wc -l)
-    echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas"
-    while [ $ready_replicas -ne $wanted_replicas ] && [ $infra_pods -ne $wanted_replicas ]; do
+    monitoring_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep -E "$infra_nodes"| grep "$statefulset")
+    echo "pods $monitoring_pods"
+    infra_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep -E "$infra_nodes" | grep Running | grep "$statefulset" | wc -l  | xargs)
+    echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas!"
+    echo "current replicas in $statefulset: wanted--$wanted_replicas, current infra running--$infra_pods!"
+    while [[ $ready_replicas != $wanted_replicas ]] ||  [[ $infra_pods != $wanted_replicas ]]; do
         sleep 5
         ((retries += 1))
         ready_replicas=$(oc get statefulsets $statefulset -n openshift-monitoring -o jsonpath='{.status.availableReplicas}')
         echo "retries printing: $retries"
+        monitoring_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep -E "$infra_nodes"| grep "$statefulset")
+        echo "pods $monitoring_pods"
 
-        infra_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep infra | grep $statefulset | wc -l)
-
+        infra_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep -E "$infra_nodes" | grep Running| grep "$statefulset" | wc -l |xargs )
+        echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas!"
+        echo "current replicas in $statefulset: wanted--$wanted_replicas, current infra running--$infra_pods!"
         if [[ ${retries} -gt ${attempts} ]]; then
             oc describe $statefulset -n openshift-monitoring
             for pod in $(oc get pods -n openshift-monitoring --no-headers | grep -v Running | awk '{print $1}'); do
@@ -200,7 +211,6 @@ for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | 
         fi
     done
 done
-
 
 echo "Moving ingress controllers to infra nodes"
 oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
