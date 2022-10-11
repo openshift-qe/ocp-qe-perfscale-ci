@@ -292,11 +292,6 @@ pipeline {
                     else { 
                         currentBuild.result = "FAILURE"
                     }
-                    archiveArtifacts(
-                  artifacts: '${WORKSPACE}/workloads/kube-burner/kube-burner.out',
-                  allowEmptyArchive: true,
-                  fingerprint: true
-              )
                 }
             }
         }
