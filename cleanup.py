@@ -32,6 +32,9 @@ def wait_for_all_deleted_ns(job, wait_num=300):
     ns_left = 1000  # starting at random high number
     while int(ns_left) > 0:
         returncode, ns_left = invoke("oc get ns --no-headers | grep Terminating | wc -l")
+        if returncode != 0: 
+            ns_left = 1000
+            continue
         ns_left = ns_left.strip()
         print(ns_left + " namespaces are left to still terminate")
         if counter > wait_num:
