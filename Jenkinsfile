@@ -29,44 +29,96 @@ println "user id $userId"
 
 def overall_status = "PASS"
 def output = ""
+def scale_up_job = null
 
 pipeline {
   agent none
 
   parameters {
-    string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-    choice(choices: ["conc_jobs","large_network_policy"], name: 'TEST_CASE',description:'''<p>
-                    Select the test case you want to run.<br>
-                    This job will search the TEST_CASE.sh file under svt repo <a href="https://github.com/openshift/svt/blob/master/perfscale_regression_ci/scripts">perfscale_regression_ci/scripts</a> folder and sub folders<br>
-                    If SCRIPT is specified TEST_CASE will be overwritten.
-                    </p>''')
-    string(name: 'SCRIPT', defaultValue: '', description: '''<p>
-                  Relative path to the script of the TEST_CASE under <a href="https://github.com/openshift/svt">svt repo</a>.<br>
-                  e.g.<br>
-                  For large_network_policy test case: perfscale_regression_ci/scripts/network/large_network_policy.sh<br>
-                  If TEST_CASE is specified, SCRIPT will overwrite the TEST_CASE.
-                  </p>''')
-    string(name: 'PARAMETERS', defaultValue: '', description: '''<p>
+    string(
+        name: 'BUILD_NUMBER', 
+        defaultValue: '', 
+        description: 'Build number of job that has installed the cluster.'
+    )
+    choice(
+        choices: ["conc_jobs","large_network_policy"], 
+        name: 'TEST_CASE',
+        description:'''<p>
+            Select the test case you want to run.<br>
+            This job will search the TEST_CASE.sh file under svt repo <a href="https://github.com/openshift/svt/blob/master/perfscale_regression_ci/scripts">perfscale_regression_ci/scripts</a> folder and sub folders<br>
+            If SCRIPT is specified TEST_CASE will be overwritten.
+            </p>'''
+    )
+    string(
+        name: 'SCRIPT', 
+        defaultValue: '', 
+        description: '''<p>
+            Relative path to the script of the TEST_CASE under <a href="https://github.com/openshift/svt">svt repo</a>.<br>
+            e.g.<br>
+            For large_network_policy test case: perfscale_regression_ci/scripts/network/large_network_policy.sh<br>
+            If TEST_CASE is specified, SCRIPT will overwrite the TEST_CASE.
+            </p>'''
+    )
+    string(
+        name: 'PARAMETERS', 
+        defaultValue: '', 
+        description: '''<p>
                   Parameter or an array of parameters to pass to the TEST_CASE script<p>
                   e.g.<br>
                   For conc_jobs: 100 500 1000 2000<br>
                   For large_network_policy: 5000<br>
-                  </p>''')
-    string(name: 'SVT_REPO', defaultValue:'https://github.com/openshift/svt', description:'''<p>
+                  </p>'''
+    )
+    string(
+        name: 'SVT_REPO', 
+        defaultValue:'https://github.com/openshift/svt', 
+        description:'''<p>
                   Repository to get regression test scripts and artifacts.<br>
                   You can change this to point to your fork if needed.
-                  </p>''')
-    string(name: 'SVT_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-    string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:'')
-    text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env vars you'd want to pass to the script, one pair on each line. <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
+                  </p>'''
+    )
+    string(
+        name: 'SVT_REPO_BRANCH', 
+        defaultValue:'master', 
+        description:'You can change this to point to a branch on your fork if needed.'
+    )
+    string(
+        name: 'SCALE_UP', 
+        defaultValue: '0', 
+        description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
+    )
+    string(
+        name: 'SCALE_DOWN', 
+        defaultValue: '0', 
+        description:
+        '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
+        if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+    )
+    booleanParam(
+        name: 'INFRA_WORKLOAD_INSTALL',
+        defaultValue: false,
+        description: '''
+        Install workload and infrastructure nodes even if less than 50 nodes.<br>
+        Checking this parameter box is valid only when SCALE_UP is greater than 0.
+        '''
+    )
+    string(
+        name:'JENKINS_AGENT_LABEL',
+        defaultValue:'oc412',
+        description:''
+    )
+    text(
+        name: 'ENV_VARS', 
+        defaultValue: '', 
+        description:'''<p>
+            Enter list of additional (optional) Env vars you'd want to pass to the script, one pair on each line. <br>
+            e.g.<br>
+            SOMEVAR1='env-test'<br>
+            SOMEVAR2='env2-test'<br>
+            ...<br>
+            SOMEVARn='envn-test'<br>
+            </p>'''
+    )
     booleanParam(
       name: 'CLEANUP',
       defaultValue: false,
@@ -78,8 +130,27 @@ pipeline {
       description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
     )
   }
-
   stages {
+    stage("Scale Up Cluster") {
+        agent { label params['JENKINS_AGENT_LABEL'] }
+        when {
+            expression { (SCALE_UP.toInteger() > 0  || INFRA_WORKLOAD_INSTALL == true)}
+        }
+        steps {
+            script{
+
+                scale_up_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
+                    string(name: 'BUILD_NUMBER', value: "${BUILD_NUMBER}"), text(name: "ENV_VARS", value: ENV_VARS),
+                    booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL),
+                    string(name: 'WORKER_COUNT', value: SCALE_UP.toString()), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                ]
+                if( scale_up_job != null && scale_up_job.result.toString() != "SUCCESS") {
+                    overall_status = "Scale Up Failed"
+                    currentBuild.result = "FAILURE"
+                }
+            }
+        }
+    }
     stage('Run Regression Test'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       environment{
@@ -106,7 +177,7 @@ pipeline {
         script{
           buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
-          currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
+          currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a><br/>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
 
@@ -150,9 +221,19 @@ pipeline {
             ''')
             output = sh(returnStdout: true, script: 'cat $WORKSPACE/output.out')
             println "return num $RETURNSTATUS"
+            if ( params.SCRIPT != "" ){
+                currentBuild.description = """
+                        <b>Ran regression script: </b> ${params.SCRIPT} <br/>
+                    """
+            } else {
+                currentBuild.description += """
+                        <b>Ran regression script: </b> ${params.TEST_CASE} <br/>
+                    """
+            }
+
             if ( RETURNSTATUS.toInteger() != 0 ) {
               currentBuild.result = "FAILURE"
-              overall_status = "FAIL"
+              overall_status = "Regression test: FAIL"
             }
           }
         }
@@ -179,6 +260,9 @@ pipeline {
                   }
               }
           }
+          currentBuild.description += """
+                <b>Final Status: </b> ${overall_status} <br/>
+            """
         }
 
         script {
@@ -194,6 +278,22 @@ pipeline {
             }
         }
       }
+    }
+    stage("Scale down workers") {
+        agent { label params['JENKINS_AGENT_LABEL'] }
+        when {
+            expression { params.SCALE_DOWN.toInteger() > 0 }
+        }
+          steps {
+            script {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN),
+                        text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                    ]
+            }
+
+        }
     }
   }
 }
