@@ -17,12 +17,6 @@ def invoke(command):
     print("Status : ",  output)
     return 0, output
 
-def delete_all_benchmarks():
-    invoke("oc delete benchmark -n benchmark-operator --all")
-
-def delete_all_jobs():
-    invoke("oc delete jobs -n benchmark-operator --all")
-
 def delete_all_namespaces(job):
     # make sure all namespaces are gone
     print("job type " + str(job))
@@ -38,6 +32,9 @@ def wait_for_all_deleted_ns(job, wait_num=300):
     ns_left = 1000  # starting at random high number
     while int(ns_left) > 0:
         returncode, ns_left = invoke("oc get ns --no-headers | grep Terminating | wc -l")
+        if returncode != 0: 
+            ns_left = 1000
+            continue
         ns_left = ns_left.strip()
         print(ns_left + " namespaces are left to still terminate")
         if counter > wait_num:
