@@ -143,11 +143,14 @@ pipeline {
               export folder=${SCRIPT%/*}
               export script=${SCRIPT##*/} 
               cd ${folder}
+
+              chmod +x ${script}
               set -o pipefail
-              ./${script} $PARAMETERS | tee $WORKSPACE/output.out
+              ./${script} $PARAMETERS |& tee $WORKSPACE/output.out
             ''')
             output = sh(returnStdout: true, script: 'cat $WORKSPACE/output.out')
-            if (RETURNSTATUS.toInteger() != 0) {
+            println "return num $RETURNSTATUS"
+            if ( RETURNSTATUS.toInteger() != 0 ) {
               currentBuild.result = "FAILURE"
             }
           }
@@ -162,14 +165,16 @@ pipeline {
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                   ],
                   propagate: false
-              if (status == "PASS") {
-                  if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
-                      status = "Cerberus check failed"
+              if (RETURNSTATUS == "PASS") {
+                  if ( cerberus_job.result.toString() != "SUCCESS") {
+                      RETURNSTATUS = "Cerberus check failed"
+                      currentBuild.result = "FAILURE"
                   }
               }
               else {
-                  if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
-                      status += "Cerberus check failed"
+                  if (cerberus_job.result.toString() != "SUCCESS") {
+                      RETURNSTATUS += "Cerberus check failed"
+                      currentBuild.result = "FAILURE"
                   }
               }
           }
