@@ -63,18 +63,18 @@ def process_query(metric_name, query, raw_data):
     clean_data = []
 
     # capture metadata and value artifacts from prometheus return object
-    # note that timestamp is multiplied by 1000 for compatability with ES date type
     try:
         for result in raw_data["data"]["result"]:
             for data_point in result["values"]:
                 metadata = result["metric"]
                 metadata["query"] = query
+                iso_timestamp = datetime.datetime.utcfromtimestamp(data_point[0]).isoformat() + 'Z'
                 clean_data.append(
                     {
                         "uuid": UUID,
                         "metric_name": metric_name,
                         "data_type": "datapoint",
-                        "timestamp": data_point[0] * 1000,
+                        "iso_timestamp": iso_timestamp,
                         "unix_timestamp": data_point[0],
                         "value": float(data_point[1]),
                         "metadata": metadata
@@ -147,11 +147,12 @@ def get_netobserv_env_info():
     '''
 
     # intialize info and base_commands objects
+    iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
     info = {
         "uuid": UUID,
         "metric_name": "netobservEnv",
         "data_type": "metadata",
-        "timestamp": int(START_TIME) * 1000,
+        "iso_timestamp": iso_timestamp,
     }
     base_commands = {
         "release": ['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'netobserv'],
@@ -196,11 +197,12 @@ def get_jenkins_env_info():
     '''
 
     # intialize info object
+    iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
     info = {
         "uuid": UUID,
         "metric_name": "jenkinsEnv",
         "data_type": "metadata",
-        "timestamp": int(START_TIME) * 1000,
+        "iso_timestamp": iso_timestamp,
         "jenkins_job_name": JENKINS_JOB,
         "jenkins_build_num": JENKINS_BUILD
     }
@@ -264,11 +266,11 @@ def upload_data_to_elasticsearch():
     for item in RESULTS['data']:
         metric_name = item.get('metric_name')
         if metric_name == 'netobservEnv':
-            index = 'netobserv-perf-operator-metadata'
+            index = 'test-netobserv-operator-metadata'
         elif metric_name == 'jenkinsEnv':
-            index = 'netobserv-perf-jenkins-metadata'
+            index = 'test-netobserv-jenkins-metadata'
         else:
-            index = 'netobserv-perf'
+            index = 'test-netobserv-perf'
         logging.debug(f"Uploading item {item} to index {index} in Elasticsearch")
         response = es.index(
             index=index,
