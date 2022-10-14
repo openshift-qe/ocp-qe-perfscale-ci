@@ -27,19 +27,19 @@
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="openshift-operators-redhat"}[5m]))
   metricName: lokiStorageUsage
 
-# 8. Number of flows processed by ingester per minute aggregated by FLP pods.
+# 8. Flows processed by ingester per minute aggregated by FLP pods.
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
   metricName: nFlowsProcessedPerMinute
 
-# 9. Number of ingress and egress bytes processed per minute.
-- query: sum(rate(netobserv_workload_ingress_bytes_total[1m])*60) + sum(rate(netobserv_workload_egress_bytes_total[1m])*60)
+# 9. Ingress bytes processed per minute
+- query: sum(rate(netobserv_workload_ingress_bytes_total[1m])*60)
   metricName: nBytesProcessedPerMinute
 
-# 11. Number of ingress and egress packets processed per minute.
-- query: sum(rate(netobserv_workload_ingress_packets_total[1m])*60) + sum(rate(netobserv_workload_egress_packets_total[1m])*60
+# 10. Ingress packets processed per minute.
+- query: sum(rate(netobserv_workload_ingress_packets_total[1m])*60)
   metricName: nPacketsProcessedPerMinute
 
-# 10. Number of Loki records written per minute.
+# 11. Loki records written per minute.
 - query: sum(netobserv_records_written)
   metricName: lokiRecordsWritten
   
