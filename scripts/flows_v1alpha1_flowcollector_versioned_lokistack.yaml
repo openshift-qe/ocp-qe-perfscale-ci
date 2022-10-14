@@ -29,7 +29,8 @@ spec:
     enableKubeProbes: true
     healthPort: 8080
     prometheusPort: 9102
-    ignoreMetrics: []
+    ignoreMetrics:
+    - egress
     dropUnusedFields: true
   kafka:
     enable: false
