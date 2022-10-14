@@ -31,11 +31,15 @@
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
   metricName: nFlowsProcessedPerMinute
 
-# 9. Number of bytes processed per minute.
-- query: sum(rate(netobserv_received_bytes_total[1m]))
+# 9. Number of ingress and egress bytes processed per minute.
+- query: sum(rate(netobserv_workload_ingress_bytes_total[1m])*60) + sum(rate(netobserv_workload_egress_bytes_total[1m])*60)
   metricName: nBytesProcessedPerMinute
+
+# 11. Number of ingress and egress packets processed per minute.
+- query: sum(rate(netobserv_workload_ingress_packets_total[1m])*60) + sum(rate(netobserv_workload_egress_packets_total[1m])*60
+  metricName: nPacketsProcessedPerMinute
 
 # 10. Number of Loki records written per minute.
 - query: sum(netobserv_records_written)
   metricName: lokiRecordsWritten
-
+  
