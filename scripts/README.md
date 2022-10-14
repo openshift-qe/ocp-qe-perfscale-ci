@@ -28,11 +28,17 @@ kube:admin
 
 ### Installing the Network Observability Operator
 There are two methods you can use to install the operator:
-- To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
-- To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
+
+#### OperatorHub
+To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
+
+#### Source
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
+
+To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
 
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki operator to create a Loki Stack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
+It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
 1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` NS
 2. Create a AWS secret for S3 bucket to be used for lokiStack, use script `$ ./deploy-loki-aws-secret.sh` to create s3-secret. By default it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configes are added here, depending upon the LokiStack size high end machine types are required for the cluster:
@@ -47,7 +53,7 @@ It is recommended to use Loki operator to create a Loki Stack for Network Observ
         - Use case: Large scale performance testing.
 
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
-4. LokiStack should be created under `openshift-operators-redhat` NS
+4. LokiStack should be created under `openshift-operators-redhat` namespace
 
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`

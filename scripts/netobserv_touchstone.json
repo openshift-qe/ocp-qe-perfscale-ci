@@ -1,6 +1,32 @@
 {
     "elasticsearch": {
-        "netobserv-perf": [
+        "metadata": {
+            "prod-netobserv-operator-metadata": {
+                "fields": [
+                    "agent",
+                    "cache_active_time",
+                    "cache_max_flows",
+                    "flp_kind",
+                    "release",
+                    "sampling"
+                ],
+                "additional_fields": [
+                    "metric_name"
+                ]
+            },
+            "prod-netobserv-jenkins-metadata": {
+                "fields": [
+                    "jenkins_build_num",
+                    "jenkins_job_name",
+                    "workload",
+                    "variable"
+                ],
+                "additional_fields": [
+                    "metric_name"
+                ]
+            }
+        },
+        "prod-netobserv-datapoints": [
             {
                 "filter": {
                     "metric_name.keyword": "nFlowsProcessedPerMinute"

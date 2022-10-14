@@ -430,7 +430,7 @@ pipeline {
                         println "Successfully ran workload job :)"
                         // update build description with workload job link
                         env.JENKINS_BUILD = "${workloadJob.getNumber()}"
-                        currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b><br/>"
+                        currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
                     }
                 }
                 copyArtifacts(
