@@ -140,7 +140,7 @@ pipeline {
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
-            defaultValue: 3,
+            defaultValue: '3',
             description: '''
             Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:
             3 - default for non-perf testing environments</br>
@@ -216,7 +216,7 @@ pipeline {
         booleanParam(
             name: 'DELETE_S3_BUCKET',
             defaultValue: false,
-            description: 'Check this box to run the NOPE tool in debug mode for additional logging'
+            description: 'Check this box to delete AWS S3 Bucket'
         )
     }
 
@@ -587,18 +587,20 @@ pipeline {
     }
 
     post {
-        // delete AWS s3 bucket in the end
-        if(params.DELETE_S3_BUCKET == true){
-            println "Deleting AWS S3 Bucket"
+        cleanup {
+            // delete AWS s3 bucket in the end
             script {
-                returnCode = sh(returnStatus: true, script: """
-                    aws rb s3://$S3_BUCKETNAME --force
-                """)
-                if (returnCode.toInteger() != 0) {
-                    error('Bucket deletion unsuccessful :(, please delete manually to save costs')
-                }
-                else {
-                    println 'Bucket deleted successfully :)'
+                if (params.DELETE_S3_BUCKET == true) {
+                    println "Deleting AWS S3 Bucket"
+                    returnCode = sh(returnStatus: true, script: """
+                        aws rb s3://$S3_BUCKETNAME --force
+                    """)
+                    if (returnCode.toInteger() != 0) {
+                        error('Bucket deletion unsuccessful :(, please delete manually to save costs')
+                    }
+                    else {
+                        println 'Bucket deleted successfully :)'
+                    }
                 }
             }
         }
