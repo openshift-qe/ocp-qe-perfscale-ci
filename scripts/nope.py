@@ -266,11 +266,11 @@ def upload_data_to_elasticsearch():
     for item in RESULTS['data']:
         metric_name = item.get('metric_name')
         if metric_name == 'netobservEnv':
-            index = 'test-netobserv-operator-metadata'
+            index = 'prod-netobserv-operator-metadata'
         elif metric_name == 'jenkinsEnv':
-            index = 'test-netobserv-jenkins-metadata'
+            index = 'prod-netobserv-jenkins-metadata'
         else:
-            index = 'test-netobserv-perf'
+            index = 'prod-netobserv-datapoints'
         logging.debug(f"Uploading item {item} to index {index} in Elasticsearch")
         response = es.index(
             index=index,
