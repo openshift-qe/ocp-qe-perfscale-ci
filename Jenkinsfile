@@ -216,7 +216,7 @@ pipeline {
         booleanParam(
             name: 'DELETE_S3_BUCKET',
             defaultValue: false,
-            description: 'Check this box to delete AWS S3 Bucket'
+            description: 'Check this box to delete AWS S3 Bucket, also deletes lokistack, flowcollector and kafka'
         )
     }
 
@@ -335,6 +335,9 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                     }
+                    // get bucketname for lokistack
+                    env.S3_BUCKETNAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
+                    println "Loki uses S3 bucket: ${env.S3_BUCKETNAME}"
                 }
             }
         }
@@ -591,9 +594,15 @@ pipeline {
             // delete AWS s3 bucket in the end
             script {
                 if (params.DELETE_S3_BUCKET == true) {
-                    println "Deleting AWS S3 Bucket"
+                    println "Deleting AWS S3 Bucket, will also cleanup lokistack and flowcollector as part of it"
                     returnCode = sh(returnStatus: true, script: """
-                        aws rb s3://$S3_BUCKETNAME --force
+                        aws s3 rb s3://${env.S3_BUCKETNAME} --force
+                        oc delete lokistack/lokistack -n openshift-operators-redhat
+                        oc delete flowcollector/cluster
+                        if [[ ${ENABLE_KAFKA} == "true" ]]; then
+                            oc delete kafka/kafka-cluster -n netobserv
+                            oc delete kafkaTopic/network-flows -n netobserv
+                        fi
                     """)
                     if (returnCode.toInteger() != 0) {
                         error('Bucket deletion unsuccessful :(, please delete manually to save costs')
