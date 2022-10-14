@@ -119,6 +119,34 @@ pipeline {
             description: 'Check this box to setup Kafka for NetObserv'
         )
         separator(
+            name: 'KAFKA_CONFIG_OPTIONS',
+            sectionHeader: 'KAFKA Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        choice(
+            name: 'TOPIC_PARTITIONS',
+            choices: [6, 10, 24, 48],
+            description: '''
+            Number of Kafka Topic Partition. Also, adjust number of FLP Replicas. Below are recommended values for paritions:
+            6 - default for non-perf testing environments</br>
+            10 - Perf testing with worker nodes <= 20</br>
+            24 - Perf testing with worker nodes <= 50</br>
+            48 - Perf testing with worker nodes <= 100</br>
+            '''
+        )
+        string(
+            name: 'FLP_KAFKA_REPLICAS',
+            defaultValue: 3,
+            description: '''
+            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:
+            3 - default for non-perf testing environments</br>
+            '''
+        )
+        separator(
             name: 'WORKLOAD_CONFIG_OPTIONS',
             sectionHeader: 'Workload Configuration Options',
             sectionHeaderStyle: '''
@@ -182,6 +210,11 @@ pipeline {
         )
         booleanParam(
             name: 'NOPE_DEBUG',
+            defaultValue: false,
+            description: 'Check this box to run the NOPE tool in debug mode for additional logging'
+        )
+        booleanParam(
+            name: 'DELETE_S3_BUCKET',
             defaultValue: false,
             description: 'Check this box to run the NOPE tool in debug mode for additional logging'
         )
@@ -554,6 +587,21 @@ pipeline {
     }
 
     post {
+        // delete AWS s3 bucket in the end
+        if(params.DELETE_S3_BUCKET == true){
+            println "Deleting AWS S3 Bucket"
+            script {
+                returnCode = sh(returnStatus: true, script: """
+                    aws rb s3://$S3_BUCKETNAME --force
+                """)
+                if (returnCode.toInteger() != 0) {
+                    error('Bucket deletion unsuccessful :(, please delete manually to save costs')
+                }
+                else {
+                    println 'Bucket deleted successfully :)'
+                }
+            }
+        }
         always {
             println 'Post Section - Always'
             archiveArtifacts(

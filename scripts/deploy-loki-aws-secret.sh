@@ -57,15 +57,15 @@ create_s3_bucket() {
     #aws s3api list-buckets --query \'Buckets[?Name == \"${LOKI_BUCKET_NAME}\"].Name\'`
     aws s3api list-buckets | grep ${LOKI_BUCKET_NAME}
     if [[ $? == 0 ]]; then
-        echo "bucket: using existing bucket"
+        echo "bucket: deleting existing bucket"
+        aws s3 rb s3://$LOKI_BUCKET_NAME --force
+    fi
+    aws s3api create-bucket --bucket $LOKI_BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION
+    if [[ $? == 0 ]]; then
+        echo "bucket: created new bucket $LOKI_BUCKET_NAME"
     else
-        aws s3api create-bucket --bucket $LOKI_BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION
-        if [[ $? == 0 ]]; then
-            echo "bucket: created new bucket $LOKI_BUCKET_NAME"
-        else
-            echo "bucket: Error: fail to create bucket $LOKI_BUCKET_NAME!"
-            exit 1
-        fi
+        echo "bucket: Error: fail to create bucket $LOKI_BUCKET_NAME!"
+        exit 1
     fi
 }
 
