@@ -141,12 +141,20 @@ pipeline {
         string(
             name: "COMPARISON_CONFIG",
             defaultValue: "mb-touchstone.json",
-            description: 'JSON files of what data to output into a google sheet'
+            description: 'JSON config files of what data to output into a Google Sheet'
         )
         booleanParam(
             name: 'GEN_CSV',
             defaultValue: true,
             description: 'Boolean to create a google sheet with comparison data'
+        )
+        string(
+            name: 'EMAIL_ID_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                Email to share Google Sheet results with<br/>
+                By default shares with email of person who ran the job
+            '''
         )
         text(
             name: 'ENV_VARS',
@@ -196,9 +204,6 @@ pipeline {
 
     stages {
         stage('Run Router perf tests'){
-            environment{
-                EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
-            }
             steps {
                 script {
                     if (params.SCALE_UP.toInteger() > 0) {
@@ -232,6 +237,12 @@ pipeline {
                     buildinfo.params.each { env.setProperty(it.key, it.value) }
                 }
                 script {
+                    if (params.EMAIL_ID_OVERRIDE != '') {
+                        env.EMAIL_ID_FOR_RESULTS_SHEET = params.EMAIL_ID_OVERRIDE
+                    }
+                    else {
+                        env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+                    }
                     withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                         RETURNSTATUS = sh(returnStatus: true, script: '''
                             # Get ENV VARS Supplied by the user to this job and store in .env_override
