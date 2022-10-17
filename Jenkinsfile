@@ -215,7 +215,7 @@ pipeline {
         )
         separator(
             name: 'CLEANUP_OPTIONS',
-            sectionHeader: 'CLEANUP Options',
+            sectionHeader: 'Cleanup Options',
             sectionHeaderStyle: '''
                 font-size: 14px;
                 font-weight: bold;
