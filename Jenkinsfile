@@ -131,19 +131,19 @@ pipeline {
             name: 'TOPIC_PARTITIONS',
             choices: [6, 10, 24, 48],
             description: '''
-            Number of Kafka Topic Partition. Also, adjust number of FLP Replicas. Below are recommended values for paritions:
-            6 - default for non-perf testing environments</br>
-            10 - Perf testing with worker nodes <= 20</br>
-            24 - Perf testing with worker nodes <= 50</br>
-            48 - Perf testing with worker nodes <= 100</br>
+            Number of Kafka Topic Partition. Also, adjust number of FLP Replicas. Below are recommended values for paritions:<br/>
+            6 - default for non-perf testing environments<br/>
+            10 - Perf testing with worker nodes <= 20<br/>
+            24 - Perf testing with worker nodes <= 50<br/>
+            48 - Perf testing with worker nodes <= 100<br/>
             '''
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
             defaultValue: '3',
             description: '''
-            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:
-            3 - default for non-perf testing environments</br>
+            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>:
+            3 - default for non-perf testing environments<br/>
             '''
         )
         separator(
