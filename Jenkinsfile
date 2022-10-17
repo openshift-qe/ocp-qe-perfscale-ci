@@ -113,11 +113,6 @@ pipeline {
             defaultValue: '500Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
         )
-        booleanParam(
-            name: 'ENABLE_KAFKA',
-            defaultValue: false,
-            description: 'Check this box to setup Kafka for NetObserv'
-        )
         separator(
             name: 'KAFKA_CONFIG_OPTIONS',
             sectionHeader: 'KAFKA Configuration Options',
@@ -127,11 +122,16 @@ pipeline {
                 font-family: 'Orienta', sans-serif;
             '''
         )
+        booleanParam(
+            name: 'ENABLE_KAFKA',
+            defaultValue: false,
+            description: 'Check this box to setup Kafka for NetObserv'
+        )
         choice(
             name: 'TOPIC_PARTITIONS',
             choices: [6, 10, 24, 48],
             description: '''
-            Number of Kafka Topic Partition. Also, adjust number of FLP Replicas. Below are recommended values for paritions:<br/>
+            Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
             6 - default for non-perf testing environments<br/>
             10 - Perf testing with worker nodes <= 20<br/>
             24 - Perf testing with worker nodes <= 50<br/>
@@ -142,7 +142,7 @@ pipeline {
             name: 'FLP_KAFKA_REPLICAS',
             defaultValue: '3',
             description: '''
-            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
+            Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
             3 - default for non-perf testing environments<br/>
             '''
         )
@@ -212,6 +212,15 @@ pipeline {
             name: 'NOPE_DEBUG',
             defaultValue: false,
             description: 'Check this box to run the NOPE tool in debug mode for additional logging'
+        )
+        separator(
+            name: 'CLEANUP_OPTIONS',
+            sectionHeader: 'CLEANUP Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
         )
         booleanParam(
             name: 'DELETE_S3_BUCKET',
@@ -590,6 +599,17 @@ pipeline {
     }
 
     post {
+        always {
+            println 'Post Section - Always'
+            archiveArtifacts(
+                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+        }
+        failure {
+            println 'Post Section - Failure'
+        }
         cleanup {
             // delete AWS s3 bucket in the end
             script {
@@ -605,24 +625,13 @@ pipeline {
                         fi
                     """)
                     if (returnCode.toInteger() != 0) {
-                        error('Bucket deletion unsuccessful :(, please delete manually to save costs')
+                        error('Bucket deletion unsuccessful - please delete manually to save costs :(')
                     }
                     else {
                         println 'Bucket deleted successfully :)'
                     }
                 }
             }
-        }
-        always {
-            println 'Post Section - Always'
-            archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml',
-                allowEmptyArchive: true,
-                fingerprint: true
-            )
-        }
-        failure {
-            println 'Post Section - Failure'
         }
     }
 }
