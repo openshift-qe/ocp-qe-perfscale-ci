@@ -142,7 +142,7 @@ pipeline {
             name: 'FLP_KAFKA_REPLICAS',
             defaultValue: '3',
             description: '''
-            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>:
+            Recommend to have replicas to be at least half of number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
             3 - default for non-perf testing environments<br/>
             '''
         )
