@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1663870823306,
+  "iteration": 1665772365734,
   "links": [],
   "panels": [
     {
@@ -48,8 +48,8 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 1
       },
@@ -83,13 +83,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m])*60) by (pod)",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m])*60)",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60)",
+          "hide": false,
           "interval": "",
           "legendFormat": "Total flows",
           "refId": "B"
@@ -153,10 +154,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 10,
+        "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 10
+        "x": 12,
+        "y": 1
       },
       "hiddenSeries": false,
       "id": 44,
@@ -188,15 +189,16 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(ingest_collector_flow_logs_processed[1m]))",
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m]))",
+          "instant": false,
           "interval": "",
-          "legendFormat": "Flow processed/min",
+          "legendFormat": "Flow processed/s",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(loki_records_written[1m]))",
+          "expr": "sum(rate(netobserv_records_written[1m]))",
           "interval": "",
-          "legendFormat": "Flow Write/min",
+          "legendFormat": "Flow Write/s",
           "refId": "B"
         }
       ],
@@ -204,7 +206,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Flows processed vs Flow write per min",
+      "title": "Flows processed vs Flow write per second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -248,6 +250,103 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "$Datasource",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 52,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(netobserv_workload_ingress_packets_total[1m]))",
+          "interval": "",
+          "legendFormat": "Pkts/s",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Ingress Packets processed/second",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "Thanos",
       "fieldConfig": {
         "defaults": {
@@ -258,10 +357,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 10,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 46,
@@ -293,9 +392,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(netobserv_bandwidth_per_network_service_per_namespace[1m]))",
+          "expr": "sum(rate(netobserv_workload_ingress_bytes_total[1m]))",
           "interval": "",
-          "legendFormat": "Bytes/min",
+          "legendFormat": "Bytes/s",
           "refId": "A"
         }
       ],
@@ -303,7 +402,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Bytes processed per min",
+      "title": "Ingress Bytes processed/second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -349,7 +448,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 17
       },
       "id": 40,
       "panels": [],
@@ -374,7 +473,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 6,
@@ -473,7 +572,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 21
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 22,
@@ -562,7 +661,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 26
       },
       "id": 38,
       "panels": [],
@@ -587,7 +686,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 28,
@@ -687,7 +786,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 8,
@@ -788,7 +887,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 26,
@@ -887,7 +986,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 24,
@@ -975,7 +1074,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 43
       },
       "id": 48,
       "panels": [],
@@ -1000,7 +1099,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1088,7 +1187,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 52
       },
       "id": 36,
       "panels": [],
@@ -1113,7 +1212,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 53
       },
       "hiddenSeries": false,
       "id": 30,
@@ -1212,7 +1311,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 53
       },
       "hiddenSeries": false,
       "id": 32,
@@ -1313,7 +1412,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 34,
@@ -1412,7 +1511,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 10,
@@ -1523,7 +1622,7 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
@@ -1575,12 +1674,12 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
-  "version": 8
+  "version": 3
 }

@@ -113,10 +113,38 @@ pipeline {
             defaultValue: '500Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
         )
+        separator(
+            name: 'KAFKA_CONFIG_OPTIONS',
+            sectionHeader: 'KAFKA Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
         booleanParam(
             name: 'ENABLE_KAFKA',
             defaultValue: false,
             description: 'Check this box to setup Kafka for NetObserv'
+        )
+        choice(
+            name: 'TOPIC_PARTITIONS',
+            choices: [6, 10, 24, 48],
+            description: '''
+            Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
+            6 - default for non-perf testing environments<br/>
+            10 - Perf testing with worker nodes <= 20<br/>
+            24 - Perf testing with worker nodes <= 50<br/>
+            48 - Perf testing with worker nodes <= 100<br/>
+            '''
+        )
+        string(
+            name: 'FLP_KAFKA_REPLICAS',
+            defaultValue: '3',
+            description: '''
+            Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
+            3 - default for non-perf testing environments<br/>
+            '''
         )
         separator(
             name: 'WORKLOAD_CONFIG_OPTIONS',
@@ -184,6 +212,20 @@ pipeline {
             name: 'NOPE_DEBUG',
             defaultValue: false,
             description: 'Check this box to run the NOPE tool in debug mode for additional logging'
+        )
+        separator(
+            name: 'CLEANUP_OPTIONS',
+            sectionHeader: 'Cleanup Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        booleanParam(
+            name: 'DELETE_S3_BUCKET',
+            defaultValue: false,
+            description: 'Check this box to delete AWS S3 Bucket, also deletes lokistack, flowcollector and kafka'
         )
     }
 
@@ -302,6 +344,9 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                     }
+                    // get bucketname for lokistack
+                    env.S3_BUCKETNAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
+                    println "Loki uses S3 bucket: ${env.S3_BUCKETNAME}"
                 }
             }
         }
@@ -349,7 +394,7 @@ pipeline {
                     if (params.ENABLE_KAFKA == true) {
                         println "Enabling Kafka in flowcollector..."
                         returnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/kafka/enable", "value": "true"}] -n netobserv"
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}] -n netobserv"
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
                         """)
@@ -564,6 +609,29 @@ pipeline {
         }
         failure {
             println 'Post Section - Failure'
+        }
+        cleanup {
+            // delete AWS s3 bucket in the end
+            script {
+                if (params.DELETE_S3_BUCKET == true) {
+                    println "Deleting AWS S3 Bucket, will also cleanup lokistack and flowcollector as part of it"
+                    returnCode = sh(returnStatus: true, script: """
+                        aws s3 rb s3://${env.S3_BUCKETNAME} --force
+                        oc delete lokistack/lokistack -n openshift-operators-redhat
+                        oc delete flowcollector/cluster
+                        if [[ ${ENABLE_KAFKA} == "true" ]]; then
+                            oc delete kafka/kafka-cluster -n netobserv
+                            oc delete kafkaTopic/network-flows -n netobserv
+                        fi
+                    """)
+                    if (returnCode.toInteger() != 0) {
+                        error('Bucket deletion unsuccessful - please delete manually to save costs :(')
+                    }
+                    else {
+                        println 'Bucket deleted successfully :)'
+                    }
+                }
+            }
         }
     }
 }

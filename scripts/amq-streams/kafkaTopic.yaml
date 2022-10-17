@@ -1,0 +1,14 @@
+kind: KafkaTopic
+apiVersion: kafka.strimzi.io/v1beta2
+metadata:
+  name: network-flows
+  labels:
+    strimzi.io/cluster: kafka-cluster
+  namespace: netobserv
+spec:
+  partitions: ${TOPIC_PARTITIONS}
+  replicas: 1
+  config:
+    retention.ms: 604800000
+    segment.bytes: 1073741824
+

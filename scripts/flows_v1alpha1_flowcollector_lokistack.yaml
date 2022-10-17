@@ -19,38 +19,27 @@ spec:
         containerName: ovnkube-node
     ebpf:
       image: 'quay.io/netobserv/netobserv-ebpf-agent:main'
-      imagePullPolicy: IfNotPresent
-      sampling: 50
+      imagePullPolicy: Always
+      sampling: 1
       cacheActiveTimeout: 5s
       cacheMaxFlows: 1000
       interfaces: [ ]
       excludeInterfaces: [ "lo" ]
       logLevel: info
       privileged: false
-      resources:
-        requests:
-          memory: 50Mi
-          cpu: 100m
-        limits:
-          memory: 100Mi
   processor:
     port: 2055
     image: 'quay.io/netobserv/flowlogs-pipeline:main'
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
     profilePort: 6060
     metricsServer:
       port: 9102
-    ignoreMetrics: []
+    ignoreMetrics:
+    - egress
     dropUnusedFields: true
-    resources:
-      requests:
-        memory: 100Mi
-        cpu: 100m
-      limits:
-        memory: 300Mi
     kafkaConsumerReplicas: 3
     kafkaConsumerAutoscaler: null
   kafka:
@@ -68,7 +57,8 @@ spec:
         certFile: user.crt
         certKey: user.key
   loki:
-    url: 'http://loki.netobserv.svc:3100/'
+    url: https://lokistack-distributor-http.openshift-operators-redhat.svc:3100/
+    querierUrl: https://lokistack-querier-http.openshift-operators-redhat.svc:3100/
     batchWait: 1s
     batchSize: 102400
     minBackoff: 1s
@@ -77,7 +67,7 @@ spec:
     staticLabels:
       app: netobserv-flowcollector
     tls:
-      enable: false
+      enable: true
       caCert:
         type: configmap
         name: openshift-service-ca.crt
@@ -85,7 +75,7 @@ spec:
   consolePlugin:
     register: true
     image: 'quay.io/netobserv/network-observability-console-plugin:main'
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     port: 9001
     logLevel: info
     autoscaler: null
