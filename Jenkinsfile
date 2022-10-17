@@ -107,12 +107,20 @@ pipeline {
       string(
           name: "COMPARISON_CONFIG",
           defaultValue: "clusterVersion.json podLatency.json containerMetrics.json",
-          description: 'JSON files of what data to output into a google sheet'
+          description: 'JSON config files of what data to output into a Google Sheet'
       )
       booleanParam(
           name: 'GEN_CSV',
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
+      )
+      string(
+          name: 'EMAIL_ID_OVERRIDE',
+          defaultValue: '',
+          description: '''
+            Email to share Google Sheet results with<br/>
+            By default shares with email of person who ran the job
+          '''
       )
       string(
           name: 'JENKINS_AGENT_LABEL',
@@ -216,13 +224,8 @@ pipeline {
               """.stripIndent()
           }
         }
-        environment{
-            EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
-        }
         steps {
-            
             deleteDir()
-
             checkout([
                 $class: 'GitSCM',
                 branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
@@ -242,8 +245,13 @@ pipeline {
                 currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
                 buildinfo.params.each { env.setProperty(it.key, it.value) }
             }
-
             script {
+                if (params.EMAIL_ID_OVERRIDE != '') {
+                    env.EMAIL_ID_FOR_RESULTS_SHEET = params.EMAIL_ID_OVERRIDE
+                }
+                else {
+                    env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+                }
                 withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     RETURNSTATUS = sh(returnStatus: true, script: '''
                         # Get ENV VARS Supplied by the user to this job and store in .env_override
