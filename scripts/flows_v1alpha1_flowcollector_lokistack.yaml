@@ -37,7 +37,8 @@ spec:
     profilePort: 6060
     metricsServer:
       port: 9102
-    ignoreMetrics: []
+    ignoreMetrics:
+    - egress
     dropUnusedFields: true
     kafkaConsumerReplicas: 3
     kafkaConsumerAutoscaler: null
