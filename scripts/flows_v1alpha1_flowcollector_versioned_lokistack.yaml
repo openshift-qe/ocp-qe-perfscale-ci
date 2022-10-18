@@ -28,9 +28,11 @@ spec:
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
-    prometheusPort: 9102
-    ignoreMetrics:
-    - egress
+    metrics:
+      server:
+        port: 9102
+      ignoreTags:
+        - egress
     dropUnusedFields: true
   kafka:
     enable: false

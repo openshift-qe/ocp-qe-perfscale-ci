@@ -35,10 +35,11 @@ spec:
     enableKubeProbes: true
     healthPort: 8080
     profilePort: 6060
-    metricsServer:
-      port: 9102
-    ignoreMetrics:
-    - egress
+    metrics:
+      server:
+        port: 9102
+      ignoreTags:
+        - egress
     dropUnusedFields: true
     kafkaConsumerReplicas: 3
     kafkaConsumerAutoscaler: null
