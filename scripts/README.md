@@ -117,5 +117,5 @@ Note that if you are running the NOPE tool in Upload mode by passing the `--uplo
 ### Mr. Sandman
 Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
-## Fetching metrics using touchstone 
-NetObserv metrics uploaded to elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run it with any given UUID with the `touchstone.sh` script (make sure your WORKSPACE variable is set).
+## Fetching metrics using Touchstone 
+NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run it with any given UUID using the `netobserv_touchstone.json` file in the [e2e-benchmarking](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/utils/touchstone-configs) repo.

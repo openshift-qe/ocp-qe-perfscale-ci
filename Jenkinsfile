@@ -183,11 +183,6 @@ pipeline {
                 Should be the number of worker nodes on your cluster (after scaling)
             '''
         )
-        booleanParam(
-            name: 'GEN_CSV',
-            defaultValue: true,
-            description: 'Boolean to create a google sheet with comparison data'
-        )
         separator(
             name: 'NOPE_CONFIG_OPTIONS',
             sectionHeader: 'NOPE Configuration Options',
@@ -203,6 +198,14 @@ pipeline {
             description: '''
                 Check this box to run the NOPE tool after the workload completes<br/>
                 If the tool successfully uploads results to Elasticsearch, Touchstone will be run afterword
+            '''
+        )
+        booleanParam(
+            name: 'GEN_CSV',
+            defaultValue: true,
+            description: '''
+                Boolean to create a Google Sheet with comparison data<br/>
+                Note this will only run if the NOPE tool successfully uploads to Elasticsearch
             '''
         )
         booleanParam(
@@ -240,6 +243,12 @@ pipeline {
                 script {
                     if (params.FLEXY_BUILD_NUMBER == '') {
                         error 'A Flexy build number must be specified'
+                    }
+                    if (params.WORKLOAD == 'None' && params.NOPE == true) {
+                        error 'NOPE tool cannot be run if a workload is not run first'
+                    }
+                    if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
+                        error 'Spreadsheet cannot be generated if data is not uploaded to Elasticsearch'
                     }
                     println('Job params are valid - continuing execution...')
                 }
@@ -452,18 +461,15 @@ pipeline {
                 script {
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
-                        COMPARISON_CONFIG_FILES = 'mb-touchstone.json netobserv-touchstone.json'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            string(name: 'COMPARISON_CONFIG', value: COMPARISON_CONFIG_FILES),
-                            booleanParam(name: 'GEN_CSV', value: params.GEN_CSV)
+                            booleanParam(name: 'GEN_CSV', value: false)
                         ]
                     }
                     else {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner'
-                        COMPARISON_CONFIG_FILES = 'clusterVersion.json podLatency.json containerMetrics.json netobserv-touchstone.json'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
@@ -471,8 +477,7 @@ pipeline {
                             booleanParam(name: 'CERBERUS_CHECK', value: true),
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
-                            string(name: 'COMPARISON_CONFIG', value: COMPARISON_CONFIG_FILES),
-                            booleanParam(name: 'GEN_CSV', value: params.GEN_CSV),
+                            booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL)
                         ]
                     }
@@ -577,21 +582,26 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/benchmark-comparison.git' ]],
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'benchmark-comparison']]
+                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking.git' ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
-                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
+                        env.COMPARISON_CONFIG = 'netobserv_touchstone.json'
+                        env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                        env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+                        env.GEN_CSV = params.GEN_CSV
+                        env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
+                        env.WORKLOAD = params.WORKLOAD
                         returnCode = sh(returnStatus: true, script: """
                             python3.9 --version
                             python3.9 -m pip install virtualenv
                             python3.9 -m virtualenv venv3
                             source venv3/bin/activate
                             python --version
-                            cd $WORKSPACE/benchmark-comparison
-                            python setup.py develop
-                            export UUID=`jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
-                            . $WORKSPACE/ocp-qe-perfscale-ci/scripts/touchstone.sh \$UUID
+                            cd $WORKSPACE/e2e-benchmarking/utils
+                            source compare.sh
+                            run_benchmark_comparison
                         """)
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
                         if (returnCode.toInteger() != 0) {
