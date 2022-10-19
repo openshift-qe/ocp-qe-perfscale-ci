@@ -33,6 +33,7 @@ def get_benchmark_uuid(env_vars_file):
             to_time = calendar.timegm(n_time.timetuple()) * 1000
             if "ES_SERVER" in env_vars_file: 
                 if "search-ocp-qe-perf-scale-test" in env_vars_file:
+                    global data_source
                     data_source = "SVTQE-kube-burner"
                 return get_grafana_url(uuid, from_time, to_time)
             return ""
@@ -182,7 +183,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         else:
             grafana_cell = ""
     else:
-        grafana_cell = get_benchmark_uuid()
+        grafana_cell = get_benchmark_uuid(env_vars_file)
         if not grafana_cell:
             grafana_cell = get_metadata_uuid(job_type, job_output)
 
