@@ -131,19 +131,19 @@ pipeline {
             name: 'TOPIC_PARTITIONS',
             choices: [6, 10, 24, 48],
             description: '''
-            Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
-            6 - default for non-perf testing environments<br/>
-            10 - Perf testing with worker nodes <= 20<br/>
-            24 - Perf testing with worker nodes <= 50<br/>
-            48 - Perf testing with worker nodes <= 100<br/>
+                Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
+                6 - default for non-perf testing environments<br/>
+                10 - Perf testing with worker nodes <= 20<br/>
+                24 - Perf testing with worker nodes <= 50<br/>
+                48 - Perf testing with worker nodes <= 100<br/>
             '''
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
             defaultValue: '3',
             description: '''
-            Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
-            3 - default for non-perf testing environments<br/>
+                Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
+                3 - default for non-perf testing environments<br/>
             '''
         )
         separator(
@@ -201,6 +201,14 @@ pipeline {
             '''
         )
         booleanParam(
+            name: 'GEN_CSV',
+            defaultValue: true,
+            description: '''
+                Boolean to create a Google Sheet with comparison data<br/>
+                Note this will only run if the NOPE tool successfully uploads to Elasticsearch
+            '''
+        )
+        booleanParam(
             name: 'NOPE_DUMP',
             defaultValue: false,
             description: '''
@@ -225,7 +233,7 @@ pipeline {
         booleanParam(
             name: 'DELETE_S3_BUCKET',
             defaultValue: false,
-            description: 'Check this box to delete AWS S3 Bucket, also deletes lokistack, flowcollector and kafka'
+            description: 'Check this box to delete AWS S3 Bucket (also deletes lokistack, flowcollector and kafka)'
         )
     }
 
@@ -235,6 +243,12 @@ pipeline {
                 script {
                     if (params.FLEXY_BUILD_NUMBER == '') {
                         error 'A Flexy build number must be specified'
+                    }
+                    if (params.WORKLOAD == 'None' && params.NOPE == true) {
+                        error 'NOPE tool cannot be run if a workload is not run first'
+                    }
+                    if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
+                        error 'Spreadsheet cannot be generated if data is not uploaded to Elasticsearch'
                     }
                     println('Job params are valid - continuing execution...')
                 }
@@ -568,21 +582,26 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/benchmark-comparison.git' ]],
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'benchmark-comparison']]
+                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking.git' ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
-                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
+                        env.COMPARISON_CONFIG = 'netobserv_touchstone.json'
+                        env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                        env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+                        env.GEN_CSV = params.GEN_CSV
+                        env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
+                        env.WORKLOAD = params.WORKLOAD
                         returnCode = sh(returnStatus: true, script: """
                             python3.9 --version
                             python3.9 -m pip install virtualenv
                             python3.9 -m virtualenv venv3
                             source venv3/bin/activate
                             python --version
-                            cd $WORKSPACE/benchmark-comparison
-                            python setup.py develop
-                            export UUID=`jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json`
-                            . $WORKSPACE/ocp-qe-perfscale-ci/scripts/touchstone.sh \$UUID
+                            cd $WORKSPACE/e2e-benchmarking/utils
+                            source compare.sh
+                            run_benchmark_comparison
                         """)
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
                         if (returnCode.toInteger() != 0) {
