@@ -122,6 +122,8 @@ deploy_kafka() {
   oc apply -f $TMP_KAFKA_TOPIC -n ${NAMESPACE}
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
 
+  oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}]"
+
   # updated FLP replicas # if different than already configured.
   FLP_REPLICAS=$(oc get flowcollector/cluster -o jsonpath='{.spec.processor.kafkaConsumerReplicas}')
   if [[ "$FLP_KAFKA_REPLICAS" != "$FLP_REPLICAS" ]]; then
