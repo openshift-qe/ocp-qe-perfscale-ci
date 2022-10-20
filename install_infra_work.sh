@@ -183,7 +183,7 @@ infra_nodes=${infra_nodes:0:-1}
 
 echo "$infra_nodes"
 ## wait for monitoring pods to go running
-attempts=15
+attempts=20
 retries=0
 ## need to get number of runnig pods in statefulsets 
 for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | awk '{print $1}'); do 
