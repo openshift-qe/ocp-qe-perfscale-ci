@@ -75,7 +75,7 @@ def get_oc_version():
         print("Error getting clusterversion")
 
 def flexy_install_type(flexy_url):
-    return_code, version_type_string = run('curl -s {}/consoleFull | grep "run_installer template -c private-templates/functionality-testing/aos-"'.format(flexy_url))
+    return_code, version_type_string = run('curl --noproxy "*" -s {}/consoleFull | grep "run_installer template -c private-templates/functionality-testing/aos-"'.format(flexy_url))
     if return_code == 0:
         version_lists = version_type_string.split("-on-")
         cloud_type = version_lists[1].split('/')[0]
