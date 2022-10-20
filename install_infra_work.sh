@@ -166,6 +166,10 @@ oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kuberne
 oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
 
 
+echo "Moving ingress pods to infra nodes"
+oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
+
+echo "Moving monitoring to infra nodes"
 if [[ $(cat $WORKSPACE/flexy-artifacts/workdir/install-dir/metadata.json | grep vsphere -c) > 0 ]]; then
     envsubst < monitoring-config-vsphere.yaml | oc apply -f -
 else
@@ -179,7 +183,7 @@ infra_nodes=${infra_nodes:0:-1}
 
 echo "$infra_nodes"
 ## wait for monitoring pods to go running
-attempts=10
+attempts=20
 retries=0
 ## need to get number of runnig pods in statefulsets 
 for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | awk '{print $1}'); do 
@@ -202,7 +206,7 @@ for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | 
         echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas!"
         echo "current replicas in $statefulset: wanted--$wanted_replicas, current infra running--$infra_pods!"
         if [[ ${retries} -gt ${attempts} ]]; then
-            oc describe $statefulset -n openshift-monitoring
+            oc describe statefulsets $statefulset -n openshift-monitoring
             for pod in $(oc get pods -n openshift-monitoring --no-headers | grep -v Running | awk '{print $1}'); do
                 oc describe pod $pod -n openshift-monitoring
             done
@@ -211,6 +215,3 @@ for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | 
         fi
     done
 done
-
-echo "Moving ingress controllers to infra nodes"
-oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
