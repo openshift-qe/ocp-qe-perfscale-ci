@@ -124,14 +124,20 @@ def run_commands(commands, outputs={}):
 
     # iterate through commands dictionary
     for command in commands:
-        logging.debug(f"Executing command '{' '.join(commands[command])}' to get {command} data")
-        result = subprocess.run(commands[command], capture_output=True, text=True)
+        logging.debug(f"Executing command '{commands[command]}' to get {command} data")
+        result = subprocess.run(commands[command], capture_output=True, text=True, shell=True)
 
         # record command stdout if execution was succesful
         if result.returncode == 0:
-            output = result.stdout[1:-1]
+            output = result.stdout
             logging.debug(f"Got back result: {output}")
             outputs[command] = output
+
+        # if command failed but was AWS-specific, don't block, just continue
+        elif 'aws' in command:
+            output = result.stdout
+            logging.debug(f"Got back result: {output} from AWS command - skipping...")
+            outputs[command] = "N/A"
 
         # otherwise raise an Exception with stderr
         else:
@@ -155,9 +161,10 @@ def get_netobserv_env_info():
         "iso_timestamp": iso_timestamp,
     }
     base_commands = {
-        "release": ['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[1].env[0].value}"', '-n', 'netobserv'],
-        "deploymentModel": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.deploymentModel}"', '-n', 'netobserv'],
-        "agent": ['oc', 'get', 'flowcollector', '-o', 'jsonpath="{.items[*].spec.agent.type}"']
+        "release": 'oc get pods -l app=netobserv-operator -o jsonpath="{.items[*].spec.containers[1].env[0].value}" -n netobserv',
+        "deploymentModel": 'oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv',
+        "agent": 'oc get flowcollector -o jsonpath="{.items[*].spec.agent.type}"',
+        "aws_s3_bucket_name": 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'
     }
 
     # collect data from cluster about netobserv operator and store in info dict
@@ -176,13 +183,16 @@ def get_netobserv_env_info():
     # run any additional commands needed and append data to info dictionary
     agent = info["agent"].lower()
     logging.debug(f"Found collector agent {agent}")
+    s3_bucket_name = info["aws_s3_bucket_name"]
+    logging.debug(f"Found AWS S3 bucket name {s3_bucket_name}")
     additional_commands = {
-        "sampling": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.sampling}}"'],
-        "cache_active_time": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheActiveTimeout}}"'],
-        "cache_max_flows": ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.agent.{agent}.cacheMaxFlows}}"']
+        "sampling": f'oc get flowcollector -o jsonpath="{{.items[*].spec.agent.{agent}.sampling}}"',
+        "cache_active_time": f'oc get flowcollector -o jsonpath="{{.items[*].spec.agent.{agent}.cacheActiveTimeout}}"',
+        "cache_max_flows": f'oc get flowcollector -o jsonpath="{{.items[*].spec.agent.{agent}.cacheMaxFlows}}"',
+        "aws_s3_bucket_usage": f'aws s3 ls --summarize --human-readable --recursive s3://{s3_bucket_name} | tail -2'
     }
     if deploymentModel == 'kafka':
-        additional_commands["kafka_replicas"] = ['oc', 'get', 'flowcollector', '-o', f'jsonpath="{{.items[*].spec.processor.kafkaConsumerReplicas}}"']
+        additional_commands["kafka_replicas"] = f'oc get flowcollector -o jsonpath="{{.items[*].spec.processor.kafkaConsumerReplicas}}"'
     else:
         info["kafka_replicas"] = "N/A"
     info = run_commands(additional_commands, info)
