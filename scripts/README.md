@@ -1,5 +1,5 @@
 # NetObserv Performance Scripts
-The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance
+The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance.
 
 Multiple workloads are run to generate traffic for the cluster:
 1. uperf - pod-to-pod traffic generation.
@@ -8,8 +8,8 @@ Multiple workloads are run to generate traffic for the cluster:
 
 ## Metrics Collection
 Below are the metrics that are collected as part of the tests:
-* CPU usage of pods in netobserv NS
-* Memory usage of pods in netobserv NS
+* CPU usage of pods in `netobserv` namespace
+* Memory usage of pods in `netobserv` namespace
 * Disk usage for LokiStack PVCs
 * Number of NetFlows processed
 * Flow Processing time summary for 0.9 quantile
@@ -38,19 +38,19 @@ GitHub Actions is used to [build and push images from the upstream operator repo
 To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
 
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack following steps can be performed:
-1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` NS
-2. Create a AWS secret for S3 bucket to be used for lokiStack, use script `$ ./deploy-loki-aws-secret.sh` to create s3-secret. By default it is setup to use `netobserv-loki` S3 bucket.
-3. Multiple sizes of LokiStack are supported and configes are added here, depending upon the LokiStack size high end machine types are required for the cluster:
-    * lokistack-1x-exsmall.yaml - Extra small t-shirt size LokiStack.
+It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack manually, the following steps can be performed:
+1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
+2. Create a AWS secret for S3 bucket to be used for lokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
+3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
+    * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
-        - Use case: For demos, development and feature testing. We should not use for scale/performance testing.
+        - Use case: For demos, development and feature testing. Should NOT be used for  testing.
     * lokistack-1x-small.yaml - Small t-shirt size LokiStack
         - Requirements: `m5.4xlarge` machines.
-        - Use case: Scale/Performance testing.
+        - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
         - Requirments: `m5.8xlarge` machines.
-        - Use case: Large scale performance testing.
+        - Use case: Large-scale performance/scale testing.
 
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
 4. LokiStack should be created under `openshift-operators-redhat` namespace
@@ -65,6 +65,9 @@ You can update common parameters of flowcollector with the following commands:
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
+
+### Enabling Kafka
+TODO
 
 ### Using Dittybopper
 1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`

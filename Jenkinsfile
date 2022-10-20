@@ -98,6 +98,15 @@ pipeline {
             defaultValue: true,
             description: 'Check this box to setup FLP service and create service-monitor'
         )
+        separator(
+            name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
+            sectionHeader: 'Flowcollector Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
         string(
             name: 'FLOW_SAMPLING_RATE',
             defaultValue: '100',
@@ -112,15 +121,6 @@ pipeline {
             name: 'MEMORY_LIMIT',
             defaultValue: '500Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
-        )
-        separator(
-            name: 'KAFKA_CONFIG_OPTIONS',
-            sectionHeader: 'KAFKA Configuration Options',
-            sectionHeaderStyle: '''
-                font-size: 14px;
-                font-weight: bold;
-                font-family: 'Orienta', sans-serif;
-            '''
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
@@ -358,9 +358,6 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                     }
-                    // get bucketname for lokistack
-                    env.S3_BUCKETNAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
-                    println "Loki uses S3 bucket: ${env.S3_BUCKETNAME}"
                 }
             }
         }
@@ -486,9 +483,13 @@ pipeline {
                     }
                     else {
                         println "Successfully ran workload job :)"
-                        // update build description with workload job link
+                        // update build description with workload job link and S3 bucket information
                         env.JENKINS_BUILD = "${workloadJob.getNumber()}"
                         currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
+                        env.S3_BUCKET_NAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
+                        currentBuild.description += "AWS S3 Bucket Name: <b>${env.S3_BUCKET_NAME}</b><br/>"
+                        env.S3_BUCKET_USAGE = sh(returnStdout: true, script: "aws s3 ls --summarize --human-readable --recursive s3://$S3_BUCKET_NAME | awk 'END {print}").trim()
+                        currentBuild.description += "AWS S3 Bucket Usage: <b>${env.S3_BUCKET_USAGE}</b><br/>"
                     }
                 }
                 copyArtifacts(
@@ -632,12 +633,17 @@ pipeline {
             // delete AWS s3 bucket in the end
             script {
                 if (params.DELETE_S3_BUCKET == true) {
-                    println "Deleting AWS S3 Bucket, will also cleanup lokistack and flowcollector as part of it"
+                    println "Deleting AWS S3 Bucket, will also cleanup lokistack, flowcollector, and kafka if applicable..."
+                    // get S3 bucket name if not already in env
+                    if (!env.S3_BUCKET_NAME) {
+                        env.S3_BUCKET_NAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
+                    }
+                    // delete all applicable resources
                     returnCode = sh(returnStatus: true, script: """
-                        aws s3 rb s3://${env.S3_BUCKETNAME} --force
+                        aws s3 rb s3://$S3_BUCKET_NAME --force
                         oc delete lokistack/lokistack -n openshift-operators-redhat
                         oc delete flowcollector/cluster
-                        if [[ ${ENABLE_KAFKA} == "true" ]]; then
+                        if [[ ${params.ENABLE_KAFKA} == "true" ]]; then
                             oc delete kafka/kafka-cluster -n netobserv
                             oc delete kafkaTopic/network-flows -n netobserv
                         fi
