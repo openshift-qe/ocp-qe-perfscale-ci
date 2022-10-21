@@ -151,7 +151,7 @@ def get_router_perf_uuid(job_output):
 
     return get_uuid_from_json(metadata)
 
-def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file):
+def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -219,6 +219,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     row.append(str(datetime.now(tz)))
     row.append(str(write_helper.get_env_vars_from_file(env_vars_file)))
+    row.append(user)
     ws.insert_row(row, index, "USER_ENTERED")
 
 #get_metadata_uuid("node-density", "write_output.out")
