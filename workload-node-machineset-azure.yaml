@@ -36,7 +36,7 @@ spec:
           image:
             offer: ""
             publisher: ""
-            resourceID: /resourceGroups/${CLUSTER_NAME}-rg/providers/Microsoft.Compute/images/${CLUSTER_NAME}
+            resourceID: ${RESOURCE_ID}
             sku: ""
             version: ""
           internalLoadBalancer: ""
