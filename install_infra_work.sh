@@ -71,6 +71,7 @@ elif [[ $(echo $VARIABLES_LOCATION | grep azure -c) > 0 ]]; then
     export NETWORK_RESOURCE_GROUP_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.networkResourceGroup}}')
     export VNET_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.vnet}}')
     export SUBNET_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).spec.template.spec.providerSpec.value.subnet)}}')
+    export RESOURCE_ID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).spec.template.spec.providerSpec.value.image.resourceID)}}')
     if [[ $(echo $NETWORK_RESOURCE_GROUP_ID | grep $CLUSTER_NAME -c) > 0 ]]; then
         envsubst < infra-node-machineset-azure.yaml | oc apply -f -
         envsubst < workload-node-machineset-azure.yaml | oc apply -f -
