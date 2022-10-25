@@ -287,6 +287,7 @@ pipeline {
                         returnCode = sh(returnStatus: true, script: """
                             mkdir -p ~/.kube
                             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                            oc get route console -n openshift-console
                             mkdir -p ~/.aws
                             cp -f $OCP_AWS ~/.aws/credentials
                             echo "[profile default]
@@ -629,8 +630,8 @@ pipeline {
             println 'Post Section - Failure'
         }
         cleanup {
-            // delete AWS s3 bucket in the end
             script {
+                // delete AWS S3 bucket if desired
                 if (params.DELETE_S3_BUCKET == true) {
                     println "Deleting AWS S3 Bucket, will also cleanup lokistack, flowcollector, and kafka if applicable..."
                     // get S3 bucket name
@@ -654,6 +655,7 @@ pipeline {
                         println 'Bucket deleted successfully :)'
                     }
                 }
+                // uninstall NetObserv operator if desired
                 if (params.UNINSTALL_NETOBSERV == true) {
                     println "Deleting Network Observability operator..."
                     returnCode = sh(returnStatus: true, script: """
