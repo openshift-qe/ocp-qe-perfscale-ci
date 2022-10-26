@@ -460,6 +460,7 @@ pipeline {
             }
             steps {
                 script {
+                    currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [

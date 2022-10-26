@@ -125,13 +125,25 @@ def run_commands(commands, outputs={}):
     # iterate through commands dictionary
     for command in commands:
         logging.debug(f"Executing command '{commands[command]}' to get {command} data")
-        result = subprocess.run(commands[command], capture_output=True, text=True, shell=True)
+        result = subprocess.run(commands[command], capture_output=True, text=True, shell=True, timeout=600)
 
         # record command stdout if execution was succesful
         if result.returncode == 0:
             output = result.stdout
             logging.debug(f"Got back result: {output}")
-            outputs[command] = output
+
+            # if aws_s3_bucket_usage command, split up the data to two different metadata fields
+            if command == 'aws_s3_bucket_usage':
+                aws_data = output.replace(" ","").splitlines()
+                aws_buckets = aws_data[0].split(':', 1)[1]
+                aws_size = aws_data[1].split(':', 1)[1]
+                logging.debug(f"aws_s3_bucket_objects calculated as {aws_buckets}")
+                outputs['aws_s3_bucket_objects'] = aws_buckets
+                logging.debug(f"aws_s3_bucket_size calculated as {aws_size}")
+                outputs['aws_s3_bucket_size'] = aws_size
+            # otherwise map command output to dict entry
+            else:
+                outputs[command] = output
 
         # if command failed but was AWS-specific, don't block, just continue
         elif 'aws' in command:
