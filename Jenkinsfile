@@ -78,7 +78,6 @@ pipeline {
             name: 'INSTALLATION_SOURCE',
             choices: ['OperatorHub', 'Source', 'None'],
             description: '''
-                <b>Select Source until 0.1.5 NOO release since flowcollector has breaking changes</b><br/>
                 Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
                 If None is selected the installation will be skipped
             '''
@@ -98,6 +97,15 @@ pipeline {
             defaultValue: true,
             description: 'Check this box to setup FLP service and create service-monitor'
         )
+        separator(
+            name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
+            sectionHeader: 'Flowcollector Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
         string(
             name: 'FLOW_SAMPLING_RATE',
             defaultValue: '100',
@@ -112,15 +120,6 @@ pipeline {
             name: 'MEMORY_LIMIT',
             defaultValue: '500Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
-        )
-        separator(
-            name: 'KAFKA_CONFIG_OPTIONS',
-            sectionHeader: 'KAFKA Configuration Options',
-            sectionHeaderStyle: '''
-                font-size: 14px;
-                font-weight: bold;
-                font-family: 'Orienta', sans-serif;
-            '''
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
@@ -235,6 +234,11 @@ pipeline {
             defaultValue: false,
             description: 'Check this box to delete AWS S3 Bucket (also deletes lokistack, flowcollector and kafka)'
         )
+        booleanParam(
+            name: 'UNINSTALL_NETOBSERV',
+            defaultValue: false,
+            description: 'Check this box to delete Network Observability at the end of the pipeline run'
+        )
     }
 
     stages {
@@ -247,6 +251,12 @@ pipeline {
                     if (params.WORKLOAD == 'None' && params.NOPE == true) {
                         error 'NOPE tool cannot be run if a workload is not run first'
                     }
+                    if (params.NOPE == false && params.NOPE_DUMP == true) {
+                        error 'NOPE must be run to dump data to a file'
+                    }
+                    if (params.NOPE == false && params.NOPE_DEBUG == true) {
+                        error 'NOPE must be run to enable debug mode'
+                    }
                     if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
                         error 'Spreadsheet cannot be generated if data is not uploaded to Elasticsearch'
                     }
@@ -254,7 +264,7 @@ pipeline {
                 }
             }
         }
-        stage('Get Flexy cluster and Netobserv scripts') {
+        stage('Setup testing environment') {
             steps {
                 copyArtifacts(
                     fingerprintArtifacts: true,
@@ -268,15 +278,29 @@ pipeline {
                     userRemoteConfigs: [[url: GIT_URL ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
                 ])
-                script {
-                    buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
-                    currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
-                    currentBuild.description = "Flexy-install Job: <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a><br/>"
-                    buildinfo.params.each { env.setProperty(it.key, it.value) }
-                    sh(returnStatus: true, script: """
-                        mkdir -p ~/.kube
-                        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                    """)
+                withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
+                    script {
+                        buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
+                        currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
+                        currentBuild.description = "Flexy-install Job: <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a><br/>"
+                        buildinfo.params.each { env.setProperty(it.key, it.value) }
+                        returnCode = sh(returnStatus: true, script: """
+                            mkdir -p ~/.kube
+                            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                            oc get route console -n openshift-console
+                            mkdir -p ~/.aws
+                            cp -f $OCP_AWS ~/.aws/credentials
+                            echo "[profile default]
+                            region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
+                            output = text" > ~/.aws/config
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error("Failed to setup testing environment :(")
+                        }
+                        else {
+                            println "Successfully setup testing environment :)"
+                        }
+                    }
                 }
             }
         }
@@ -314,26 +338,6 @@ pipeline {
                 expression { params.INSTALLATION_SOURCE != 'None' }
             }
             steps {
-                // setup AWS creds for loki
-                ansiColor('xterm') {
-                    withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
-                        script {
-                            returnCode = sh(returnStatus: true, script: """
-                                mkdir -p ~/.aws
-                                cp -f $OCP_AWS ~/.aws/credentials
-                                echo "[profile default]
-                                region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
-                                output = text" > ~/.aws/config
-                            """)
-                            if (returnCode.toInteger() != 0) {
-                                error("Failed to set up AWS creds :(")
-                            }
-                            else {
-                                println "Successfully setup AWS creds :)"
-                            }
-                        }
-                    }
-                }
                 script {
                     // attempt installation of Network Observability from selected source
                     if (params.INSTALLATION_SOURCE == 'OperatorHub') {
@@ -358,9 +362,6 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                     }
-                    // get bucketname for lokistack
-                    env.S3_BUCKETNAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
-                    println "Loki uses S3 bucket: ${env.S3_BUCKETNAME}"
                 }
             }
         }
@@ -459,6 +460,7 @@ pipeline {
             }
             steps {
                 script {
+                    currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
@@ -629,15 +631,20 @@ pipeline {
             println 'Post Section - Failure'
         }
         cleanup {
-            // delete AWS s3 bucket in the end
             script {
+                // delete AWS S3 bucket if desired
                 if (params.DELETE_S3_BUCKET == true) {
-                    println "Deleting AWS S3 Bucket, will also cleanup lokistack and flowcollector as part of it"
+                    println "Deleting AWS S3 Bucket, will also cleanup lokistack, flowcollector, and kafka if applicable..."
+                    // get S3 bucket name
+                    env.S3_BUCKET_NAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
+                    env.DEPLOYMENT_MODEL = sh(returnStdout: true, script: 'oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv').trim()
+                    // delete all applicable resources
                     returnCode = sh(returnStatus: true, script: """
-                        aws s3 rb s3://${env.S3_BUCKETNAME} --force
+                        aws s3 rm s3://$S3_BUCKET_NAME --recursive
+                        aws s3 rb s3://$S3_BUCKET_NAME --force
                         oc delete lokistack/lokistack -n openshift-operators-redhat
                         oc delete flowcollector/cluster
-                        if [[ ${ENABLE_KAFKA} == "true" ]]; then
+                        if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
                             oc delete kafka/kafka-cluster -n netobserv
                             oc delete kafkaTopic/network-flows -n netobserv
                         fi
@@ -647,6 +654,20 @@ pipeline {
                     }
                     else {
                         println 'Bucket deleted successfully :)'
+                    }
+                }
+                // uninstall NetObserv operator if desired
+                if (params.UNINSTALL_NETOBSERV == true) {
+                    println "Deleting Network Observability operator..."
+                    returnCode = sh(returnStatus: true, script: """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        uninstall_netobserv
+                    """)
+                    if (returnCode.toInteger() != 0) {
+                        error('Operator deletion unsuccessful - please delete manually :(')
+                    }
+                    else {
+                        println 'Operator deleted successfully :)'
                     }
                 }
             }

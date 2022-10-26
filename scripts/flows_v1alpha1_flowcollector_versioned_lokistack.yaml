@@ -4,16 +4,23 @@ metadata:
   name: cluster
 spec:
   namespace: netobserv
+  deploymentModel: DIRECT
   agent:
     type: EBPF
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
       sampling: 400
+      clusterNetworkOperator:
+        namespace: openshift-network-operator
+      ovnKubernetes:
+        namespace: ovn-kubernetes
+        daemonSetName: ovnkube-node
+        containerName: ovnkube-node
     ebpf:
-      image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.1.2'
-      imagePullPolicy: IfNotPresent
-      sampling: 50
+      image: 'quay.io/netobserv/netobserv-ebpf-agent:v0.2.1'
+      imagePullPolicy: Always
+      sampling: 1
       cacheActiveTimeout: 5s
       cacheMaxFlows: 1000
       interfaces: [ ]
@@ -21,23 +28,24 @@ spec:
       logLevel: info
       privileged: false
   processor:
-    kind: DaemonSet
     port: 2055
-    image: 'quay.io/netobserv/flowlogs-pipeline:v0.1.3'
-    imagePullPolicy: IfNotPresent
+    image: 'quay.io/netobserv/flowlogs-pipeline:0.1.4'
+    imagePullPolicy: Always
     logLevel: info
     enableKubeProbes: true
     healthPort: 8080
+    profilePort: 6060
     metrics:
       server:
         port: 9102
       ignoreTags:
         - egress
     dropUnusedFields: true
+    kafkaConsumerReplicas: 3
+    kafkaConsumerAutoscaler: null
   kafka:
-    enable: false
     address: "kafka-cluster-kafka-bootstrap.netobserv"
-    topic: "network-flows"
+    topic: network-flows
     tls:
       enable: false
       caCert:
@@ -63,21 +71,16 @@ spec:
       enable: true
       caCert:
         type: configmap
-        name: loki
+        name: openshift-service-ca.crt
         certFile: service-ca.crt
   consolePlugin:
     register: true
-    image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.4'
-    imagePullPolicy: IfNotPresent
+    image: 'quay.io/netobserv/network-observability-console-plugin:v0.1.5'
+    imagePullPolicy: Always
     port: 9001
     logLevel: info
+    autoscaler: null
     portNaming:
       enable: true
       portNames:
         "3100": loki
-  clusterNetworkOperator:
-    namespace: "openshift-network-operator"
-  ovnKubernetes:
-    namespace: "ovn-kubernetes"
-    daemonSetName: "ovnkube-node"
-    containerName: "ovnkube-node"
