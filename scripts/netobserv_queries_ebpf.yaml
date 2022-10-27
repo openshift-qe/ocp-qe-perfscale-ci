@@ -46,3 +46,4 @@
 # 12. Kafka storage
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv"}[5m]))
   metricName: kafkaStorageUsage
+  
