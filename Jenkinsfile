@@ -47,6 +47,11 @@ pipeline {
             defaultValue: "[^installer*]", 
             description: "Which specific pod names regex patterns you want to ignore in the namespaces you defined above"
         )
+        booleanParam(
+            name: 'MUST_GATHER', 
+            defaultValue: true, 
+            description: 'This variable will set cerberus to inspect failing components'
+        )
         string(
             name: 'JENKINS_AGENT_LABEL',
             defaultValue: 'oc411',
@@ -189,8 +194,8 @@ pipeline {
           
           python -c "import check_kube_burner_ns; check_kube_burner_ns.check_namespaces( '$WORKLOAD' )"
           cd ..
+          ls
           exit $final_health
-
           ''')
             
             sh "echo $RETURNSTATUS"
@@ -200,16 +205,32 @@ pipeline {
                 currentBuild.result = "FAILURE"
            }
       }
-      script {
-          if (status != "PASS" && fileExists("inspect_data")) {
-             archiveArtifacts artifacts: 'inspect_data/*,inspect_data/**', fingerprint: false
-          }
-          if (fileExists("cerberus_jenkins/failed_pods/*")) {
-             archiveArtifacts artifacts: 'cerberus_jenkins/failed_pods/*,cerberus_jenkins/failed_pods/**', fingerprint: false
-          }
-       }
+      }
+    }
+  }
+  post {
+      always {
+          script {
+            if (status != "PASS" ) { 
+              if (fileExists("inspect_data")) {
+                archiveArtifacts artifacts: 'inspect_data/*,inspect_data/**', fingerprint: false
+              }
+              if (params.MUST_GATHER == true) {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather',
+                parameters: [
+                    string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                    text(name: "ENV_VARS", value: ENV_VARS)
+                ], propagate: false
+              }
+            }
+            if (fileExists("cerberus_jenkins/failed_pods/*")) {
+              archiveArtifacts artifacts: 'cerberus_jenkins/failed_pods/*,cerberus_jenkins/failed_pods/**', fingerprint: false
+            }
+            if (fileExists("cerberus_jenkins/cerberus.report")) {
+              archiveArtifacts artifacts: 'cerberus_jenkins/cerberus.report', fingerprint: false
+            }
+        }
 
      }
    }
-  }
 }
