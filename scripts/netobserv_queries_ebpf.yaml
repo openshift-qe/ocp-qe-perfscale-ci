@@ -1,10 +1,10 @@
 
 # 1. netobserv pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="netobserv"} * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
+- query: pod:container_cpu_usage:sum{namespace="netobserv"}
   metricName: cpuUsage
 
 # 2. eBPF pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="netobserv-privileged"} * on (pod) group_left(node) kube_pod_info{namespace="netobserv-privileged", pod_ip!=""}
+- query: pod:container_cpu_usage:sum{namespace="netobserv-privileged"}
   metricName: ebpfCpuUsage
 
 # 3. netobserv pods memory usage (Working Set)
@@ -28,18 +28,21 @@
   metricName: lokiStorageUsage
 
 # 8. Flows processed by ingester per minute aggregated by FLP pods.
-- query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod) * on (pod) group_left(node) kube_pod_info{namespace="netobserv", pod_ip!=""}
+- query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
-# 9. Ingress bytes processed per minute
-- query: sum(rate(netobserv_workload_ingress_bytes_total[1m])*60)
-  metricName: nBytesProcessedPerMinute
-
-# 10. Ingress packets processed per minute.
-- query: sum(rate(netobserv_workload_ingress_packets_total[1m])*60)
-  metricName: nPacketsProcessedPerMinute
-
-# 11. Loki records written per minute.
+# 9. Loki records written per minute.
 - query: sum(netobserv_records_written)
   metricName: lokiRecordsWritten
-  
+
+# 10. LokiStack CPU usage
+- query: pod:container_cpu_usage:sum{namespace="openshift-operators-redhat"}
+  metricName: cpuUsageLoki
+
+# 11. LokiStack memory usage
+- query: sum(container_memory_rss{namespace="openshift-operators-redhat",container="",}) by (container, pod, namespace, node )
+  metricName: memoryUsageLoki 
+
+# 12. Kafka storage
+- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv"}[5m]))
+  metricName: kafkaStorageUsage
