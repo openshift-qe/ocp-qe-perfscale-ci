@@ -84,11 +84,17 @@ deploy_lokistack() {
   oc apply -f $SCRIPTS_DIR/loki-subscription.yaml -n openshift-operators-redhat
   sleep 30
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
+  CLUSTER_NAME=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}')
   if [[ "$WORKLOAD" == "None" ]]; then
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
   else
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD"
   fi
+
+  if [[ ${CLUSTER_NAME} =~ "preserve" ]]; then
+    S3_BUCKETNAME+="-preserve"
+  fi
+
   # create s3 secret for loki
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
