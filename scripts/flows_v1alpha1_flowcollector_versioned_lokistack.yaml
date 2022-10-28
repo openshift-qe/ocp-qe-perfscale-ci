@@ -29,7 +29,7 @@ spec:
       privileged: false
   processor:
     port: 2055
-    image: 'quay.io/netobserv/flowlogs-pipeline:0.1.4'
+    image: 'quay.io/netobserv/flowlogs-pipeline:v0.1.4'
     imagePullPolicy: Always
     logLevel: info
     enableKubeProbes: true
