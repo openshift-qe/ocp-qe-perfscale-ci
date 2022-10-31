@@ -374,12 +374,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # set logging config
-    coloredlogs.install(isatty=True)
     DEBUG = args.debug
     if DEBUG:
         logging.basicConfig(level=logging.DEBUG)
+        coloredlogs.install(level='DEBUG', isatty=True)
     else:
         logging.basicConfig(level=logging.INFO)
+        coloredlogs.install(level='INFO', isatty=True)
 
     # if running in upload mode - immediately load JSON, upload, and exit
     UPLOAD_FILE = args.upload_file
