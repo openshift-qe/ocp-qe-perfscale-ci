@@ -126,6 +126,7 @@ deploy_kafka() {
   TMP_KAFKA_TOPIC=/tmp/topic.yaml
   envsubst <$KAFKA_TOPIC >$TMP_KAFKA_TOPIC
   oc apply -f $TMP_KAFKA_TOPIC -n ${NAMESPACE}
+  sleep 60
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n ${NAMESPACE}
 
   oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}]"
