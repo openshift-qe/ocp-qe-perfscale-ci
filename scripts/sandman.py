@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # initialize argument parser
     parser = argparse.ArgumentParser(description='Mr. Sandman')
 
-    # set logging flags
+    # set argument flags
     parser.add_argument("--file", type=str, required=True, help='File to parse')
 
     # parse arguments

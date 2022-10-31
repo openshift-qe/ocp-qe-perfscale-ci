@@ -14,6 +14,7 @@ import argparse
 import requests
 import datetime
 import subprocess
+import coloredlogs
 from elasticsearch import Elasticsearch
 
 
@@ -373,6 +374,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # set logging config
+    coloredlogs.install(isatty=True)
     DEBUG = args.debug
     if DEBUG:
         logging.basicConfig(level=logging.DEBUG)
