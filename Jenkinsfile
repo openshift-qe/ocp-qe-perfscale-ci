@@ -212,7 +212,7 @@ pipeline{
           font-family: 'Orienta', sans-serif;"""
       )
       choice(
-        choices: ["","conc_jobs","large_network_policy"], 
+        choices: ["conc_jobs","large_network_policy"], 
         name: 'TEST_CASE',
         description:'''<p>
         Select the test case you want to run.<br>
@@ -225,6 +225,7 @@ pipeline{
         defaultValue: '',
         description: '''<p>
         Relative path to the script of the TEST_CASE under <a href="https://github.com/openshift/svt">svt repo</a>.<br>
+        If you want to use script from your own repo you need to change also SVT_REPO variable. <br>
         e.g.<br>
         For large_network_policy test case: perfscale_regression_ci/scripts/network/large_network_policy.sh<br>
         If TEST_CASE is specified, SCRIPT will overwrite the TEST_CASE.
