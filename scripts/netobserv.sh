@@ -58,7 +58,7 @@ uninstall_netobserv() {
   oc delete csv -l operators.coreos.com/netobserv-operator.${NAMESPACE}
   oc delete -f $SCRIPTS_DIR/operator_group.yaml
   oc delete project ${NAMESPACE}
-  oc delete catalogsource/netobserv-testing -n openshift-marketplace
+  oc delete --ignore-not-found catalogsource/netobserv-testing -n openshift-marketplace
 }
 
 populate_netobserv_metrics() {
