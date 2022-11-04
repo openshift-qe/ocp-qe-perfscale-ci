@@ -98,3 +98,4 @@
 # 25. Total working set memory by all Loki pods.
 - query: sum(container_memory_working_set_bytes{namespace="openshift-operators-redhat",container=""})
   metricName: workingsetLokiTotals
+  
