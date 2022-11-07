@@ -27,7 +27,7 @@ if (userId) {
 
 println "user id $userId"
 
-def RETURNSTATUS = "default"
+def overall_status = "PASS"
 def output = ""
 
 pipeline {
@@ -152,6 +152,7 @@ pipeline {
             println "return num $RETURNSTATUS"
             if ( RETURNSTATUS.toInteger() != 0 ) {
               currentBuild.result = "FAILURE"
+              overall_status = "FAIL"
             }
           }
         }
@@ -165,15 +166,15 @@ pipeline {
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
                   ],
                   propagate: false
-              if (RETURNSTATUS == "PASS") {
+              if (overall_status == "PASS") {
                   if ( cerberus_job.result.toString() != "SUCCESS") {
-                      RETURNSTATUS = "Cerberus check failed"
+                      overall_status = "Cerberus check failed"
                       currentBuild.result = "FAILURE"
                   }
               }
               else {
                   if (cerberus_job.result.toString() != "SUCCESS") {
-                      RETURNSTATUS += "Cerberus check failed"
+                      overall_status += "Cerberus check failed"
                       currentBuild.result = "FAILURE"
                   }
               }
