@@ -24,7 +24,7 @@ Below are the metrics that are collected as part of the tests:
 $ oc whoami
 kube:admin
 ```
-3. Navigate to the parent directory of `ocp-qe-perfscale-ci` and run `export WORKSPACE=$PWD`
+3. Depending on which functions within `netobserv.sh` you plan to use, you may also need to install the AWS CLI and properly set your credentials
 
 ### Installing the Network Observability Operator
 There are two methods you can use to install the operator:

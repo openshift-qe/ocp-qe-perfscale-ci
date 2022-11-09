@@ -96,7 +96,7 @@ pipeline {
         booleanParam(
             name: 'USER_WORKLOADS',
             defaultValue: true,
-            description: 'Check this box to setup FLP service and create service-monitor'
+            description: 'Check this box to setup FLP service and create service-monitor or to include user workload metrics in a NOPE run even if they are already set up'
         )
         separator(
             name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
@@ -125,7 +125,7 @@ pipeline {
         booleanParam(
             name: 'ENABLE_KAFKA',
             defaultValue: false,
-            description: 'Check this box to setup Kafka for NetObserv'
+            description: 'Check this box to setup Kafka for NetObserv or to update Kafka configs even if it is already installed'
         )
         choice(
             name: 'TOPIC_PARTITIONS',
@@ -343,19 +343,14 @@ pipeline {
                     // attempt installation of Network Observability from selected source
                     if (params.INSTALLATION_SOURCE == 'OperatorHub') {
                         println 'Installing Network Observability from OperatorHub...'
-                        returnCode = sh(returnStatus: true, script: """
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            deploy_netobserv
-                        """)
                     }
                     else {
                         println 'Installing Network Observability from Source...'
-                        returnCode = sh(returnStatus: true, script: """
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            deploy_main_catalogsource
-                            deploy_netobserv
-                        """)
                     }
+                    returnCode = sh(returnStatus: true, script: """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        deploy_netobserv
+                    """)
                     // fail pipeline if installation failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
@@ -366,29 +361,7 @@ pipeline {
                 }
             }
         }
-        stage('Setup FLP and service-monitor') {
-            when {
-                expression { params.USER_WORKLOADS == true }
-            }
-            steps {
-                script {
-                    // attempt setup of FLP service and creation of service-monitor
-                    println 'Setting up FLP service and creating service-monitor...'
-                    returnCode = sh(returnStatus: true, script:  """
-                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        populate_netobserv_metrics
-                    """)
-                    // fail pipeline if setup failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
-                        error('Setting up FLP service and creating service-monitor failed :(')
-                    }
-                    else {
-                        println 'Successfully set up FLP service and created service-monitor :)'
-                    }
-                }
-            }
-        }
-        stage('Update flowcollector params') {
+        stage('Configure flowcollector and Kafka') {
             steps {
                 script {
                     // attempt updating common parameters of flowcollector
@@ -406,7 +379,7 @@ pipeline {
                     else {
                         println 'Successfully updated common parameters of flowcollector :)'
                     }
-                    println "Checking if Kafka needs to be enabled..."
+                    println "Checking if Kafka needs to be enabled or updated..."
                     if (params.ENABLE_KAFKA == true) {
                         println "Enabling Kafka in flowcollector..."
                         returnCode = sh(returnStatus: true, script: """
@@ -421,7 +394,29 @@ pipeline {
                         }
                     }
                     else {
-                        println "Skipping Kafka deploy..."
+                        println "Skipping Kafka configuration..."
+                    }
+                }
+            }
+        }
+        stage('Setup FLP service and service-monitor') {
+            when {
+                expression { params.USER_WORKLOADS == true }
+            }
+            steps {
+                script {
+                    // attempt setup of FLP service and creation of service-monitor
+                    println 'Setting up FLP service and creating service-monitor...'
+                    returnCode = sh(returnStatus: true, script:  """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        populate_netobserv_metrics
+                    """)
+                    // fail pipeline if setup failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error('Setting up FLP service and creating service-monitor failed :(')
+                    }
+                    else {
+                        println 'Successfully set up FLP service and created service-monitor :)'
                     }
                 }
             }
@@ -635,20 +630,11 @@ pipeline {
             script {
                 // delete AWS S3 bucket if desired
                 if (params.DELETE_S3_BUCKET == true) {
-                    println "Deleting AWS S3 Bucket, will also cleanup lokistack, flowcollector, and kafka if applicable..."
-                    // get S3 bucket name
-                    env.S3_BUCKET_NAME = sh(returnStdout: true, script: "/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'").trim()
-                    env.DEPLOYMENT_MODEL = sh(returnStdout: true, script: 'oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv').trim()
+                    println "Deleting AWS S3 Bucket, LokiStack, flowcollector, and Kafka if applicable..."
                     // delete all applicable resources
                     returnCode = sh(returnStatus: true, script: """
-                        aws s3 rm s3://$S3_BUCKET_NAME --recursive
-                        aws s3 rb s3://$S3_BUCKET_NAME --force
-                        oc delete lokistack/lokistack -n openshift-operators-redhat
-                        oc delete flowcollector/cluster
-                        if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-                            oc delete kafka/kafka-cluster -n netobserv
-                            oc delete kafkaTopic/network-flows -n netobserv
-                        fi
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        delete_s3
                     """)
                     if (returnCode.toInteger() != 0) {
                         error('Bucket deletion unsuccessful - please delete manually to save costs :(')

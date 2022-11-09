@@ -22,7 +22,7 @@ spec:
       imagePullPolicy: Always
       sampling: 1
       cacheActiveTimeout: 5s
-      cacheMaxFlows: 1000
+      cacheMaxFlows: 100000
       interfaces: [ ]
       excludeInterfaces: [ "lo" ]
       logLevel: info
