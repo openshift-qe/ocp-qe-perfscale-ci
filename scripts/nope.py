@@ -415,8 +415,8 @@ if __name__ == '__main__':
         logging.error("START_TIME and END_TIME are needed to proceed")
         sys.exit(1)
     else:
-        logging.info("Parsed Start Time: " + datetime.datetime.fromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
-        logging.info("Parsed End Time:   " + datetime.datetime.fromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
+        logging.info("Parsed Start Time: " + datetime.datetime.utcfromtimestamp(int(START_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
+        logging.info("Parsed End Time:   " + datetime.datetime.utcfromtimestamp(int(END_TIME)).strftime('%I:%M%p%Z UTC on %m/%d/%Y'))
         logging.info("Step is:           " + STEP)
 
     # check if Jenkins arguments are valid and if so set constants
