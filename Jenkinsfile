@@ -615,7 +615,8 @@ pipeline{
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "SVT_REPO", value: SVT_REPO),
                             string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
-                            string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE)
+                            string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE),
+                            booleanParam(name: "CLEANUP", value: CLEANUP),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                        ]
                         currentBuild.description += """
                             <b>Scale-Ci: </b> regression-test <br/>
