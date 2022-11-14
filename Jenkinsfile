@@ -381,7 +381,7 @@ pipeline {
                     }
                     println "Checking if Kafka needs to be enabled or updated..."
                     if (params.ENABLE_KAFKA == true) {
-                        println "Enabling Kafka in flowcollector..."
+                        println "Configuring Kafka in flowcollector..."
                         returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
