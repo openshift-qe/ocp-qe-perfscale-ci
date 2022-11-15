@@ -24,7 +24,7 @@ Below are the metrics that are collected as part of the tests:
 $ oc whoami
 kube:admin
 ```
-3. Navigate to the parent directory of `ocp-qe-perfscale-ci` and run `export WORKSPACE=$PWD`
+3. Depending on which functions within `netobserv.sh` you plan to use, you may also need to install the AWS CLI and properly set your credentials
 
 ### Installing the Network Observability Operator
 There are two methods you can use to install the operator:
@@ -35,7 +35,7 @@ To install from Operator Hub, navigate to the `scripts/` directory and run `$ IN
 #### Source
 GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
 
-To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_main_catalogsource; deploy_netobserv`
+To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_netobserv`
 
 ### Creating LokiStack using Loki Operator
 It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack manually, the following steps can be performed:

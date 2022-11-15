@@ -22,7 +22,7 @@ spec:
       imagePullPolicy: Always
       sampling: 1
       cacheActiveTimeout: 5s
-      cacheMaxFlows: 1000
+      cacheMaxFlows: 100000
       interfaces: [ ]
       excludeInterfaces: [ "lo" ]
       logLevel: info
@@ -79,7 +79,9 @@ spec:
     imagePullPolicy: Always
     port: 9001
     logLevel: info
-    autoscaler: null
+    autoscaler:
+      maxReplicas: 0
+      status: DISABLED
     portNaming:
       enable: true
       portNames:
