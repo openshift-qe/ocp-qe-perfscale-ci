@@ -208,7 +208,7 @@ pipeline {
               spec:
                 containers:
                 - name: "jnlp"
-                  image: "quay.io/openshift-qe-optional-operators/cucushift:${JENKINS_AGENT_LABEL}"
+                  image: "quay.io/openshift-qe-optional-operators/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
                   resources:
                     requests:
                       memory: "8Gi"
