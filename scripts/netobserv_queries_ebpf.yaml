@@ -32,7 +32,7 @@
   metricName: nFlowsProcessedPerMinute
 
 # 9. Loki records written per minute.
-- query: sum(netobserv_records_written)
+- query: sum(netobserv_loki_sent_entries_total)
   metricName: lokiRecordsWritten
 
 # 10. LokiStack CPU usage
@@ -98,4 +98,7 @@
 # 25. Total working set memory by all Loki pods.
 - query: sum(container_memory_working_set_bytes{namespace="openshift-operators-redhat",container=""})
   metricName: workingsetLokiTotals
-  
+
+# 26. Total records dropped while sending to Loki (inverse of netobserv_loki_sent_entries_total)
+- query: sum(netobserv_loki_dropped_entries_total)
+  metricName: lokiRecordsDropped
