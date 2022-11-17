@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1665772365734,
+  "iteration": 1668708255741,
   "links": [],
   "panels": [
     {
@@ -63,6 +63,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -83,7 +85,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)",
+          "expr": "sum(rate(netobserv_ingest_flows_processed{pod=~\"$PodPrefix\"}[1m])*60) by (pod)",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -169,6 +171,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -196,17 +200,23 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(netobserv_records_written[1m]))",
+          "expr": "sum(rate(netobserv_loki_sent_entries_total[1m]))",
           "interval": "",
           "legendFormat": "Flow Write/s",
           "refId": "B"
+        },
+        {
+          "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m]))",
+          "interval": "",
+          "legendFormat": "Flow dropped/s",
+          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Flows processed vs Flow write per second",
+      "title": "Flows processed/write/dropped per second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -250,6 +260,204 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 54,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
+          "interval": "",
+          "legendFormat": "Node Ingress",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Node Traffic Receive/second",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:179",
+          "format": "binBps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:180",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 62,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(container_network_receive_bytes_total[1m]))",
+          "interval": "",
+          "legendFormat": "recv bytes/s",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Container network receive",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:63",
+          "format": "binBps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:64",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "$Datasource",
       "fieldConfig": {
         "defaults": {
@@ -260,10 +468,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 52,
@@ -321,7 +529,8 @@
       },
       "yaxes": [
         {
-          "format": "short",
+          "$$hashKey": "object:1199",
+          "format": "pps",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -329,6 +538,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:1200",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -357,10 +567,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 46,
@@ -419,7 +629,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:348",
-          "format": "decbytes",
+          "format": "binBps",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -448,12 +658,131 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 23
       },
       "id": 40,
       "panels": [],
       "title": "NetObserv CPU",
       "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "hiddenSeries": false,
+      "id": 56,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"flowlogs.*\"})",
+          "interval": "",
+          "legendFormat": "FLP ",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"kafka.*\"})",
+          "interval": "",
+          "legendFormat": "Kafka",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"})",
+          "interval": "",
+          "legendFormat": "ebpf",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"openshift-operators-redhat\"})",
+          "interval": "",
+          "legendFormat": "loki",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "CPU TOTALS",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:139",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:140",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "aliasColors": {},
@@ -473,7 +802,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 33
       },
       "hiddenSeries": false,
       "id": 6,
@@ -509,6 +838,12 @@
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
+        },
+        {
+          "expr": "sum",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
         }
       ],
       "thresholds": [],
@@ -572,7 +907,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 33
       },
       "hiddenSeries": false,
       "id": 22,
@@ -585,6 +920,8 @@
         "rightSide": true,
         "show": true,
         "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -661,7 +998,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 41
       },
       "id": 38,
       "panels": [],
@@ -684,9 +1021,247 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "hiddenSeries": false,
+      "id": 58,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\",container=\"\"})",
+          "interval": "",
+          "legendFormat": "ebpf",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", pod=~\"flowlogs.*\"})",
+          "interval": "",
+          "legendFormat": "FLP",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", pod=~\"kafka.*\"})",
+          "interval": "",
+          "legendFormat": "kafka",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(container_memory_rss{namespace=\"openshift-operators-redhat\",container=\"\"})",
+          "interval": "",
+          "legendFormat": "loki",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "RSS Totals",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:257",
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:258",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "hiddenSeries": false,
+      "id": 60,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv-privileged\",container=\"\"})",
+          "interval": "",
+          "legendFormat": "ebpf",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", pod=~\"flowlogs.*\"})",
+          "interval": "",
+          "legendFormat": "FLP",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", pod=~\"kafka.*\"})",
+          "interval": "",
+          "legendFormat": "kafka",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"openshift-operators-redhat\",container=\"\"})",
+          "interval": "",
+          "legendFormat": "loki",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Memory Working Set Totals",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:367",
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:368",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 57
       },
       "hiddenSeries": false,
       "id": 28,
@@ -746,7 +1321,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:513",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -786,7 +1361,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 57
       },
       "hiddenSeries": false,
       "id": 8,
@@ -847,7 +1422,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:462",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -887,7 +1462,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 65
       },
       "hiddenSeries": false,
       "id": 26,
@@ -899,6 +1474,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -919,7 +1496,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\",container=\"\", pod=~\"$PodPrefix\"}) by (container, pod, namespace )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -946,7 +1523,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:134",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -986,7 +1563,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 65
       },
       "hiddenSeries": false,
       "id": 24,
@@ -998,6 +1575,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1018,7 +1597,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv-privileged\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv-privileged\",container=\"\", pod=~\"$PodPrefix\"}) by (container, pod, namespace)",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1045,7 +1624,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:358",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1074,7 +1653,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 73
       },
       "id": 48,
       "panels": [],
@@ -1099,7 +1678,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 74
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1158,7 +1737,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:141",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1187,7 +1766,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 52
+        "y": 82
       },
       "id": 36,
       "panels": [],
@@ -1212,7 +1791,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 83
       },
       "hiddenSeries": false,
       "id": 30,
@@ -1271,7 +1850,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:1680",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1311,7 +1890,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 53
+        "y": 83
       },
       "hiddenSeries": false,
       "id": 32,
@@ -1372,7 +1951,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:408",
-          "format": "decbytes",
+          "format": "bytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1412,7 +1991,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 61
+        "y": 91
       },
       "hiddenSeries": false,
       "id": 34,
@@ -1424,6 +2003,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1511,7 +2092,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 61
+        "y": 91
       },
       "hiddenSeries": false,
       "id": 10,
@@ -1591,9 +2172,106 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 99
+      },
+      "hiddenSeries": false,
+      "id": 64,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(loki_distributor_bytes_received_total[1m]))",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Loki data rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:209",
+          "format": "binBps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:210",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
-  "refresh": false,
+  "refresh": "30s",
   "schemaVersion": 26,
   "style": "dark",
   "tags": [],
@@ -1652,7 +2330,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": ".*",
           "value": ".*"
         },
@@ -1674,12 +2352,12 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
-  "version": 3
+  "version": 10
 }

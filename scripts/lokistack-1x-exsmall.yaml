@@ -7,7 +7,6 @@ spec:
   tenants:
     mode: openshift-logging
   managementState: Managed
-  replicationFactor: 1
   storage:
     schemas:
       - effectiveDate: '2020-10-11'

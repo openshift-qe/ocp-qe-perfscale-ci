@@ -360,7 +360,7 @@ if __name__ == '__main__':
     standard.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
     standard.add_argument("--starttime", type=str, help='Start time for range query')
     standard.add_argument("--endtime", type=str, help='End time for range query')
-    standard.add_argument("--step", type=str, default='10', help='Step time for range query')
+    standard.add_argument("--step", type=str, default='60', help='Step time for range query')
     standard.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
     standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
