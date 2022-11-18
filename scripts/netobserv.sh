@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 NAMESPACE=${1:-netobserv}
-SCRIPTS_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 if [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
   echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
@@ -12,7 +12,7 @@ elif [[ "${INSTALLATION_SOURCE}" == "Source" ]]; then
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/noo-main-subscription.yaml
   FLOWCOLLECTOR=$SCRIPTS_DIR/flows_v1alpha1_flowcollector_lokistack.yaml
 else
-  echo "Please set INSTALLATION_SOURCE env variable to either 'OperatorHub' or 'Source' if you intend to use the 'deploy_netobserv' function" 
+  echo "Please set INSTALLATION_SOURCE env variable to either 'OperatorHub' or 'Source' if you intend to use the 'deploy_netobserv' function"
 fi
 
 deploy_netobserv() {
@@ -71,7 +71,7 @@ deploy_lokistack() {
   echo "====> Creating S3 secret for Loki"
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
-  
+
   echo "====> Determining LokiStack config"
   if [[ "${LOKISTACK_SIZE}" == "1x.extra-small" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/lokistack-1x-exsmall.yaml
@@ -89,6 +89,8 @@ deploy_lokistack() {
   oc apply -f $TMP_LOKICONFIG
   sleep 30
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n openshift-operators-redhat
+  echo "====> Configuring Loki rate limit alert"
+  oc apply -f $SCRIPTS_DIR/loki-ratelimit-alert.yaml
 }
 
 deploy_loki() {
@@ -163,8 +165,8 @@ delete_s3() {
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-      oc delete kafka/kafka-cluster -n netobserv
-      oc delete kafkaTopic/network-flows -n netobserv
+    oc delete kafka/kafka-cluster -n netobserv
+    oc delete kafkaTopic/network-flows -n netobserv
   fi
 }
 
