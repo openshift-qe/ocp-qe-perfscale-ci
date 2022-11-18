@@ -12,7 +12,7 @@ spec:
         message: |-
           {{ $labels.job }} {{ $labels.route }} is experiencing 429 errors.
         summary: "At any number of requests are responded with the rate limit error code."
-      expr: sum(irate(loki_request_duration_seconds_count{status_code="429"}[1m])) by (job, namespace, route) / sum(irate(loki_request_duration_seconds_count[1m])) by (job, namespace, route) * 100 > 10
+      expr: sum(irate(loki_request_duration_seconds_count{status_code="429"}[1m])) by (job, namespace, route) / sum(irate(loki_request_duration_seconds_count[1m])) by (job, namespace, route) * 100 > 0
       for: 15m
       labels:
         severity: warning
