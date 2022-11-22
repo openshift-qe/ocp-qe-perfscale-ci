@@ -8,7 +8,3 @@ metadata:
 spec:
   partitions: ${TOPIC_PARTITIONS}
   replicas: 1
-  config:
-    retention.ms: 604800000
-    segment.bytes: 1073741824
-
