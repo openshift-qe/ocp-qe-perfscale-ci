@@ -9,15 +9,43 @@ if (userId) {
 def RETURNSTATUS = "default"
 def output = ""
 pipeline {
-  agent none
+  agent {
+    kubernetes {
+      cloud 'PSI OCP-C1 agents'
+      yaml """\
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            label: ${JENKINS_AGENT_LABEL}
+        spec:
+          containers:
+          - name: "jnlp"
+            image: "image-registry.openshift-image-registry.svc:5000/aos-qe-ci/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
+            resources:
+              requests:
+                memory: "8Gi"
+                cpu: "2"
+              limits:
+                memory: "8Gi"
+                cpu: "2"
+            imagePullPolicy: Always
+            workingDir: "/home/jenkins/ws"
+            tty: true
+        """.stripIndent()
+    }
+  }
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'KUBEADMIN_PASS', defaultValue: '', description: 'Password to login to password.')
+        string(name: "DAST_IMAGE", defaultValue: "quay.io/redhatproductsecurity/rapidast", description: 'Image to use as the base for running zap.')
+        string(name: "DAST_IMAGE_TAG", defaultValue: "latest", description: 'Image tag to use as the base for running zap.')
         string(name: 'DAST_TOOL_URL', defaultValue: 'https://github.com/RedHatProductSecurity/rapidast.git', description: 'Rapidast tool github url .')
         string(name: 'DAST_TOOL_BRANCH', defaultValue: 'development', description: 'Rapdiast tool github barnch to checkout.')
-        string(name: 'GIT_LAB_URL', defaultValue: 'https://gitlab.cee.redhat.com/jechoi/rapidast-ocp.git', description: 'Rapidast tool github url .')
-        string(name: 'GIT_LAB_BRANCH', defaultValue: 'main', description: 'Rapdiast tool github barnch to checkout.')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        string(name: 'API_URL_LIST', defaultValue: 'admissionregistration.k8s.io/v1', description: 
+        '''List of api files to scan against.
+        Api docs you can find using <b>kubectl api-versions</b>''')
+        string(name: 'POLICY_FILE', defaultValue: 'API-scan-minimal', description: 'List of policies to check apis against.')
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -40,8 +68,7 @@ pipeline {
      }
 
   stages {
-    stage('Kraken Run'){
-      agent { label params['JENKINS_AGENT_LABEL'] }
+    stage('SSMl Run'){
       steps{
         deleteDir()
         checkout([
@@ -63,26 +90,6 @@ pipeline {
             ],
             userRemoteConfigs: [[url: params.DAST_TOOL_URL ]]
         ])
-        checkout changelog: false,
-          poll: false,
-          scm: [
-              $class: 'GitSCM',
-              branches: [[name: "${params.GIT_LAB_BRANCH}"]],
-              doGenerateSubmoduleConfigurations: false,
-              extensions: [
-                  [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
-                  [$class: 'PruneStaleBranch'],
-                  [$class: 'CleanCheckout'],
-                  [$class: 'IgnoreNotifyCommit'],
-                  [$class: 'RelativeTargetDirectory', relativeTargetDir: 'dast_git_lab']
-              ],
-              submoduleCfg: [],
-              userRemoteConfigs: [[
-                  name: 'origin',
-                  refspec: "+refs/heads/${params.GIT_LAB_BRANCH}:refs/remotes/origin/${params.GIT_LAB_BRANCH}",
-                  url: "${params.GIT_LAB_URL}"
-              ]]
-          ]
         copyArtifacts(
             filter: '',
             fingerprintArtifacts: true,
@@ -105,36 +112,23 @@ pipeline {
           mkdir -p ~/.kube
           cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
           ls
+          oc login -u kubeadmin -p $(cat $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeadmin-password)
+          HELM_DIR=$(mktemp -d)
+          curl -sS -L https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz | tar -xzC ${HELM_DIR}/ linux-amd64/helm
+          
+          ${HELM_DIR}/linux-amd64/helm version  
 
-          if [[ ! -z $(kubectl get ns rapidast) ]]; then 
-              kubectl delete ns rapidast
-          fi
-          kubectl create ns rapidast
+          mv ${HELM_DIR}/linux-amd64/helm $WORKSPACE/helm
+          PATH=$PATH:$WORKSPACE
+          helm version
 
-          mkdir /dast_tool/config/openapi
-
-
-          cp dast_git_lab/ocp-openapi-v2-1.23.5%2B3afdacb.json /dast_tool/config/openapi/
-
-          ls /dast_tool/config/openapi
-          cp dast_git_lab/config.yaml /dast_tool/config/config.yaml
-          cp dast_git_lab/add-ocp-token-cookie.js dast_tool/scripts
-
-          kubectl apply -f operator_configs/catalog_source.yaml
-          kubectl apply -f operator_configs/subscription.yaml
-          kubectl apply -f operator_configs/operatorgroup.yaml
-
-
-          kubectl apply -f dast_tool/operator/config/samples/research_v1alpha1_rapidast.yaml
-
-          mkdir results
-          bash results.sh rapidast-pvc results
-          ls
-
+          oc label ns default security.openshift.io/scc.podSecurityLabelSync=false pod-security.kubernetes.io/enforce=privileged pod-security.kubernetes.io/audit=privileged pod-security.kubernetes.io/warn=privileged --overwrite
+          
+          ./deploy_ssml_api.sh
           ''')
           sh "echo $RETURNSTATUS"
           archiveArtifacts(
-              artifacts: 'results/*',
+              artifacts: 'results/**',
               allowEmptyArchive: true,
               fingerprint: true
           )
@@ -150,5 +144,17 @@ pipeline {
       }
      }
    }
+  }
+  post {
+      always {
+          script {
+                      build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                      parameters: [
+                          string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "ssml"),
+                          text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),
+                          string(name: 'RESULT', value:currentBuild.currentResult)
+                      ], propagate: false
+          }
+      }
   }
 }
