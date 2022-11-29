@@ -21,17 +21,17 @@ pipeline{
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
-			""")
+			  """)
         string(name: 'OCP_PREFIX', defaultValue: '', description: 'Name of ocp cluster you want to build')
         string(name: 'OCP_VERSION', defaultValue: '', description: 'Build version to install the cluster.')
         separator(name: "BUILD_FLEXY_FROM_PROFILE", sectionHeader: "Build Flexy From Profile", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
-			""")
+			  """)
         string(name: 'CI_PROFILE', defaultValue: '', description: 'Name of ci profile to build for the cluster you want to build')
         choice(choices: ['extra-small','small','medium'], name: 'PROFILE_SCALE_SIZE', description: 'Size of cluster to scale to; will be ignored if SCALE_UP is set')
-         separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
+        separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
 				font-family: 'Orienta', sans-serif;
@@ -41,6 +41,7 @@ pipeline{
         choice(choices: ['','ovn', 'sdn'], name: 'NETWORK_TYPE', description: 'Network type, will be ignored if BUILD_NUMBER is set')
         choice(choices: ['','ipi', 'upi', 'sno'], name: 'INSTALL_TYPE', description: '''Type of installation (set to SNO for sno cluster type),  <br/>
         will be ignored if BUILD_NUMBER is set''')
+        choice(choices: ['x86_64','aarch64', 's390x', 'ppc64le', 'multi', 'multi-aarch64','multi-x86_64','multi-ppc64le', 'multi-s390x'], name: 'ARCH_TYPE', description: '''Type of installation''')
         string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of master nodes in your cluster to create.')
         string(name: "WORKER_COUNT", defaultValue: '3', description: 'Number of worker nodes in your cluster to create.')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:
@@ -200,7 +201,7 @@ services:
 
                         install_type_desc = "${install_type_custom} ${custom_cloud_type} ${params.NETWORK_TYPE}"
                     }
-
+                    def version_string=""
                     // z stream and ec builds are on quay
                     def registry = "quay.io/openshift-release-dev/ocp-release"
                     // nightly build is on registery.ci.openshift.org
@@ -217,11 +218,18 @@ services:
                         
                     }
 
+                    if (registry.contains('quay')) {
+                      version_string = "${registry}:${VERSION}-${ARCH_TYPE}"
+                    } else {
+                      version_string = "${registry}:${VERSION}"
+                    }
+                    
+
                     install = build job:"ocp-common/Flexy-install", propagate: false, parameters:[
                         string(name: "INSTANCE_NAME_PREFIX", value: OCP_PREFIX),
                         string(name: "VARIABLES_LOCATION", value: "${var_loc}"),
                         string(name: "JENKINS_AGENT_LABEL", value: custom_jenkins_label),
-                        text(name: "LAUNCHER_VARS", value: "${extra_launcher_vars}installer_payload_image: '${registry}:${VERSION}'"),
+                        text(name: "LAUNCHER_VARS", value: "${extra_launcher_vars}installer_payload_image: '${version_string}'"),
                         text(name: "BUSHSLICER_CONFIG", value: "${bushslicer_config}"),
                         text(name: 'REPOSITORIES', value: '''
 GIT_PRIVATE_URI=git@gitlab.cee.redhat.com:aosqe/cucushift-internal.git
