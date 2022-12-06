@@ -60,6 +60,14 @@ pipeline{
         defaultValue: '', 
         description: 'Build version to install the cluster.'
       )
+      choice(
+        choices: ["",'x86_64','aarch64', 's390x', 'ppc64le', 'multi', 'multi-aarch64','multi-x86_64','multi-ppc64le', 'multi-s390x'], 
+        name: 'ARCH_TYPE', 
+        description: '''Type of architecture installation for quay image url; <b>
+        set to x86_64 by default or if profile contains ARM will set to aarch64
+        If this is not blank will use value you set here'''
+      )
+        
       separator(
         name: "BUILD_FLEXY_FROM_PROFILE", 
         sectionHeader: "Build Flexy From Profile", 
@@ -321,7 +329,7 @@ pipeline{
       )
       string(
         name:'JENKINS_AGENT_LABEL',
-        defaultValue:'oc45',
+        defaultValue:'oc412',
         description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
@@ -414,13 +422,11 @@ pipeline{
                     println "global num $global_scale_num"
                      if(params.BUILD_NUMBER == "") {
 
-
                         if(params.CI_PROFILE != "" ) {
 
                             // read data from CI profile install file
                             MAJOR_VERSION = params.OCP_VERSION.split("\\.")[0]
                             MINOR_VERSION = params.OCP_VERSION.split("\\.")[1]
-
 
                             installData = readYaml(file: "local-ci-profiles/scale-ci/$MAJOR_VERSION.$MINOR_VERSION/${CI_PROFILE}.install.yaml")
                             installData.install.flexy.each { env.setProperty(it.key, it.value) }
@@ -448,13 +454,21 @@ pipeline{
                                 <b>Create Cluster: </b> ${params.INSTALL_TYPE} on ${params.CLOUD_TYPE}-${params.NETWORK_TYPE} <br/>
                             """
                         }
+                        def set_arch_type = "x86_64"
+                        if (params.ARCH_TYPE != "") {
+                          set_arch_type = params.ARCH_TYPE
+                        }
+                        else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
+                          set_arch_type = "aarch64"
+                        }
+        
 
                         install = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-builder/', parameters: [
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
                             string(name: 'CI_PROFILES_URL', value: CI_PROFILES_URL),string(name: 'CI_PROFILES_REPO_BRANCH', value: CI_PROFILES_REPO_BRANCH),
                             string(name: 'OCP_PREFIX', value: OCP_PREFIX),string(name: 'OCP_VERSION', value: OCP_VERSION),
                             string(name: 'CI_PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SCALE_SIZE', value: PROFILE_SCALE_SIZE),
-                            string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),
+                            string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),string(name: "ARCH_TYPE", value: set_arch_type),
                             string(name: 'NETWORK_TYPE', value: NETWORK_TYPE),string(name: 'INSTALL_TYPE', value: INSTALL_TYPE),
                             string(name: 'MASTER_COUNT', value: MASTER_COUNT),string(name: "WORKER_COUNT", value: WORKER_COUNT)
                         ]
