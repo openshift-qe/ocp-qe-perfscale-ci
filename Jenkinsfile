@@ -456,11 +456,9 @@ pipeline{
                         }
                         def set_arch_type = "x86_64"
                         if (params.ARCH_TYPE == "") {
-                          if (params.CI_PROFILE != "") {
-                            if (params.CI_PROFILE.contains('ARM')) {
+                          if (params.CI_PROFILE != "") && (params.CI_PROFILE.contains('ARM')) {
                               set_arch_type = "aarch64"
                             }
-                          }
                         } else {
                           set_arch_type = params.ARCH_TYPE
                         }
