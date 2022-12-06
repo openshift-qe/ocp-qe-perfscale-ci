@@ -105,12 +105,12 @@ pipeline {
         )
         string(
             name: 'LARGE_SCALE_CLIENTS',
-            defaultValue: '1 20',
+            defaultValue: '1 80',
             description: 'Threads/route to use in the large scale scenario'
         )
         string(
             name: 'LARGE_SCALE_CLIENTS_MIX',
-            defaultValue: '1 10',
+            defaultValue: '1 25',
             description: 'Threads/route to use in the large scale scenario with mix termination'
         )
         string(
@@ -120,12 +120,12 @@ pipeline {
         )
         string(
             name: 'SMALL_SCALE_CLIENTS',
-            defaultValue: '1 100',
+            defaultValue: '1 400',
             description: 'Threads/route to use in the small scale scenario'
         )
         string(
             name: 'SMALL_SCALE_CLIENTS_MIX',
-            defaultValue: '1 50',
+            defaultValue: '1 125',
             description: 'Threads/route to use in the small scale scenario with mix termination'
         )
         string(
