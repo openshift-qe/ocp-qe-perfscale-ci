@@ -32,7 +32,7 @@ deploy_netobserv() {
   done
   echo "====> Creating flowlogs-pipeline"
   oc apply -f $FLOWCOLLECTOR
-  echo "====> Waiting for flowlogs-pipeline pod to be ready"
+  echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
     oc get daemonset flowlogs-pipeline -n ${NAMESPACE} && break
     sleep 1
@@ -53,16 +53,17 @@ deploy_lokistack() {
   echo "====> Deploying LokiStack"
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup, loki-operator Subscription"
   oc apply -f $SCRIPTS_DIR/loki-subscription.yaml -n openshift-operators-redhat
-  sleep 30
+
+  echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
-  CLUSTER_NAME=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}')
-  if [[ "$WORKLOAD" == "None" ]]; then
+  if [[ "$WORKLOAD" == "None" ]] || [[ -z "$WORKLOAD" ]]; then
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
   else
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
+  CLUSTER_NAME=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}')
   if [[ ${CLUSTER_NAME} =~ "preserve" ]]; then
     S3_BUCKETNAME+="-preserve"
   fi
@@ -70,6 +71,7 @@ deploy_lokistack() {
 
   echo "====> Creating S3 secret for Loki"
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
+  sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
   echo "====> Determining LokiStack config"
@@ -122,7 +124,7 @@ deploy_kafka() {
   oc wait --timeout=180s --for=condition=ready pod -l name=amq-streams-cluster-operator -n openshift-operators
   echo "====> Creating kafka-metrics ConfigMap and kafka-resources-metrics PodMonitor"
   oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n ${NAMESPACE}
-  echo "====> Creating Kafka"
+  echo "====> Creating kafka-cluster Kafka"
   curl -s -L "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" | envsubst | oc apply -n ${NAMESPACE} -f -
 
   echo "====> Creating network-flows KafkaTopic"
@@ -158,9 +160,12 @@ delete_s3() {
   S3_BUCKET_NAME=$(/bin/bash -c 'oc extract cm/lokistack-config -n openshift-operators-redhat --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n')
   echo "====> Got $S3_BUCKET_NAME"
   aws s3 rm s3://$S3_BUCKET_NAME --recursive
+  sleep 30
   aws s3 rb s3://$S3_BUCKET_NAME --force
-  oc delete lokistack/lokistack -n openshift-operators-redhat
-  delete_flowcollector
+}
+
+delete_kafka() {
+  echo "====> Deleting Kafka (if applicable)"
   echo "====> Getting Deployment Model"
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
@@ -170,9 +175,17 @@ delete_s3() {
   fi
 }
 
-uninstall_netobserv() {
-  echo "====> Uninstalling NetObserv"
-  delete_flowcollector
+delete_lokistack() {
+  echo "====> Deleting LokiStack"
+  oc delete --ignore-not-found lokistack/lokistack -n openshift-operators-redhat
+}
+
+delete_flowcollector() {
+  echo "====> Deleting flowcollector"
+  oc delete --ignore-not-found flowcollector/cluster
+}
+
+delete_netobserv() {
   echo "====> Deleting NetObserv Subscription, OperatorGroup, and Project"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/noo-main-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/noo-released-subscription.yaml
@@ -183,13 +196,11 @@ uninstall_netobserv() {
   oc delete --ignore-not-found catalogsource/netobserv-testing -n openshift-marketplace
 }
 
-delete_flowcollector() {
-  echo "====> Deleting flowcollector"
-  oc delete --ignore-not-found flowcollector/cluster
-}
-
 nukeobserv() {
   echo "====> Nuking NetObserv and all related resources"
   delete_s3
-  uninstall_netobserv
+  delete_kafka
+  delete_lokistack
+  delete_flowcollector
+  delete_netobserv
 }

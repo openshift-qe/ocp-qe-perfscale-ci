@@ -83,6 +83,11 @@ pipeline {
                 If None is selected the installation will be skipped
             '''
         )
+        string(
+            name: 'CONTROLLER_MEMORY_LIMIT',
+            defaultValue: '800Mi',
+            description: 'Note that 800Mi = 800 megabytes, i.e. 0.8 GB'
+        )
         choice(
             name: 'LOKISTACK_SIZE',
             choices: ['1x.extra-small', '1x.small', '1x.medium'],
@@ -108,18 +113,18 @@ pipeline {
             '''
         )
         string(
-            name: 'FLOW_SAMPLING_RATE',
-            defaultValue: '100',
+            name: 'FLP_SAMPLING_RATE',
+            defaultValue: '1',
             description: 'Rate at which to sample flows'
         )
         string(
-            name: 'CPU_LIMIT',
-            defaultValue: '1000m',
+            name: 'FLP_CPU_LIMIT',
+            defaultValue: '8000m',
             description: 'Note that 1000m = 1000 millicores, i.e. 1 core'
         )
         string(
-            name: 'MEMORY_LIMIT',
-            defaultValue: '500Mi',
+            name: 'FLP_MEMORY_LIMIT',
+            defaultValue: '8000Mi',
             description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
         )
         booleanParam(
@@ -231,14 +236,12 @@ pipeline {
             '''
         )
         booleanParam(
-            name: 'DELETE_S3_BUCKET',
+            name: 'NUKEOBSERV',
             defaultValue: false,
-            description: 'Check this box to delete AWS S3 Bucket (also deletes lokistack, flowcollector and kafka)'
-        )
-        booleanParam(
-            name: 'UNINSTALL_NETOBSERV',
-            defaultValue: false,
-            description: 'Check this box to delete Network Observability at the end of the pipeline run'
+            description: '''
+                Check this box to completely remove NetObserv and all related resources at the end of the pipeline run<br/>
+                This includes the AWS S3 Bucket, Kafka (if applicable), LokiStack, and flowcollector
+            '''
         )
     }
 
@@ -329,6 +332,7 @@ pipeline {
                         }
                         sh(returnStatus: true, script: '''
                             oc get nodes
+                            echo "Total Workers: `oc get nodes | grep worker | wc -l`"
                         ''')
                     }
                 }
@@ -357,27 +361,34 @@ pipeline {
                     }
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
+                        sh(returnStatus: true, script: '''
+                            oc get pods -n netobserv
+                            oc get pods -n netobserv-privileged
+                            oc get pods -n openshift-operators-redhat
+                        ''')
                     }
                 }
             }
         }
-        stage('Configure flowcollector and Kafka') {
+        stage('Configure NOO, flowcollector, and Kafka') {
             steps {
                 script {
-                    // attempt updating common parameters of flowcollector
-                    println 'Updating common parameters of flowcollector...'
+                    // attempt updating common parameters of NOO and flowcollector
+                    println 'Updating common parameters of NOO and flowcollector...'
+                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n netobserv").trim()
                     returnCode = sh(returnStatus: true, script: """
+                        oc -n netobserv patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "EBPF"}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLOW_SAMPLING_RATE}}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.CPU_LIMIT}"}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.MEMORY_LIMIT}"}] -n netobserv"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
+                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
                     """)
                     // fail pipeline if setup failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
-                        error('Updating common parameters of flowcollector failed :(')
+                        error('Updating common parameters of NOO and flowcollector failed :(')
                     }
                     else {
-                        println 'Successfully updated common parameters of flowcollector :)'
+                        println 'Successfully updated common parameters of NOO and flowcollector :)'
                     }
                     println "Checking if Kafka needs to be enabled or updated..."
                     if (params.ENABLE_KAFKA == true) {
@@ -391,6 +402,11 @@ pipeline {
                         }
                         else {
                             println 'Successfully enabled Kafka with flowcollector :)'
+                            sh(returnStatus: true, script: '''
+                                oc get pods -n netobserv
+                                oc get pods -n netobserv-privileged
+                                oc get pods -n openshift-operators-redhat
+                            ''')
                         }
                     }
                     else {
@@ -456,7 +472,10 @@ pipeline {
             }
             steps {
                 script {
+                    // set build name and remove previous artifacts
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
+                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/workloads/**/*.out")
+                    // build workload job based off selected workload
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
@@ -628,27 +647,12 @@ pipeline {
         }
         cleanup {
             script {
-                // delete AWS S3 bucket if desired
-                if (params.DELETE_S3_BUCKET == true) {
-                    println "Deleting AWS S3 Bucket, LokiStack, flowcollector, and Kafka if applicable..."
-                    // delete all applicable resources
-                    returnCode = sh(returnStatus: true, script: """
-                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        delete_s3
-                    """)
-                    if (returnCode.toInteger() != 0) {
-                        error('Bucket deletion unsuccessful - please delete manually to save costs :(')
-                    }
-                    else {
-                        println 'Bucket deleted successfully :)'
-                    }
-                }
-                // uninstall NetObserv operator if desired
-                if (params.UNINSTALL_NETOBSERV == true) {
+                // uninstall NetObserv operator and related resources if desired
+                if (params.NUKEOBSERV == true) {
                     println "Deleting Network Observability operator..."
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        uninstall_netobserv
+                        nukeobserv
                     """)
                     if (returnCode.toInteger() != 0) {
                         error('Operator deletion unsuccessful - please delete manually :(')
