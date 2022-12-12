@@ -37,8 +37,21 @@ function set_storage_class() {
     fi
 }
 
+function wait_for_prometheus_status() {
+    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h)
+ 
+    URL=https://$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath="{.spec.host}")
+    prom_status="not_started"
+    sleep 30
+    while [[ "$prom_status" != "success" ]]; do
+        prom_status=$(curl -s -g -k -X GET -H "Authorization: Bearer $token" -H 'Accept: application/json' -H 'Content-Type: application/json' "$URL/api/v1/query?query=up" | jq -r '.status')
+        sleep 5
+        echo "Prometheus status not ready yet, retrying in 5s..."
+    done 
+}
 
 set_storage_class
+
 if [[ $(oc get machineset -n openshift-machine-api $(oc get machinesets -A  -o custom-columns=:.metadata.name | shuf -n 1) -o=jsonpath='{.metadata.annotations}' | grep -c "machine.openshift.io") -ge 1 ]]; then
     export MACHINESET_METADATA_LABEL_PREFIX=machine.openshift.io
 else
@@ -216,3 +229,5 @@ for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | 
         fi
     done
 done
+
+wait_for_prometheus_status
