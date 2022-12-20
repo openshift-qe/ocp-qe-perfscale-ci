@@ -147,6 +147,11 @@ pipeline {
           '''
       )
       booleanParam(
+          name: "SEND_SLACK",
+          defaultValue: false,
+          description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+      )
+      booleanParam(
           name: 'INFRA_WORKLOAD_INSTALL',
           defaultValue: false,
           description: '''
@@ -241,7 +246,7 @@ pipeline {
             )
             script {
                 buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
-                currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
+                currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}-${params.WORKLOAD}"
                 currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
                 buildinfo.params.each { env.setProperty(it.key, it.value) }
             }
@@ -321,80 +326,104 @@ pipeline {
                     ],
                     propagate: false
                 if (status == "PASS") {
-                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                    if (cerberus_job.result.toString() != "SUCCESS") {
                         status = "Cerberus check failed"
+                        currentBuild.result = "FAILURE"
                     }
                 }
                 else {
-                    if (cerberus_job == null && cerberus_job == "" && cerberus_job.result.toString() != "SUCCESS") {
+                    if (cerberus_job.result.toString() != "SUCCESS") {
                         status += "Cerberus check failed"
+                        currentBuild.result = "FAILURE"
                     }
                 }
             }
         }
+    }
+    stage("Write out results") {
+      agent { label params['JENKINS_AGENT_LABEL'] }
+      when {
+          expression { params.WRITE_TO_FILE == true }
       }
-      stage("Write out results") {
-        agent { label params['JENKINS_AGENT_LABEL'] }
-        when {
-            expression { params.WRITE_TO_FILE == true }
+        steps {
+          script {
+              if (status != "PASS") {
+                  currentBuild.result = "FAILURE"
+              }
+              def parameter_to_pass = VARIABLE
+              if (params.WORKLOAD == "node-density" || params.WORKLOAD == "node-density-heavy") {
+                  parameter_to_pass += "," + NODE_COUNT
+              }
+              else if (params.WORKLOAD == "concurrent-builds") {
+                  parameter_to_pass = APP_LIST + "," + BUILD_LIST
+              }
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                      string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
+                      string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
+                      text(name: "JOB_OUTPUT", value: "${output}")
+                  ],
+                  propagate: false
+            }
         }
-          steps {
-            script {
-                if (status != "PASS") {
-                    currentBuild.result = "FAILURE"
-                }
-                    def parameter_to_pass = VARIABLE
-                    if (params.WORKLOAD == "node-density" || params.WORKLOAD == "node-density-heavy") {
-                        parameter_to_pass += "," + NODE_COUNT
-                    }
-                    else if (params.WORKLOAD == "concurrent-builds") {
-                        parameter_to_pass = APP_LIST + "," + BUILD_LIST
-                    }
-                    build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
-                        parameters: [
-                            string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
-                            string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
-                            string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
-                            string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
-                            text(name: "JOB_OUTPUT", value: "${output}")
-                        ],
-                        propagate: false
+    }
+    stage("Cleanup cluster of objects created in workload") {
+      agent { label params['JENKINS_AGENT_LABEL'] }
+      when {
+          expression { params.CLEANUP == true}
+      }
+        steps {
+          script {
+              // if the build fails, cleaning and scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                      string(name: "CI_TYPE", value: WORKLOAD)
+                  ],
+                  propagate: false
               }
           }
+    }
+    stage("Scale down workers") {
+      agent { label params['JENKINS_AGENT_LABEL'] }
+      when {
+          expression { params.SCALE_DOWN.toInteger() > 0 }
       }
-      stage("Cleanup cluster of objects created in workload") {
-        agent { label params['JENKINS_AGENT_LABEL'] }
-        when {
-            expression { params.CLEANUP == true}
-        }
-          steps {
-            script {
-                // if the build fails, cleaning and scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
-                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
-                    parameters: [
-                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
-                        string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                        string(name: "CI_TYPE", value: WORKLOAD)
-                    ],
-                    propagate: false
-                }
-            }
+        steps {
+          script {
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN),
+                      text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
+                  ]
+          }
       }
-      stage("Scale down workers") {
-        agent { label params['JENKINS_AGENT_LABEL'] }
-        when {
-            expression { params.SCALE_DOWN.toInteger() > 0 }
-        }
-          steps {
-            script {
-                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling',
-                    parameters: [
-                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKER_COUNT', value: SCALE_DOWN),
-                        text(name: "ENV_VARS", value: ENV_VARS), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL)
-                    ]
-            }
+    }
+    stage("Send Slack Status") {
+      agent { label params['JENKINS_AGENT_LABEL'] }
+      when {
+        expression { params.SEND_SLACK == true }
+      }
+      steps {
+        script {
+          def slack_channel = "ocp-qe-scale-ci-results"
+          println "Sending Slack notification to #${slack_channel}..."
+          msg = "@${userId}, your *${params.WORKLOAD}* job with id <${env.BUILD_URL}|${env.BUILD_NUMBER}> exited with status: *${currentBuild.currentResult}*"
+          if (currentBuild.currentResult == 'SUCCESS') {
+              slackSend channel: "$slack_channel",
+                  message: "${msg}",
+                  color: "good"
+          } else {
+              slackSend channel: "$slack_channel",
+                  message: "${msg}"
+          }
+
 
         }
+      }
     }
   }
 }
