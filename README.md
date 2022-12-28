@@ -1,24 +1,60 @@
-# ocp-qe-perfscale-ci
+# Chaos During Upgrade while Monitoring Cluster
+
+This jenkinsfile tests the clusters ability to withstand chaotic scenarios during an upgrade and show it's recovery and overall cluster health once complete.
+
+Right now you have to set a hard coded number of iterations for cerberus to run, haven't figured out how to stop dameon mode once it starts 
+
+The cerberus job, kraken and upgrade (if upstream version set) are all run in parallel and will wait for all jobs to fully finish before ending the test
 
 
-## Purpose
+## Cerberus
 
-This repo would contain `Jenkinsfile` and any other pertaining contents that would be used by a multi-branch pipeline in our Jenkins.
+For full information see [cerberus github](https://github.com/redhat-chaos/cerberus)
 
-## Structure
+## Kraken
 
-There are multiple orphan branches present in this repos, each of them are supposed to house one kind of workload for [E2E-benchmarking](https://github.com/cloud-bulldozer/e2e-benchmarking/). Each branch should contain one `Jenkinsfile`
+For full information see [kraken github](https://github.com/redhat-chaos/krkn)
 
-You can create a new orphan branch simply by `git checkout --orphan BRANCHNAME` for new workload.
 
-Jenkins multi-branch pipeline job will look at the `Jenkinsfile` on each of these branches and create a new workload job for you to execute in your Jenkins.
+### Configurations 
 
-This repository also hosting the `perf-dashboard-grafana-crs` directory, that includes all the Custom Resources and relevant files that you need to deploy a fully functional perf-scale dashboard.
-This deployment uses grafana operator to enable grafana operator on your cluster, create an instance, create required datasources(in this case Prometheus and ElasticSearch) and dashboards.
+BUILD_NUMBER: Only accepts flexy built clusters, pass the flexy id number 
 
-See `launch-grafana.sh` for env variables we need. And, `cleanup-grafana.sh` could be used to cleanup everything created by the `launch-grafana.sh` script.
+UPGRADE_VERSION: what version you want your cluster to upgrade to, if set to blank won't upgrade at all 
 
-**PREREQUISITE:** is to have `KUBECONFIG` env variable configured that can access your OpenShift cluster. 
+Number of iterations to run cerberus: CERBERUS_ITERATIONS
 
-### Author
-Kedar Kulkarni <@kedark3 on Github>
+To watch all created namespaces set the following variable CERBERUS_WATCH_NAMESPACES = [^.*\$]
+
+Set the type of chaos scenario to run by using KRAKEN_SCENARIO
+
+Scenario types are: 
+* application-outages
+* container-scenarios
+* namespace-scenarios
+* network-scenarios
+* pod-scenarios
+* node-cpu-hog
+* node-io-hog
+* node-memory-hog
+* power-outages
+* pvc-scenario
+* time-scenarios
+* zone-outages
+
+There are 2 ways to the run the chaos scenario on a cluster: using **python** or running kraken in a **pod** on your cluster. Set using KRAKEN_RUN_TYPE
+
+ENV_VARS: be able to set any of the parameters in each of the above scenarios seperate than the defaults defined in each of the env.sh files in the folder of the scenario in kraken-hub
+See all environment variables [here](https://github.com/redhat-chaos/krkn-hub/blob/main/docs/all_scenarios_env.md) and look at [cerberus](https://github.com/redhat-chaos/krkn-hub/blob/main/docs/cerberus.md) and the specific kraken scenario you're running docs as well 
+
+KRAKEN_REPO: what is the url of kraken you want to use
+
+KRAKN_REPO_BRANCH: branch of the kraken repo you set above to run (helpful with testing changes)
+
+KRAKEN_HUB_REPO: what is the url of kraken-hub you want to use, useful when setting env vars changes
+
+KRAKN_HUB_REPO_BRANCH: what is the branch of kraken-hub you want to use; again, useful when setting env vars changes
+
+CERBERUS_REPO: what is the url of cerberus you want to use
+
+CERBERUS_REPO_BRANCH: branch of the cerberus repo you set above to run (helpful with testing cerberus changes)
