@@ -86,7 +86,7 @@ pipeline {
         string(
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '800Mi',
-            description: 'Note that 800Mi = 800 megabytes, i.e. 0.8 GB'
+            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         choice(
             name: 'LOKISTACK_SIZE',
@@ -125,7 +125,7 @@ pipeline {
         string(
             name: 'FLP_MEMORY_LIMIT',
             defaultValue: '8000Mi',
-            description: 'Note that 500Mi = 500 megabytes, i.e. 0.5 GB'
+            description: 'Note that 500Mi = 500 mebibytes, i.e. 0.5 Gi'
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
