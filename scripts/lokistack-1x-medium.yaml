@@ -4,6 +4,12 @@ metadata:
   name: lokistack
   namespace: openshift-operators-redhat
 spec:
+  limits:
+    global:
+      ingestion:
+        ingestionBurstSize: 100
+        ingestionRate: 500
+        maxGlobalStreamsPerTenant: 100000
   tenants:
     mode: openshift-logging
   managementState: Managed

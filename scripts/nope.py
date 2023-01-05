@@ -206,8 +206,10 @@ def get_netobserv_env_info():
     }
     if deploymentModel == 'kafka':
         additional_commands["kafka_replicas"] = f'oc get flowcollector -o jsonpath="{{.items[*].spec.processor.kafkaConsumerReplicas}}"'
+        additional_commands["kafka_brokers"] = f'oc get Kafka -o jsonpath="{{.items[*].spec.kafka.replicas}}" -n netobserv'
     else:
         info["kafka_replicas"] = "N/A"
+        info["kafka_brokers"] = "N/A"
     info = run_commands(additional_commands, info)
 
     # return all collected data
