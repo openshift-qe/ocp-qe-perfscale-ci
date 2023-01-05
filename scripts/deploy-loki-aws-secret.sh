@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 LOKI_BUCKET_NAME=${1:-netobserv-loki-ocpqe-perf}
-NAMESPACE=openshift-operators-redhat
+NAMESPACE="netobserv"
 SECRETNAME="s3-secret"
 AWS_DEFAULT_REGION="us-east-2"
 ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com"
@@ -23,8 +23,8 @@ set_credentials_from_provider() {
 set_aws_credentials() {
     echo "CreateAWSSecret: get aws credentials"
 
-    #use credentials in Env as the first option
-    #use credentials in local as the second option
+    # use credentials in env as the first option
+    # use credentials in local as the second option
     if [[ $AWS_ACCESS_KEY_ID == "" || ${AWS_SECRET_ACCESS_KEY} == "" ]]; then
         if aws configure get region; then
             echo "CreateAWSSecret: use credentials in local"
@@ -32,7 +32,7 @@ set_aws_credentials() {
         fi
     fi
 
-    #use cloud provideer the third option
+    # use cloud provider as the third option
     if [[ $AWS_ACCESS_KEY_ID == "" || ${AWS_SECRET_ACCESS_KEY} == "" ]]; then
         if oc get secret aws-creds -n kube-system; then
             echo "CreateAWSSecret: try credentials in kube-system/aws-creds"
@@ -46,7 +46,7 @@ set_aws_credentials() {
     fi
 }
 
-#Create s3 bucket
+# Create s3 bucket
 create_s3_bucket() {
     if aws configure get region; then
         echo "bucket: Create s3 bucket $LOKI_BUCKET_NAME if it does not exist"
@@ -54,8 +54,8 @@ create_s3_bucket() {
         echo "bucket: Warning: Can not connect to aws, ensure bucket is ready before trying to deploy lokistack"
         return 0
     fi
-    #todo: use query https://jmespath.org/
-    #aws s3api list-buckets --query \'Buckets[?Name == \"${LOKI_BUCKET_NAME}\"].Name\'`
+    # todo: use query https://jmespath.org/
+    # aws s3api list-buckets --query \'Buckets[?Name == \"${LOKI_BUCKET_NAME}\"].Name\'`
     aws s3api list-buckets | grep ${LOKI_BUCKET_NAME}
     if [[ $? == 0 ]]; then
         echo "bucket: deleting existing bucket"
