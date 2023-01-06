@@ -44,7 +44,7 @@ deploy_netobserv() {
   oc apply -f $FLOWCOLLECTOR
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
-    oc get daemonset flowlogs-pipeline -netobserv && break
+    oc get daemonset flowlogs-pipeline -n netobserv && break
     sleep 1
   done
   sleep 60
