@@ -77,10 +77,13 @@ pipeline {
         )
         choice(
             name: 'INSTALLATION_SOURCE',
-            choices: ['OperatorHub', 'Source', 'None'],
+            choices: ['Downstream', 'OperatorHub', 'Source', 'None'],
             description: '''
-                Network Observability can be installed either from OperatorHub or directly from the main branch of the Source code<br/>
-                If None is selected the installation will be skipped
+                Network Observability can be installed from the following sources:<br/>
+                <b>Downstream</b> installs the operator via the internal-only qe-app-registry (i.e. latest unreleased downstream bits)<br/>
+                <b>OperatorHub</b> installs the operator via the public-facing OperatorHub (i.e. latest released upstream bits)<br/>
+                <b>Source</b> installs the operator directly from the main branch of the upstream source code (i.e. latest unreleased upstream bits)<br/>
+                If <b>None</b> is selected the installation will be skipped
             '''
         )
         string(
@@ -345,12 +348,7 @@ pipeline {
             steps {
                 script {
                     // attempt installation of Network Observability from selected source
-                    if (params.INSTALLATION_SOURCE == 'OperatorHub') {
-                        println 'Installing Network Observability from OperatorHub...'
-                    }
-                    else {
-                        println 'Installing Network Observability from Source...'
-                    }
+                    println "Installing Network Observability from ${params.INSTALLATION_SOURCE}..."
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
@@ -364,6 +362,7 @@ pipeline {
                         sh(returnStatus: true, script: '''
                             oc get pods -n netobserv
                             oc get pods -n netobserv-privileged
+                            oc get pods -n openshift-operators
                             oc get pods -n openshift-operators-redhat
                         ''')
                     }
@@ -375,9 +374,10 @@ pipeline {
                 script {
                     // attempt updating common parameters of NOO and flowcollector
                     println 'Updating common parameters of NOO and flowcollector...'
-                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n netobserv").trim()
+                    env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
+                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n ${NAMESPACE}").trim()
                     returnCode = sh(returnStatus: true, script: """
-                        oc -n netobserv patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
+                        oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "EBPF"}] -n netobserv"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
@@ -405,6 +405,7 @@ pipeline {
                             sh(returnStatus: true, script: '''
                                 oc get pods -n netobserv
                                 oc get pods -n netobserv-privileged
+                                oc get pods -n openshift-operators
                                 oc get pods -n openshift-operators-redhat
                             ''')
                         }

@@ -2,10 +2,16 @@ apiVersion: loki.grafana.com/v1
 kind: LokiStack
 metadata:
   name: lokistack
-  namespace: openshift-operators-redhat
+  namespace: netobserv
 spec:
+  limits:
+    global:
+      ingestion:
+        ingestionBurstSize: 100
+        ingestionRate: 500
+        maxGlobalStreamsPerTenant: 100000
   tenants:
-    mode: openshift-logging
+    mode: openshift-network
   managementState: Managed
   storage:
     schemas:

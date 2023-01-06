@@ -719,7 +719,7 @@
         {
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"flowlogs.*\"})",
           "interval": "",
-          "legendFormat": "FLP ",
+          "legendFormat": "FLP",
           "refId": "A"
         },
         {
@@ -735,17 +735,23 @@
           "refId": "C"
         },
         {
-          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"openshift-operators-redhat\"})",
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"})",
           "interval": "",
           "legendFormat": "loki",
           "refId": "D"
+        },
+        {
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"openshift-operators\", pod=~\"netobserv.*\"})",
+          "interval": "",
+          "legendFormat": "noo",
+          "refId": "E"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "CPU TOTALS",
+      "title": "CPU Totals",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1057,28 +1063,34 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\",container=\"\"})",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\", container=\"\"})",
           "interval": "",
           "legendFormat": "ebpf",
           "refId": "A"
         },
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", pod=~\"flowlogs.*\"})",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"flowlogs.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "FLP",
           "refId": "B"
         },
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", pod=~\"kafka.*\"})",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "kafka",
           "refId": "C"
         },
         {
-          "expr": "sum(container_memory_rss{namespace=\"openshift-operators-redhat\",container=\"\"})",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "loki",
           "refId": "D"
+        },
+        {
+          "expr": "sum(container_memory_rss{namespace=\"openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
+          "interval": "",
+          "legendFormat": "noo",
+          "refId": "E"
         }
       ],
       "thresholds": [],
@@ -1182,21 +1194,27 @@
           "refId": "A"
         },
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", pod=~\"flowlogs.*\"})",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", container=\"\", pod=~\"flowlogs.*\"})",
           "interval": "",
           "legendFormat": "FLP",
           "refId": "B"
         },
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", pod=~\"kafka.*\"})",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", container=\"\", pod=~\"kafka.*\"})",
           "interval": "",
           "legendFormat": "kafka",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\"})",
+          "interval": "",
+          "legendFormat": "loki",
           "refId": "D"
         },
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"openshift-operators-redhat\",container=\"\"})",
+          "expr": "sum(container_memory_rss{namespace=\"openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "loki",
+          "legendFormat": "noo",
           "refId": "E"
         }
       ],
@@ -1823,7 +1841,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"openshift-operators-redhat\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1924,7 +1942,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"openshift-operators-redhat\",container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -2025,7 +2043,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "pod:container_cpu_usage:sum{namespace=\"openshift-operators-redhat\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -2124,7 +2142,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"openshift-operators-redhat\"}[5m]))",
+          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", pod=~\"loki.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"

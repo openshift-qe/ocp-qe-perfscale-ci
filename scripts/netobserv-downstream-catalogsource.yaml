@@ -1,0 +1,9 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: netobserv-testing
+  namespace: openshift-marketplace
+spec:
+  displayName: NetObservTest
+  image: 'quay.io/openshift-qe-optional-operators/ocp4-index:latest'
+  sourceType: grpc
