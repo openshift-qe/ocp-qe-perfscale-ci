@@ -49,9 +49,9 @@ deploy_netobserv() {
   done
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
-  if [[ "${INSTALLATION_SOURCE}" == "Downstream" ]]; then
-    echo "====> Adding RBACs for authToken HOST"
-    oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
+
+  echo "====> Adding RBACs for authToken HOST"
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
   fi
 }
 
@@ -114,6 +114,7 @@ deploy_lokistack() {
   oc apply -f $TMP_LOKICONFIG
   sleep 30
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+
   echo "====> Configuring Loki rate limit alert"
   oc apply -f $SCRIPTS_DIR/loki-ratelimit-alert.yaml
 }
@@ -163,6 +164,9 @@ deploy_kafka() {
 
   echo "====> Update flowcollector replicas"
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": ${FLP_KAFKA_REPLICAS}}]"
+
+  echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST-kafka.yaml
 
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }

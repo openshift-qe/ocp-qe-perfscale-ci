@@ -20,7 +20,7 @@
   metricName: nFlowsProcessedPerMinute
 
 # 6. loki-store PVC usage averaging over 5 mins period
-- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~"loki.*"}[5m]))
+- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*loki.*"}[5m]))
   metricName: lokiStorageUsage
 
 # 7. Ingress bytes processed per minute.
