@@ -3,102 +3,98 @@
 - query: pod:container_cpu_usage:sum{namespace="netobserv|openshift-operators"}
   metricName: cpuUsage
 
-# 2. eBPF pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace="netobserv-privileged"}
-  metricName: ebpfCpuUsage
-
-# 3. netobserv pods memory usage (Working Set)
+# 2. netobserv pods memory usage (Working Set)
 - query: sum(container_memory_working_set_bytes{namespace="netobserv|openshift-operators", container=""}) by (container, pod, namespace, node)
   metricName: memoryUsageWorkingSet
 
-# 4. netobserv pods memory usage (RSS)
+# 3. netobserv pods memory usage (RSS)
 - query: sum(container_memory_rss{namespace="netobserv|openshift-operators", container=""}) by (container, pod, namespace, node)
   metricName: memoryUsageRSS
 
-# 5. eBPF pods memory usage (RSS)
+# 4. eBPF pods memory usage (RSS)
 - query: sum(container_memory_rss{namespace="netobserv-privileged", container=""}) by (container, pod, namespace, node)
   metricName: ebpfMemoryUsageRSS
 
-# 6. eBPF pods memory usage (Working Set)
+# 5. eBPF pods memory usage (Working Set)
 - query: sum(container_memory_working_set_bytes{namespace="netobserv-privileged", container=""}) by (container, pod, namespace, node)
   metricName: ebpfMemoryUsageWorkingSet
 
-# 7. lokistack PVC usage averaging over 5 mins period
+# 6. lokistack PVC usage averaging over 5 mins period
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", pod=~"loki.*"}[5m]))
   metricName: lokiStorageUsage
 
-# 8. Flows processed by ingester per minute aggregated by FLP pods.
+# 7. Flows processed by ingester per minute aggregated by FLP pods.
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
-# 9. Loki records written per minute.
+# 8. Loki records written per minute.
 - query: sum(netobserv_loki_sent_entries_total)
   metricName: lokiRecordsWritten
 
-# 10. LokiStack CPU usage
+# 9. LokiStack CPU usage
 - query: pod:container_cpu_usage:sum{namespace="netobserv", pod=~"loki.*"}
   metricName: cpuUsageLoki
 
-# 11. LokiStack memory usage
+# 10. LokiStack memory usage
 - query: sum(container_memory_rss{namespace="netobserv", pod=~"loki.*", container=""}) by (container, pod, namespace, node)
   metricName: memoryUsageLoki 
 
-# 12. Kafka storage
+# 11. Kafka storage
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv"}[5m]))
   metricName: kafkaStorageUsage
 
-# 13. Total flows processed per minute
+# 12. Total flows processed per minute
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60)
   metricName: nFlowsProcessedPerMinuteTotals
 
-# 14. Total CPU usage by FLP
+# 13. Total CPU usage by FLP
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"flowlogs.*"})
   metricName: cpuFLPTotals
 
-# 15. Total CPU usage by EBPF
+# 14. Total CPU usage by EBPF
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv-privileged", pod=~"netobserv-ebpf.*"})
   metricName: cpuEBPFTotals
 
-# 16. Total CPU usage by all Kafka pods.
+# 15. Total CPU usage by all Kafka pods.
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"kafka.*"})
   metricName: cpuKafkaTotals
 
-# 17. Total CPU usage by all Loki pods.
+# 16. Total CPU usage by all Loki pods.
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"loki.*"})
   metricName: cpuLokiTotals
 
-# 18. Total RSS by all EBPF pods.
+# 17. Total RSS by all EBPF pods.
 - query: sum(container_memory_rss{namespace="netobserv-privileged", container=""})
   metricName: rssEBPFTotals
 
-# 19. Total RSS by all FLP pods.
+# 18. Total RSS by all FLP pods.
 - query: sum(container_memory_rss{namespace="netobserv", container="", pod=~"flowlogs.*"})
   metricName: rssFLPTotals
 
-# 20. Total RSS by all Kafka pods.
+# 19. Total RSS by all Kafka pods.
 - query: sum(container_memory_rss{namespace="netobserv", container="", pod=~"kafka.*"})
   metricName: rssKafkaTotals
 
-# 21. Total RSS by all Loki pods.
+# 20. Total RSS by all Loki pods.
 - query: sum(container_memory_rss{namespace="netobserv", pod=~"loki.*", container=""})
   metricName: rssLokiTotals
 
-# 22. Total working set memory by all EBPF pods.
+# 21. Total working set memory by all EBPF pods.
 - query: sum(container_memory_working_set_bytes{namespace="netobserv-privileged", container=""})
   metricName: workingsetEBPFTotals
 
-# 23. Total working set memory by all FLP pods.
+# 22. Total working set memory by all FLP pods.
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", container="", pod=~"flowlogs.*"})
   metricName: workingsetFLPTotals
 
-# 24. Total working set memory by all Kafka pods.
+# 23. Total working set memory by all Kafka pods.
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", container="", pod=~"kafka.*"})
   metricName: workingsetKafkaTotals
 
-# 25. Total working set memory by all Loki pods.
+# 24. Total working set memory by all Loki pods.
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", pod=~"loki.*", container=""})
   metricName: workingsetLokiTotals
 
-# 26. Total records dropped while sending to Loki (inverse of netobserv_loki_sent_entries_total)
+# 25. Total records dropped while sending to Loki (inverse of netobserv_loki_sent_entries_total)
 - query: sum(netobserv_loki_dropped_entries_total)
   metricName: lokiRecordsDropped
