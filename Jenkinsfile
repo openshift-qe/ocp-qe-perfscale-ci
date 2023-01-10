@@ -573,21 +573,7 @@ pipeline{
             }
             steps{
                 script {
-                  if( ["cluster-density","pod-density","node-density","node-density-heavy", "max-namespaces","max-services","concurrent-builds","pod-density-heavy"].contains(params.CI_TYPE) ) {
-                    loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
-                        string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                        string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
-                        string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
-                        text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
-                        booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
-                        string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                        string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
-                    ]
-                    currentBuild.description += """
-                        <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
-                        <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                    """
-                   } else if (params.CI_TYPE == "etcd-perf") {
+                  if (params.CI_TYPE == "etcd-perf") {
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
@@ -636,13 +622,26 @@ pipeline{
                             <b>Scale-Ci: </b> regression-test <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                         """
-                   }else{
+                    } else if (params.CI_TYPE == "") {
                         println "No Scale-ci Job"
                         currentBuild.description += """
                             <b>No Scale-Ci Run</b><br/>
                         """
-                    }
-
+                    } else {
+                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
+                            string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
+                            text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
+                            string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
+                        ]
+                        currentBuild.description += """
+                            <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                        """
+                    }  
                     if( loaded_ci != null ) {
                       if( loaded_ci.result.toString() != "SUCCESS") {
                            status = "Scale CI Job Failed"
