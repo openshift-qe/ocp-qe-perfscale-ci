@@ -76,6 +76,14 @@ Types:
 * "network-perf-hostnetwork-network-test"
 * "network-perf-pod-network-test"
 * "network-perf-serviceip-network-test"
+* "node-density-cni"
+* "node-density-cni-networkpolicy"
+* "pods-service-route"
+* "pod-density-heavy"
+* "cluster-density-ms"
+* "networkpolicy-case1"
+* "networkpolicy-case2"
+* "networkpolicy-case3"
 
 
 * NOTE: The scale-ci tests have a boolean parameter (write_to_sheet) that will write results to this [sheet](https://docs.google.com/spreadsheets/d/1uiKGYQyZ7jxchZRU77lsINpa23HhrFWjphsqGjTD-u4/edit?usp=sharing) 
