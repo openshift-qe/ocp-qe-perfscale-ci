@@ -4,16 +4,16 @@ SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 if [[ "${INSTALLATION_SOURCE}" == "Downstream" ]]; then
   echo "Using 'Downstream' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/noo-downstream-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/noo-downstream-subscription.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
 elif [[ "${INSTALLATION_SOURCE}" == "OperatorHub" ]]; then
   echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/noo-upstream-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/noo-upstream-subscription.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
 elif [[ "${INSTALLATION_SOURCE}" == "Source" ]]; then
   echo "Using 'Source' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/noo-main-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flows_v1alpha1_flowcollector_main_lokistack.yaml
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/noo-main-subscription.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_main_lokistack.yaml
 else
   echo "Please set INSTALLATION_SOURCE env variable to either 'Downstream', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
 fi
@@ -49,22 +49,21 @@ deploy_netobserv() {
   done
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
-  if [[ "${INSTALLATION_SOURCE}" == "Downstream" ]]; then
-    echo "====> Adding RBACs for authToken HOST"
-    oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
-  fi
+
+  echo "====> Adding RBACs for authToken HOST"
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
 }
 
 deploy_downstream_catalogsource() {
   echo "====> Creating netobserv-testing CatalogSource from the downstream bundle"
-  oc apply -f $SCRIPTS_DIR/netobserv-downstream-catalogsource.yaml
+  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-downstream-catalogsource.yaml
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
 }
 
 deploy_main_catalogsource() {
   echo "====> Creating netobserv-testing CatalogSource from the main bundle"
-  oc apply -f $SCRIPTS_DIR/netobserv-main-catalogsource.yaml
+  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
 }
@@ -74,7 +73,7 @@ deploy_lokistack() {
   oc new-project netobserv || true
 
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup, loki-operator Subscription"
-  oc apply -f $SCRIPTS_DIR/loki-subscription.yaml -n openshift-operators-redhat
+  oc apply -f $SCRIPTS_DIR/loki/loki-subscription.yaml -n openshift-operators-redhat
 
   echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
@@ -93,19 +92,19 @@ deploy_lokistack() {
 
   echo "====> Creating S3 secret for Loki"
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
-  sleep 30
+  sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
   echo "====> Determining LokiStack config"
   if [[ "${LOKISTACK_SIZE}" == "1x.extra-small" ]]; then
-    LokiStack_CONFIG=$SCRIPTS_DIR/lokistack-1x-exsmall.yaml
+    LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   elif [[ "${LOKISTACK_SIZE}" == "1x.small" ]]; then
-    LokiStack_CONFIG=$SCRIPTS_DIR/lokistack-1x-small.yaml
+    LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-small.yaml
   elif [[ "${LOKISTACK_SIZE}" == "1x.medium" ]]; then
-    LokiStack_CONFIG=$SCRIPTS_DIR/lokistack-1x-medium.yaml
+    LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
     echo "====> No LokiStack config was found - using 1x-exsmall"
-    LokiStack_CONFIG=$SCRIPTS_DIR/lokistack-1x-exsmall.yaml
+    LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
   TMP_LOKICONFIG=/tmp/lokiconfig.yaml
   envsubst <$LokiStack_CONFIG >$TMP_LOKICONFIG
@@ -114,14 +113,15 @@ deploy_lokistack() {
   oc apply -f $TMP_LOKICONFIG
   sleep 30
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+
   echo "====> Configuring Loki rate limit alert"
-  oc apply -f $SCRIPTS_DIR/loki-ratelimit-alert.yaml
+  oc apply -f $SCRIPTS_DIR/loki/loki-ratelimit-alert.yaml
 }
 
 deploy_loki() {
   echo "====> Deploying Loki"
-  oc apply -f $SCRIPTS_DIR/loki-storage-1.yaml
-  oc apply -f $SCRIPTS_DIR/loki-storage-2.yaml
+  oc apply -f $SCRIPTS_DIR/loki/loki-storage-1.yaml
+  oc apply -f $SCRIPTS_DIR/loki/loki-storage-2.yaml
   oc wait --timeout=120s --for=condition=ready pod -l app=loki -n netobserv
 }
 
@@ -163,6 +163,9 @@ deploy_kafka() {
 
   echo "====> Update flowcollector replicas"
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": ${FLP_KAFKA_REPLICAS}}]"
+
+  echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST-kafka.yaml
 
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
@@ -211,9 +214,9 @@ delete_flowcollector() {
 
 delete_netobserv() {
   echo "====> Deleting NetObserv Subscription, OperatorGroup, and Project"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/noo-main-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/noo-upstream-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/noo-downstream-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/noo-main-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/noo-upstream-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/noo-downstream-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
   oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
   oc delete --ignore-not-found -f $SCRIPTS_DIR/operator_group.yaml

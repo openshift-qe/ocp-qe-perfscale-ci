@@ -449,7 +449,7 @@ if __name__ == '__main__':
     YAML_FILE = args.yaml_file
     logging.info(f"YAML_FILE: {YAML_FILE}")
     try:
-        with open(SCRIPT_DIR + '/' + YAML_FILE, 'r') as yaml_file:
+        with open(SCRIPT_DIR + '/queries/' + YAML_FILE, 'r') as yaml_file:
             QUERIES = yaml.safe_load(yaml_file)
     except Exception as e:
         logging.error(f'Failed to read YAML file {YAML_FILE}: {e}')

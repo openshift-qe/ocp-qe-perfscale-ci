@@ -39,7 +39,7 @@ To install from Source, navigate to the `scripts/` directory and run `$ INSTALLA
 
 ### Creating LokiStack using Loki Operator
 It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack manually, the following steps can be performed:
-1. Create a loki-operator subscription `$ oc apply -f loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
+1. Create a loki-operator subscription `$ oc apply -f loki/loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
 2. Create a AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
@@ -97,7 +97,7 @@ MAX_WAIT_TIMEOUT=10m
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for sharing.
 
-Queries are sourced from the `netobserv_queries_ebpf.yaml` file within the `scripts/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files.
+Queries are sourced from the `netobserv_queries_ebpf.yaml` file within the `scripts/queries/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files.
 
 Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
 

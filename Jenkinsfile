@@ -80,9 +80,9 @@ pipeline {
             choices: ['Downstream', 'OperatorHub', 'Source', 'None'],
             description: '''
                 Network Observability can be installed from the following sources:<br/>
-                <b>Downstream</b> installs the operator via the internal-only qe-app-registry (i.e. latest unreleased downstream bits)<br/>
-                <b>OperatorHub</b> installs the operator via the public-facing OperatorHub (i.e. latest released upstream bits)<br/>
-                <b>Source</b> installs the operator directly from the main branch of the upstream source code (i.e. latest unreleased upstream bits)<br/>
+                <b>Downstream</b> installs the operator via the internal-only qe-app-registry (i.e. <b>latest unreleased downstream</b> bits)<br/>
+                <b>OperatorHub</b> installs the operator via the public-facing OperatorHub (i.e. <b>latest released upstream</b> bits)<br/>
+                <b>Source</b> installs the operator directly from the main branch of the upstream source code (i.e. <b>latest unreleased upstream</b> bits)<br/>
                 If <b>None</b> is selected the installation will be skipped
             '''
         )
@@ -451,7 +451,7 @@ pipeline {
                 ])
                 script {
                     // attempt installation of dittybopper
-                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json"
+                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_ebpf.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template

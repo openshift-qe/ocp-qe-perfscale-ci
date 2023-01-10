@@ -202,7 +202,7 @@
         {
           "expr": "sum(rate(netobserv_loki_sent_entries_total[1m]))",
           "interval": "",
-          "legendFormat": "Flow Write/s",
+          "legendFormat": "Flow write/s",
           "refId": "B"
         },
         {
@@ -731,19 +731,19 @@
         {
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"})",
           "interval": "",
-          "legendFormat": "ebpf",
+          "legendFormat": "eBPF",
           "refId": "C"
         },
         {
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"})",
           "interval": "",
-          "legendFormat": "loki",
+          "legendFormat": "Loki",
           "refId": "D"
         },
         {
-          "expr": "sum(pod:container_cpu_usage:sum{namespace=\"openshift-operators\", pod=~\"netobserv.*\"})",
+          "expr": "sum(pod:container_cpu_usage:sum{namespace=~\"netobserv|openshift-operators\", pod=~\"netobserv.*\"})",
           "interval": "",
-          "legendFormat": "noo",
+          "legendFormat": "NOO",
           "refId": "E"
         }
       ],
@@ -840,7 +840,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"$PodPrefix\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=~\"netobserv|openshift-operators\", pod=~\"$PodPrefix\", pod!~\"loki.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1065,7 +1065,7 @@
         {
           "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\", container=\"\"})",
           "interval": "",
-          "legendFormat": "ebpf",
+          "legendFormat": "eBFP",
           "refId": "A"
         },
         {
@@ -1077,19 +1077,19 @@
         {
           "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "kafka",
+          "legendFormat": "Kafka",
           "refId": "C"
         },
         {
           "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "loki",
+          "legendFormat": "Loki",
           "refId": "D"
         },
         {
-          "expr": "sum(container_memory_rss{namespace=\"openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
+          "expr": "sum(container_memory_rss{namespace=~\"netobserv|openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "noo",
+          "legendFormat": "NOO",
           "refId": "E"
         }
       ],
@@ -1190,7 +1190,7 @@
         {
           "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv-privileged\",container=\"\"})",
           "interval": "",
-          "legendFormat": "ebpf",
+          "legendFormat": "eBPF",
           "refId": "A"
         },
         {
@@ -1202,19 +1202,19 @@
         {
           "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", container=\"\", pod=~\"kafka.*\"})",
           "interval": "",
-          "legendFormat": "kafka",
+          "legendFormat": "Kafka",
           "refId": "C"
         },
         {
           "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "loki",
+          "legendFormat": "Loki",
           "refId": "D"
         },
         {
-          "expr": "sum(container_memory_rss{namespace=\"openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
+          "expr": "sum(container_memory_rss{namespace=~\"netobserv|openshift-operators\", pod=~\"netobserv.*\", container=\"\"})",
           "interval": "",
-          "legendFormat": "noo",
+          "legendFormat": "NOO",
           "refId": "E"
         }
       ],
@@ -1222,7 +1222,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Working Set Totals",
+      "title": "Memory (Working Set) Totals",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1311,7 +1311,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=~\"netobserv|openshift-operators\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\", pod!~\"loki.*\"}) by (container, pod, namespace, node )",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{pod}}",
@@ -1413,7 +1413,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"netobserv\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"netobserv|openshift-operators\",container=\"\", node=~\"$_node\", pod=~\"$PodPrefix\", pod!~\"loki.*\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1423,7 +1423,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "NetObserv Pod Memory (Working Set)",
+      "title": "NetObserv Pods Memory (Working Set)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2142,7 +2142,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", pod=~\"loki.*\"}[5m]))",
+          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", persistentvolumeclaim=~\".*loki.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
@@ -2196,7 +2196,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "Thanos",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2249,7 +2249,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Loki data rate",
+      "title": "Loki Data Rate",
       "tooltip": {
         "shared": true,
         "sort": 0,
