@@ -131,7 +131,6 @@ spec:
     metrics:
       ignoreTags:
       - egress
-      - packets
       server:
         port: 9102
         tls:

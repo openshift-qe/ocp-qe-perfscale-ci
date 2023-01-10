@@ -52,7 +52,6 @@ deploy_netobserv() {
 
   echo "====> Adding RBACs for authToken HOST"
   oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
-  fi
 }
 
 deploy_downstream_catalogsource() {
@@ -93,7 +92,7 @@ deploy_lokistack() {
 
   echo "====> Creating S3 secret for Loki"
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
-  sleep 30
+  sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
   echo "====> Determining LokiStack config"
