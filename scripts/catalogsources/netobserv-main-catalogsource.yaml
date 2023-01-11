@@ -1,9 +1,9 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: netobserv-testing
+  name: netobserv-main-testing
   namespace: openshift-marketplace
 spec:
-  displayName: NetObservTest
+  displayName: NetObservMainTesting
   image: 'quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main'
   sourceType: grpc

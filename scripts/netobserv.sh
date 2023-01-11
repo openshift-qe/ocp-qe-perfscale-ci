@@ -23,7 +23,7 @@ deploy_netobserv() {
   deploy_lokistack
   echo "====> Deploying NetObserv"
   if [[ $INSTALLATION_SOURCE == "Downstream" ]]; then
-    deploy_downstream_catalogsource
+    deploy_unreleased_catalogsource
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     deploy_main_catalogsource
   fi
@@ -65,7 +65,7 @@ deploy_lokistack() {
   if [[ $LOKI_OPERATOR == "Released" ]]; then
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
-    oc apply -f $SCRIPTS_DIR/catalogsources/loki-unreleased-catalogsource.yaml
+    deploy_unreleased_catalogsource
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
   else
     echo "====> No Loki Operator config was found - using Released"
@@ -115,18 +115,18 @@ deploy_lokistack() {
   oc apply -f $SCRIPTS_DIR/loki/loki-ratelimit-alert.yaml
 }
 
-deploy_downstream_catalogsource() {
-  echo "====> Creating netobserv-testing CatalogSource from the downstream bundle"
-  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-downstream-catalogsource.yaml
+deploy_unreleased_catalogsource() {
+  echo "====> Creating qe-unreleased-testing CatalogSource"
+  oc apply -f $SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
   sleep 30
-  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
+  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=qe-unreleased-testing -n openshift-marketplace
 }
 
 deploy_main_catalogsource() {
-  echo "====> Creating netobserv-testing CatalogSource from the main bundle"
+  echo "====> Creating netobserv-main-testing CatalogSource from the main bundle"
   oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
   sleep 30
-  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-testing -n openshift-marketplace
+  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
 }
 
 deploy_loki() {
@@ -232,14 +232,14 @@ delete_netobserv() {
   oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
   oc delete project netobserv
-  echo "====> Deleting netobserv-testing CatalogSource"
-  oc delete --ignore-not-found catalogsource/netobserv-testing -n openshift-marketplace
+  echo "====> Deleting netobserv-main-testing CatalogSource"
+  oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
 }
 
 delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml -n openshift-operators-redhat
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml -n openshift-operators-redhat
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
   oc delete csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 
