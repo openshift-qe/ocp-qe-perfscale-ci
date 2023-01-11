@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue:'oc411',
+            defaultValue:'oc412',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -90,6 +90,15 @@ pipeline {
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '800Mi',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
+        )
+        choice(
+            name: 'LOKI_OPERATOR',
+            choices: ['Released', 'Unreleased'],
+            description: '''
+                You can use either the latest released or unreleased version of Loki Operator:<br/>
+                <b>Released</b> installs Loki Operator via the public-facing redhat-operators (i.e. <b>latest released downstream</b> bits)<br/>
+                <b>Unreleased</b> installs Loki Operator via the internal-only qe-app-registry (i.e. <b>latest unreleased downstream</b> bits)<br/>
+            '''
         )
         choice(
             name: 'LOKISTACK_SIZE',
