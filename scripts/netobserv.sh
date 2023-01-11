@@ -116,6 +116,8 @@ deploy_lokistack() {
 }
 
 deploy_unreleased_catalogsource() {
+  echo "====> Creating brew-registry ImageContentSourcePolicy"
+  oc apply -f $SCRIPTS_DIR/iscp.yaml
   echo "====> Creating qe-unreleased-testing CatalogSource"
   oc apply -f $SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
   sleep 30
