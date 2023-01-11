@@ -58,15 +58,18 @@ deploy_lokistack() {
   echo "====> Creating NetObserv Project (if it does not already exist)"
   oc new-project netobserv || true
 
-  echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup, loki-operator Subscription"
+  echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
+
+  echo "====> Creating loki-operator CatalogSource (if applicable) and Subscription"
   if [[ $LOKI_OPERATOR == "Released" ]]; then
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml -n openshift-operators-redhat
+    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml -n openshift-operators-redhat
+    oc apply -f $SCRIPTS_DIR/catalogsources/loki-unreleased-catalogsource.yaml
+    oc apply -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
   else
     echo "====> No Loki Operator config was found - using Released"
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml -n openshift-operators-redhat
+    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   fi
   
   echo "====> Generate S3_BUCKETNAME"
