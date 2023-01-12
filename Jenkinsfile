@@ -39,7 +39,7 @@ pipeline {
       )
       choice(
           name: 'WORKLOAD',
-          choices: ["cluster-density", "node-density", "node-density-heavy", "pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds"],
+          choices: ["cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3"],
           description: 'Type of kube-burner job to run'
       )
       booleanParam(
@@ -63,11 +63,16 @@ pipeline {
           description: '''
           This variable configures parameter needed for each type of workload. By default 1000.<br>
           pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
+          pod-density-heavy: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
           cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
+          cluster-density-ms: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
           max-namespaces: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
+          pods-service-route: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
           max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace.<br>
           node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node.<br>
           node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
+          node-density-cni: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
+          node-density-cni-networkpolicy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
           Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
           '''
       )
@@ -277,16 +282,16 @@ pipeline {
                         source venv3/bin/activate
                         python --version
                         pip install pytimeparse futures
-                        if [[ $WORKLOAD == "cluster-density" ]]; then
-                        export JOB_ITERATIONS=$VARIABLE
-                        elif [[ $WORKLOAD == "pod-density" ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
-                        export PODS=$VARIABLE
-                        elif [[ $WORKLOAD == "max-namespaces" ]]; then
-                        export NAMESPACE_COUNT=$VARIABLE
+                        if [[ $WORKLOAD == *"cluster-density"* ]] || [[ $WORKLOAD == *"networkpolicy-case"* ]]; then
+                            export JOB_ITERATIONS=$VARIABLE
+                        elif [[ $WORKLOAD == *"pod-density"* ]]; then
+                            export PODS=$VARIABLE
+                        elif [[ $WORKLOAD == "max-namespaces" ]] || [[ $WORKLOAD == "pods-service-route" ]]; then
+                            export NAMESPACE_COUNT=$VARIABLE
                         elif [[ $WORKLOAD == "max-services" ]]; then
-                        export SERVICE_COUNT=$VARIABLE
-                        elif [[ $WORKLOAD == "node-density" ]] || [[ $WORKLOAD == "node-density-heavy" ]]; then
-                        export PODS_PER_NODE=$VARIABLE
+                            export SERVICE_COUNT=$VARIABLE
+                        elif [[ $WORKLOAD == *"node-density"* ]]; then
+                            export PODS_PER_NODE=$VARIABLE
                         fi
                         set -o pipefail
                         pwd
@@ -411,6 +416,7 @@ pipeline {
         script {
           def slack_channel = "ocp-qe-scale-ci-results"
           println "Sending Slack notification to #${slack_channel}..."
+          println "user id $userId"
           msg = "@${userId}, your *${params.WORKLOAD}* job with id <${env.BUILD_URL}|${env.BUILD_NUMBER}> exited with status: *${currentBuild.currentResult}*"
           if (currentBuild.currentResult == 'SUCCESS') {
               slackSend channel: "$slack_channel",
