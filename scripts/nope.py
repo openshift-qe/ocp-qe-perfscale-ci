@@ -175,6 +175,7 @@ def get_netobserv_env_info():
     }
     base_commands = {
         "release": 'oc get pods -l app=netobserv-operator -o jsonpath="{.items[*].spec.containers[1].env[0].value}" -A',
+        "loki": 'oc get sub -n openshift-operators-redhat loki-operator -o jsonpath="{.status.currentCSV}"',
         "deploymentModel": 'oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv',
         "agent": 'oc get flowcollector -o jsonpath="{.items[*].spec.agent.type}"',
         "aws_s3_bucket_name": 'oc extract cm/lokistack-config -n netobserv --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n'
