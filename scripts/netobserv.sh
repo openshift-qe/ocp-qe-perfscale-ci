@@ -16,6 +16,7 @@ elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
   FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_main_lokistack.yaml
 else
   echo "Please set INSTALLATION_SOURCE env variable to either 'Downstream', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+  echo "Don't forget to source 'netobserv.sh' again after doing so!"
 fi
 
 deploy_netobserv() {
@@ -216,6 +217,7 @@ delete_kafka() {
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
     oc delete kafka/kafka-cluster -n netobserv
     oc delete kafkaTopic/network-flows -n netobserv
+    oc delete csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
   fi
 }
 
