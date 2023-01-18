@@ -2,20 +2,24 @@
 
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
-if [[ $INSTALLATION_SOURCE == "Downstream" ]]; then
-  echo "Using 'Downstream' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-downstream-subscription.yaml
+if [[ $INSTALLATION_SOURCE == "Official" ]]; then
+  echo "Using 'Official' as INSTALLATION_SOURCE"
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
+elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
+  echo "Using 'Internal' as INSTALLATION_SOURCE"
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
   FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
 elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
   echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-upstream-subscription.yaml
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
   FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
 elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
   echo "Using 'Source' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-main-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_main_lokistack.yaml
+  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
 else
-  echo "Please set INSTALLATION_SOURCE env variable to either 'Downstream', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+  echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
   echo "Don't forget to source 'netobserv.sh' again after doing so!"
 fi
 
@@ -23,7 +27,7 @@ deploy_netobserv() {
   echo "====> Deploying LokiStack"
   deploy_lokistack
   echo "====> Deploying NetObserv"
-  if [[ $INSTALLATION_SOURCE == "Downstream" ]]; then
+  if [[ $INSTALLATION_SOURCE == "Internal" ]]; then
     deploy_unreleased_catalogsource
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     deploy_main_catalogsource
@@ -32,7 +36,7 @@ deploy_netobserv() {
   oc apply -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
-  if [[ $INSTALLATION_SOURCE == "Downstream" ]]; then
+  if [[ $INSTALLATION_SOURCE == "Official" ]] || [[ $INSTALLATION_SOURCE == "Internal" ]]; then
     oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
   else
     oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n netobserv
@@ -217,6 +221,7 @@ delete_kafka() {
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
     oc delete kafka/kafka-cluster -n netobserv
     oc delete kafkaTopic/network-flows -n netobserv
+    oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
     oc delete csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
   fi
 }
@@ -229,9 +234,10 @@ delete_flowcollector() {
 
 delete_netobserv() {
   echo "====> Deleting NetObserv Subscription, CSV, OperatorGroup, and Project"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-main-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-upstream-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-downstream-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
   oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml

@@ -76,7 +76,9 @@ spec:
     imagePullPolicy: Always
     port: 9001
     logLevel: info
-    autoscaler: null
+    autoscaler:
+      maxReplicas: 0
+      status: DISABLED
     portNaming:
       enable: true
       portNames:

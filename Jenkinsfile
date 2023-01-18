@@ -77,13 +77,14 @@ pipeline {
         )
         choice(
             name: 'INSTALLATION_SOURCE',
-            choices: ['Downstream', 'OperatorHub', 'Source', 'None'],
+            choices: ['Official', 'Internal', 'OperatorHub', 'Source', 'None'],
             description: '''
                 Network Observability can be installed from the following sources:<br/>
-                <b>Downstream</b> installs the operator via the internal-only qe-app-registry (i.e. <b>latest unreleased downstream</b> bits)<br/>
-                <b>OperatorHub</b> installs the operator via the public-facing OperatorHub (i.e. <b>latest released upstream</b> bits)<br/>
-                <b>Source</b> installs the operator directly from the main branch of the upstream source code (i.e. <b>latest unreleased upstream</b> bits)<br/>
-                If <b>None</b> is selected the installation will be skipped
+                <b>Official</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Internal</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
+                <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
+                <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
+                If <b>None</b> is selected the installation will be skipped (Loki Operator installation will also be skipped)
             '''
         )
         string(
@@ -96,8 +97,8 @@ pipeline {
             choices: ['Released', 'Unreleased'],
             description: '''
                 You can use either the latest released or unreleased version of Loki Operator:<br/>
-                <b>Released</b> installs Loki Operator via the public-facing redhat-operators (i.e. <b>latest released downstream</b> bits)<br/>
-                <b>Unreleased</b> installs Loki Operator via the internal-only qe-app-registry (i.e. <b>latest unreleased downstream</b> bits)<br/>
+                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
             '''
         )
         choice(
