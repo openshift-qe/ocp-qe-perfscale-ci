@@ -262,7 +262,8 @@ pipeline {
                 else {
                     env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                 }
-                withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+                withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
+                    file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     RETURNSTATUS = sh(returnStatus: true, script: '''
                         # Get ENV VARS Supplied by the user to this job and store in .env_override
                         echo "$ENV_VARS" > .env_override
@@ -271,7 +272,7 @@ pipeline {
                         cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
                         export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
                         export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
-
+                        export ES_SERVER="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         mkdir -p ~/.kube
                         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
                         ls -ls ~/.kube/
