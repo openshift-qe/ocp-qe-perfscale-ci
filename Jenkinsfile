@@ -157,7 +157,7 @@ pipeline{
           font-family: 'Orienta', sans-serif;"""
       )
       choice(
-        choices: ["","cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
+        choices: ["","cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","etcd-perf","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
