@@ -5,19 +5,19 @@ export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annota
 if [[ $INSTALLATION_SOURCE == "Official" ]]; then
   echo "Using 'Official' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released_lokistack.yaml
 elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
   echo "Using 'Internal' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_downstream_lokistack.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased_lokistack.yaml
 elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
   echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released_lokistack.yaml
 elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
   echo "Using 'Source' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_upstream_lokistack.yaml
+  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased_lokistack.yaml
 else
   echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
   echo "Don't forget to source 'netobserv.sh' again after doing so!"
