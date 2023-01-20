@@ -74,6 +74,7 @@ deploy_lokistack() {
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
   else
     echo "====> No Loki Operator config was found - using Released"
+    echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   fi
   
@@ -106,6 +107,7 @@ deploy_lokistack() {
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
     echo "====> No LokiStack config was found - using 1x-exsmall"
+    echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
   TMP_LOKICONFIG=/tmp/lokiconfig.yaml
