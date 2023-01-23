@@ -408,29 +408,19 @@ pipeline {
           }
       }
     }
-    stage("Send Slack Status") {
-      agent { label params['JENKINS_AGENT_LABEL'] }
-      when {
-        expression { params.SEND_SLACK == true }
-      }
-      steps {
-        script {
-          def slack_channel = "ocp-qe-scale-ci-results"
-          println "Sending Slack notification to #${slack_channel}..."
-          println "user id $userId"
-          msg = "@${userId}, your *${params.WORKLOAD}* job with id <${env.BUILD_URL}|${env.BUILD_NUMBER}> exited with status: *${currentBuild.currentResult}*"
-          if (currentBuild.currentResult == 'SUCCESS') {
-              slackSend channel: "$slack_channel",
-                  message: "${msg}",
-                  color: "good"
-          } else {
-              slackSend channel: "$slack_channel",
-                  message: "${msg}"
-          }
-
-
-        }
-      }
-    }
   }
+    post {
+        always {
+            script {
+                if (params.SEND_SLACK == true ) {
+                        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                        parameters: [
+                            string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: WORKLOAD),
+                            text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                        ], propagate: false
+                }
+            }
+        }
+    }
 }
+
