@@ -6,5 +6,5 @@ metadata:
 spec:
   channel: v1.0.x
   name: netobserv-operator
-  source: netobserv-testing
+  source: qe-unreleased-testing
   sourceNamespace: openshift-marketplace 

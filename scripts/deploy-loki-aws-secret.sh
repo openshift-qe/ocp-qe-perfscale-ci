@@ -59,6 +59,8 @@ create_s3_bucket() {
     aws s3api list-buckets | grep ${LOKI_BUCKET_NAME}
     if [[ $? == 0 ]]; then
         echo "bucket: deleting existing bucket"
+        aws s3 rm s3://$LOKI_BUCKET_NAME --recursive
+        sleep 30
         aws s3 rb s3://$LOKI_BUCKET_NAME --force
     fi
     aws s3api create-bucket --bucket $LOKI_BUCKET_NAME --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION

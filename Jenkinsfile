@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue:'oc411',
+            defaultValue:'oc412',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -77,19 +77,29 @@ pipeline {
         )
         choice(
             name: 'INSTALLATION_SOURCE',
-            choices: ['Downstream', 'OperatorHub', 'Source', 'None'],
+            choices: ['Official', 'Internal', 'OperatorHub', 'Source', 'None'],
             description: '''
                 Network Observability can be installed from the following sources:<br/>
-                <b>Downstream</b> installs the operator via the internal-only qe-app-registry (i.e. latest unreleased downstream bits)<br/>
-                <b>OperatorHub</b> installs the operator via the public-facing OperatorHub (i.e. latest released upstream bits)<br/>
-                <b>Source</b> installs the operator directly from the main branch of the upstream source code (i.e. latest unreleased upstream bits)<br/>
-                If <b>None</b> is selected the installation will be skipped
+                <b>Official</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Internal</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
+                <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
+                <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
+                If <b>None</b> is selected the installation will be skipped (Loki Operator installation will also be skipped)
             '''
         )
         string(
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '800Mi',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
+        )
+        choice(
+            name: 'LOKI_OPERATOR',
+            choices: ['Released', 'Unreleased'],
+            description: '''
+                You can use either the latest released or unreleased version of Loki Operator:<br/>
+                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
+            '''
         )
         choice(
             name: 'LOKISTACK_SIZE',
@@ -451,7 +461,7 @@ pipeline {
                 ])
                 script {
                     // attempt installation of dittybopper
-                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_ebpf.json"
+                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_ebpf.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
