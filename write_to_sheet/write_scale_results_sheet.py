@@ -11,9 +11,9 @@ import write_helper
 import get_scale_output
 import re
 
-data_source = "Development-AWS-ES_ripsaw-kube-burner"
+data_source = "QE%20kube-burner"
 uuid = ""
-def get_benchmark_uuid(env_vars_file):
+def get_benchmark_uuid():
     return_code, namespace = write_helper.run("oc get ns -l kube-burner-uuid -o name --sort-by='.metadata.creationTimestamp' --no-headers | head -1")
     print('namespace ' + str(namespace))
     return_code, namespace_str = write_helper.run("oc get " + namespace.strip() + " -o json")
@@ -31,17 +31,14 @@ def get_benchmark_uuid(env_vars_file):
 
             n_time = datetime.utcnow()
             to_time = calendar.timegm(n_time.timetuple()) * 1000
-            if "ES_SERVER" in env_vars_file: 
-                if "search-ocp-qe-perf-scale-test" in env_vars_file:
-                    global data_source
-                    data_source = "SVTQE-kube-burner"
-                return get_grafana_url(uuid, from_time, to_time)
-            return ""
+
+            return get_grafana_url(uuid, from_time, to_time)
     return ""
 
 def get_grafana_url(uuid, start_time, end_time):
 
-    grafana_url = "http://grafana.rdu2.scalelab.redhat.com:3000/d/hIBqKNvMz/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=openshift-sdn&var-sdn=openshift-ovn-kubernetes&var-job=All&var-uuid={}&var-namespace=All&var-verb=All&var-resource=All&var-flowschema=All&var-priority_level=All".format(str(start_time), str(end_time), data_source, uuid)
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/FwPsenw7z/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=OpenShiftSDN&var-job=All&var-uuid={}&var-namespace=All".format(str(start_time), str(end_time), data_source, uuid)
+    print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
@@ -183,7 +180,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         else:
             grafana_cell = ""
     else:
-        grafana_cell = get_benchmark_uuid(env_vars_file)
+        grafana_cell = get_benchmark_uuid()
         if not grafana_cell:
             grafana_cell = get_metadata_uuid(job_type, job_output)
 
