@@ -79,7 +79,8 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         ansiColor('xterm') {
-          withCredentials([file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
+          withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
+            file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
             sh label: '', script: """
             # Get ENV VARS Supplied by the user to this job and store in .env_override
             echo "$ENV_VARS" > .env_override
@@ -110,7 +111,7 @@ pipeline {
             else
                 echo "else job"
                 printf '${params.JOB_OUTPUT}' >> output_file.out
-                python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', 'output_file.out', 'env_vars.out', '${params.USER}')"
+                python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', 'output_file.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
             fi
             rm -rf ~/.kube
             """
