@@ -4,6 +4,9 @@ import subprocess
 import datetime
 from pytz import timezone
 
+
+es_url = ""
+
 def run(command):
     try:
         output = subprocess.check_output(command, shell=True, universal_newlines=True)
@@ -38,19 +41,6 @@ def print_new_json(new_value, find_key, fileName):
     with open(fileName, "w+") as f:
         json.dump(new_json_file, f, indent=4)
 
-def get_benchmark_data(uuid):
-
-    return_code, benchmark_str = run("oc get benchmark -n benchmark-operator -o yaml")
-    if return_code == 0:
-        benchmark_yaml_all = yaml.safe_load(benchmark_str)
-        if len(benchmark_yaml_all['items']) > 0:
-            for benchmark_item in benchmark_yaml_all['items']:
-                if uuid == benchmark_item['spec']['uuid']:
-                    es_url = benchmark_item['spec']['elasticsearch']['url']
-                    creation_time = benchmark_item['metadata']['creationTimestamp'][:-1] + ".000Z"
-                    return es_url, creation_time
-    return "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443", get_project_creation_time(uuid)
-
 def rewrite_data(start_time, uuid, file_name):
 
     print_new_json(start_time,"gte", file_name)
@@ -75,13 +65,11 @@ def get_data_from_json(json_data):
     return [json_data['quantileName'], json_data['avg'], json_data['P99']]
 
 
-def get_pod_latency_data(uuid, creation_time=""):
+def get_pod_latency_data(uuid, creation_time="",es_username="", es_password=""):
     file_name = "get_es_data.json"
-    es_url, start_time = get_benchmark_data(uuid)
-    if start_time == "":
-        start_time = creation_time
+    get_es_url(es_username, es_password)
     if es_url != "":
-        rewrite_data(start_time, uuid, file_name)
+        rewrite_data(creation_time, uuid, file_name)
         json_response = execute_command(es_url, file_name)
         data_info = []
         if "hits" in json_response.keys() and "hits" in json_response['hits'].keys():
@@ -91,18 +79,12 @@ def get_pod_latency_data(uuid, creation_time=""):
             data_info = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
     return data_info
 
-def get_project_creation_time(uuid=""):
-    return_code, start_time = run("oc get project benchmark-operator -o jsonpath='{.metadata.creationTimestamp}'")
-    if return_code == 0:
-        return start_time
 
-    if uuid != "":
-        return_code, start_time = run("oc get project -l kube-burner-uuid=%s  -o jsonpath='{.items[0].metadata.creationTimestamp}'" % uuid)
-        if return_code == 0:
-            return start_time
-    return ""
+def get_es_url(username, password):
+    global es_url
+    es_url = f"https://{username}:{password}@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
 
-def get_uuid_uperf(cluster_name, start_time):
+def get_uuid_uperf(cluster_name, start_time, es_username, es_password):
     file_name = "uperf_find_uuid.json"
 
     #start time to be when benchmark-operator was created
@@ -110,9 +92,9 @@ def get_uuid_uperf(cluster_name, start_time):
     print_new_json(cluster_name, "cluster_name", file_name)
     # rewrite lte with current date
     tz = timezone('UTC')
+    get_es_url(es_username, es_password)
     end_time = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     print_new_json(end_time, "lte", file_name)
-    es_url = "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443"
     json_response = execute_command(es_url, file_name)
     # want to find most recent, list should already be ordered
     if "hits" in json_response.keys() and "hits" in json_response['hits'].keys():
