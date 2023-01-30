@@ -45,6 +45,11 @@ pipeline {
             defaultValue: false,
             description: 'Check cluster health status pass'
         )
+        booleanParam(
+            name: "SEND_SLACK",
+            defaultValue: false,
+            description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+        )
         string(
             name: 'JENKINS_AGENT_LABEL',
             defaultValue: 'oc412',
@@ -322,6 +327,30 @@ pipeline {
                     }
                 }
            }
+        }
+        stage("Send Slack Status") {
+            agent { label params['JENKINS_AGENT_LABEL'] }
+            when {
+                expression { params.SEND_SLACK == true }
+            }
+            steps {
+                script {
+                def slack_channel = "ocp-qe-scale-ci-results"
+                println "Sending Slack notification to #${slack_channel}..."
+                println "user id $userId"
+                msg = "@${userId}, your *router-perf* job with id <${env.BUILD_URL}|${env.BUILD_NUMBER}> exited with status: *${currentBuild.currentResult}*"
+                if (currentBuild.currentResult == 'SUCCESS') {
+                    slackSend channel: "$slack_channel",
+                        message: "${msg}",
+                        color: "good"
+                } else {
+                    slackSend channel: "$slack_channel",
+                        message: "${msg}"
+                }
+
+
+                }
+            }
         }
     }
     post {
