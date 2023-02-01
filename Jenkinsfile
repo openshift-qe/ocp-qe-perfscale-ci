@@ -63,13 +63,13 @@ pipeline {
           description: '''
           This variable configures parameter needed for each type of workload. By default 1000.<br>
           pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
-          pod-density-heavy: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
+          pod-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many hello-openshift application as configured in this variable*NODE_COUNT - existing number of pods on node - 1.<br>
           cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
           cluster-density-ms: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
           max-namespaces: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
           pods-service-route: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
           max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace.<br>
-          node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node.<br>
+          node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable*NODE_COUNT - existing number of pods on node - 1.<br>
           node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
           node-density-cni: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
           node-density-cni-networkpolicy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
@@ -285,13 +285,13 @@ pipeline {
                         pip install pytimeparse futures
                         if [[ $WORKLOAD == *"cluster-density"* ]] || [[ $WORKLOAD == *"networkpolicy-case"* ]]; then
                             export JOB_ITERATIONS=$VARIABLE
-                        elif [[ $WORKLOAD == *"pod-density"* ]]; then
+                        elif [[ $WORKLOAD == "pod-density" ]]; then
                             export PODS=$VARIABLE
                         elif [[ $WORKLOAD == "max-namespaces" ]] || [[ $WORKLOAD == "pods-service-route" ]]; then
                             export NAMESPACE_COUNT=$VARIABLE
                         elif [[ $WORKLOAD == "max-services" ]]; then
                             export SERVICE_COUNT=$VARIABLE
-                        elif [[ $WORKLOAD == *"node-density"* ]]; then
+                        elif [[ $WORKLOAD == *"node-density"* ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
                             export PODS_PER_NODE=$VARIABLE
                         fi
                         set -o pipefail
