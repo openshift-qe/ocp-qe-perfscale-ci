@@ -111,7 +111,7 @@ pipeline {
             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
             ls
             echo -e "upgrade post check find err, collect must-gather....\n"
-            schedulable_masters=(`oc get node | grep master |egrep -v 'Ready,SchedulingDisabled|NotReady'|awk '{print $1'}`)
+            schedulable_masters=(`oc get node | grep master |egrep -v 'Ready,SchedulingDisabled|NotReady'|awk '{print $1}'`)
             if [ -z "$schedulable_masters" ]; then
                 echo "Skipping must-gather as there are no schedulable masters...\n"
                 exit 120 # upgrade itself succ and post-check fail
