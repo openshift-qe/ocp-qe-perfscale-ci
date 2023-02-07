@@ -68,6 +68,11 @@ pipeline {
       3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
       '''
     )
+    booleanParam(
+        name: "SEND_SLACK",
+        defaultValue: false,
+        description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+    )
     text(
       name: 'ENV_VARS', 
       defaultValue: '', 
@@ -196,5 +201,18 @@ pipeline {
       }
     }
   }
+      post {
+        always {
+            script {
+                if (params.SEND_SLACK == true ) {
+                        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                        parameters: [
+                            string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "etcd-perf"),
+                            text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                        ], propagate: false
+                }
+            }
+        }
+    }
 }
 
