@@ -80,6 +80,11 @@ pipeline {
       defaultValue: false, 
       description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
     )
+    booleanParam(
+          name: "SEND_SLACK",
+          defaultValue: false,
+          description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+      )
     string(
       name:'JENKINS_AGENT_LABEL',
       defaultValue:'oc410',
@@ -235,5 +240,18 @@ pipeline {
         }
       }
     }
+  }
+  post {
+      always {
+          script {
+              if (params.SEND_SLACK == true ) {
+                      build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                      parameters: [
+                          string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: WORKLOAD),
+                          text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                      ], propagate: false
+              }
+          }
+      }
   }
 }
