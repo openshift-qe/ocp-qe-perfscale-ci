@@ -327,6 +327,11 @@ pipeline{
         defaultValue: 'False', 
         description: 'If you want to destroy the cluster created at the end of your run '
       )
+      booleanParam(
+          name: "SEND_SLACK",
+          defaultValue: false,
+          description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+      )
       string(
         name:'JENKINS_AGENT_LABEL',
         defaultValue:'oc412',
@@ -740,6 +745,13 @@ pipeline{
                 currentBuild.description += """
                     <b>Final Status:</b> ${status}<br/>
                 """
+              if (params.SEND_SLACK == true ) {
+                        build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                        parameters: [
+                            string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: WORKLOAD),
+                            text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                        ], propagate: false
+                }
             }
         }
     }
