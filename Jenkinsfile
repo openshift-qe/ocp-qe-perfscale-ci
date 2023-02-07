@@ -34,6 +34,11 @@ pipeline {
         choice(choices: ['fast', 'eus', 'candidate', 'stable'], name: 'EUS_CHANNEL', description: 'EUS Channel type, will be ignored if EUS_UPGRADE is not set to true')
         string(name: 'MAX_UNAVAILABLE', defaultValue: "1", description: 'This variable will set the max number of unavailable nodes during the upgrade')
         booleanParam(name: 'WRITE_TO_FILE', defaultValue: true, description: 'Value to write to google sheet ')
+        booleanParam(
+          name: "SEND_SLACK",
+          defaultValue: false,
+          description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
+        )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -112,5 +117,18 @@ pipeline {
             }
         }
      }
+  post {
+    always {
+        script {
+            if (params.SEND_SLACK == true ) {
+              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+              parameters: [
+                  string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "upgrade"),
+                  text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+              ], propagate: false
+            }
+        }
+    }
+  }
 }
 
