@@ -140,22 +140,9 @@ function abnormal_co() {
       echo -e "post check passed without err.\n"
 
   else
-      echo -e "upgrade post check find err, collect must-gather....\n"
-      schedulable_masters=(`oc get node | grep master |egrep -v 'Ready,SchedulingDisabled|NotReady'|awk '{print $1'}`)
-      if [ -z "$schedulable_masters" ]; then
-          echo "Skipping must-gather as there are no schedulable masters...\n"
-      else
-          oc adm must-gather --node-name=${schedulable_masters[0]}>/dev/null 2>&1
-          ls must-gather.local*
-          if [ $? -eq 0 ]; then
-              filename=`ls |grep must-gather.local*`
-              tar -czvf must-gather.tar.gz $filename >/dev/null 2>&1
-              ls
-          else
-             echo -e "must-gather file creation fails!!!"
-          fi
-      fi
       python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('false')"
+      sleep 10
+      python3 -c "import check_upgrade; check_upgrade.wait_for_mcp_upgrade()"
       exit 127 # upgrade itself succ and post-check fail
   fi
 
