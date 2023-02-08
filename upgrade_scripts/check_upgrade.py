@@ -37,6 +37,8 @@ def set_upstream_channel(channel, version):
     print('small v ' + str(small_version))
     if small_version == "4.9":
         patch_48_to_49()
+    if small_version == "4.12":
+        patch_411_to_412()
     merge_json = '{"spec":{"channel": "%s-%s" }}' % (channel, small_version)
     return_code, output = invoke(f"oc patch clusterversion/version --type='merge' -p='{merge_json}'")
     if return_code != 0:
@@ -50,6 +52,13 @@ def patch_48_to_49():
     print('patch api')
     return_code, output = invoke(f"oc -n openshift-config patch cm admin-acks --type=merge -p='{merge_json}'")
     print('output: ' + str(output))
+
+def patch_411_to_412(): 
+    merge_json = '{"data":{"ack-4.11-kube-1.25-api-removals-in-4.12":"true"}}'
+    print('patch api')
+    return_code, output = invoke(f"oc -n openshift-config patch cm admin-acks --type=merge -p='{merge_json}'")
+    print('output: ' + str(output))
+
 
 def set_upstream_url(url):
 
@@ -78,10 +87,12 @@ def verify_version_in_channel_list(expected_version):
 def get_upgrade_status(mcp_json):
     for mcp_status in mcp_json['status']['conditions']:
         if mcp_status['type'] == "Updating":
+            print('Upgrade mcp status: ' + str(mcp_status['status']))
             return mcp_status['status']
 
 def wait_for_mcp_upgrade(wait_num=90):
     counter = 0
+    time.sleep(20)
     return_code, worker_str = invoke(f"oc get mcp worker -o json")
     worker_json = json.loads(worker_str)
     while get_upgrade_status(worker_json) != "False":

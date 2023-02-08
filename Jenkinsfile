@@ -78,25 +78,25 @@ pipeline {
 
         script {
           RETURNSTATUS = sh(returnStatus: true, script: '''
-          # Get ENV VARS Supplied by the user to this job and store in .env_override
-          echo "$ENV_VARS" > .env_override
-          # Export those env vars so they could be used by CI Job
-          set -a && source .env_override && set +a
-          mkdir -p ~/.kube
-          cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-          oc config view
-          oc projects
-          ls -ls ~/.kube/
-          env
-          cd upgrade_scripts
-          ls
-          python3 --version
-          python3 -m venv venv3
-          source venv3/bin/activate
-          pip --version
-          pip install --upgrade pip
-          pip install -U datetime pyyaml
-          ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE -e $EUS_UPGRADE -c $EUS_CHANNEL
+            # Get ENV VARS Supplied by the user to this job and store in .env_override
+            echo "$ENV_VARS" > .env_override
+            # Export those env vars so they could be used by CI Job
+            set -a && source .env_override && set +a
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            oc config view
+            oc projects
+            ls -ls ~/.kube/
+            env
+            cd upgrade_scripts
+            ls
+            python3 --version
+            python3 -m venv venv3
+            source venv3/bin/activate
+            pip --version
+            pip install --upgrade pip
+            pip install -U datetime pyyaml
+            ./upgrade.sh $UPGRADE_VERSION -f $ENABLE_FORCE -s $SCALE -u $MAX_UNAVAILABLE -e $EUS_UPGRADE -c $EUS_CHANNEL
           ''' )
            }
            script {
@@ -104,7 +104,15 @@ pipeline {
                 overall_status = "PASS"
             } else {
                 currentBuild.result = "FAILURE"
-                archiveArtifacts artifacts: 'upgrade_scripts/must-gather.tar.gz', fingerprint: false
+
+                must_gather_url = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather',
+                parameters: [
+                    string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                    text(name: "ENV_VARS", value: ENV_VARS)
+                ], propagate: false
+                currentBuild.description += """
+                <b>Must Gather: </b> <a href="${must_gather_url.absoluteUrl}"> ${must_gather_url.getNumber()} </a> <br/>
+                """
             }
            }
            script {
