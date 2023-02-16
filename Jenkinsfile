@@ -94,10 +94,15 @@ pipeline {
                e.g. <b>for OSP:</b><br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.cpu.xxxl<br>
                OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.cpu.xxl<br>
-               <b>And ALWAYS INCLUDE(except for vSphere provider) this part, for Prometheus AlertManager, it may look like</b>:<br>
+               e.g. <b>for Nutanix:</b><br>
+               OPENSHIFT_INFRA_NODE_INSTANCE_VCPU=16<br>
+               OPENSHIFT_INFRA_NODE_INSTANCE_MEMORYSIZE=64Gi<br>
+               OPENSHIFT_WORKLOAD_NODE_INSTANCE_VCPU=16<br>
+               OPENSHIFT_WORKLOAD_NODE_INSTANCE_MEMORYSIZE=64Gi<br>
+               <b>And ALWAYS INCLUDE(except for vSphere provider or Nutanix install without storageclass) this part, for Prometheus AlertManager, it may look like</b>:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
-               OPENSHIFT_PROMETHEUS_STORAGE_SIZE=500Gi  <br>
-               OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi <br></p>'''
+               OPENSHIFT_PROMETHEUS_STORAGE_SIZE=50Gi  <br>
+               OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=1Gi <br></p>'''
             )
         booleanParam(name: 'INSTALL_DITTYBOPPER', defaultValue: true, description: 'Value to install dittybopper dashboards to cluster')
         string(name: 'DITTYBOPPER_REPO', defaultValue:'https://github.com/cloud-bulldozer/performance-dashboards.git', description:'You can change this to point to your fork if needed')

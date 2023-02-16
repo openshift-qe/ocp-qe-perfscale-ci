@@ -144,6 +144,15 @@ elif [[ $(echo $VARIABLES_LOCATION | grep ibmcloud -c) > 0 ]]; then
 elif [[ $(echo $VARIABLES_LOCATION | grep osp -c) > 0 ]]; then
     envsubst < infra-node-machineset-osp.yaml | oc apply -f -
     envsubst < workload-node-machineset-osp.yaml | oc apply -f -
+elif [[ $(echo $VARIABLES_LOCATION | grep nutanix -c) > 0 ]]; then
+    export CLUSTER_UUID=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).spec.template.spec.providerSpec.value.cluster.uuid)}}')
+    export SUBNET_UUID=$(oc get machineset -n openshift-machine-api -o=go-template='{{((index (index .items 0).spec.template.spec.providerSpec.value.subnets 0).uuid)}}')
+    if [[ -n $CLUSTER_UUID &&  -n $SUBNET_UUID ]]; then
+        envsubst < infra-node-machineset-nutanix.yaml | oc apply -f -
+        envsubst < workload-node-machineset-nutanix.yaml | oc apply -f -
+    else
+        echo "error: cluster uuid or subnet uuid not found."
+    fi  
 fi
 retries=0
 attempts=60
@@ -179,13 +188,15 @@ oc get nodes
 oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
 oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
 
-
 echo "Moving ingress pods to infra nodes"
 oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
-
 echo "Moving monitoring to infra nodes"
 if [[ $(cat $WORKSPACE/flexy-artifacts/workdir/install-dir/metadata.json | grep vsphere -c) > 0 ]]; then
-    envsubst < monitoring-config-vsphere.yaml | oc apply -f -
+    envsubst < monitoring-config-no-pvc.yaml | oc apply -f -
+elif [[ $(echo $VARIABLES_LOCATION | grep nutanix | grep pvc -c) > 0 ]]; then
+    envsubst < monitoring-config.yaml | oc apply -f -
+elif [[ $(echo $VARIABLES_LOCATION | grep nutanix | grep -v pvc -c) > 0 ]]; then
+    envsubst < monitoring-config-no-pvc.yaml | oc apply -f -
 else
     envsubst < monitoring-config.yaml | oc apply -f -
 fi
@@ -210,7 +221,7 @@ for statefulset in $(oc get statefulsets --no-headers -n openshift-monitoring | 
     echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas!"
     echo "current replicas in $statefulset: wanted--$wanted_replicas, current infra running--$infra_pods!"
     while [[ $ready_replicas != $wanted_replicas ]] ||  [[ $infra_pods != $wanted_replicas ]]; do
-        sleep 5
+        sleep 30
         ((retries += 1))
         ready_replicas=$(oc get statefulsets $statefulset -n openshift-monitoring -o jsonpath='{.status.availableReplicas}')
         echo "retries printing: $retries"
