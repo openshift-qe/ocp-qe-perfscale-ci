@@ -323,6 +323,11 @@ pipeline{
         description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
       )
       booleanParam(
+        name: 'MUST_GATHER', 
+        defaultValue: true, 
+        description: 'This variable will run must-gather if any cerberus components fail'
+      )
+      booleanParam(
         name: 'DESTROY_WHEN_DONE', 
         defaultValue: 'False', 
         description: 'If you want to destroy the cluster created at the end of your run '
@@ -582,7 +587,7 @@ pipeline{
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
                             booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
                        ]
@@ -596,7 +601,7 @@ pipeline{
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                        ]
                         currentBuild.description += """
                             <b>Scale-Ci: </b> router-perf <br/>
@@ -609,7 +614,7 @@ pipeline{
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                          ]
                        currentBuild.description += """
                             <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
@@ -622,6 +627,7 @@ pipeline{
                             string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
                             string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE),
                             booleanParam(name: "CLEANUP", value: CLEANUP),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                        ]
                         currentBuild.description += """
                             <b>Scale-Ci: </b> regression-test <br/>
@@ -640,7 +646,7 @@ pipeline{
                             text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
                             string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH)
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                         ]
                         currentBuild.description += """
                             <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
