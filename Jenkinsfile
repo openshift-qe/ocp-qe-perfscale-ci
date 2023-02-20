@@ -57,6 +57,11 @@ pipeline {
           defaultValue: false,
           description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
       )
+       booleanParam(
+            name: 'MUST_GATHER', 
+            defaultValue: true, 
+            description: 'This variable will run must-gather if any cerberus components fail'
+        )
       string(
           name: 'VARIABLE',
           defaultValue: '1000', 
@@ -328,7 +333,7 @@ pipeline {
                         string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
                         string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true),
-                        string(name: "WORKLOAD", value: WORKLOAD)
+                        string(name: "WORKLOAD", value: WORKLOAD),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                     ],
                     propagate: false
                 if (status == "PASS") {
