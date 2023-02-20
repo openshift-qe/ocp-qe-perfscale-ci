@@ -120,8 +120,8 @@ function abnormal_co() {
   fi 
 
   echo -e "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Abnormal co details~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n"
-  bnormalCO=""
-  abnormalCO=$(oc get co |sed '1d'|grep -v "openshift-samples"|grep -v '.*True.*False.*False' | awk '{print $1}')
+  abnormalCO=""
+  abnormalCO=$(oc get co -o jsonpath='{range .items[*]}{.metadata.name} {range .status.conditions[*]} {.type}={.status}{end}{"\n"}{end}' | grep -v "openshift-samples" | grep -w -E 'Available=False|Progressing=True|Degraded=True' | awk '{print $1}')
   if [ "X$abnormaalCO" != "X" ]; then
       upgrade_pass=False
       quick_diagnosis "$abnormalCO"
