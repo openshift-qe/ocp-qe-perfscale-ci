@@ -45,6 +45,11 @@ pipeline {
             defaultValue: false,
             description: 'Check cluster health status pass'
         )
+        booleanParam(
+            name: 'MUST_GATHER', 
+            defaultValue: true, 
+            description: 'This variable will run must-gather if any cerberus components fail'
+        )
         string(
             name: 'JENKINS_AGENT_LABEL',
             defaultValue: 'oc412',
@@ -155,6 +160,11 @@ pipeline {
                 Email to share Google Sheet results with<br/>
                 By default shares with email of person who ran the job
             '''
+        )
+        booleanParam(
+            name: "SEND_SLACK",
+            defaultValue: false,
+            description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
         )
         text(
             name: 'ENV_VARS',
@@ -279,7 +289,8 @@ pipeline {
                                 string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                                 string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
                                 string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
-                                string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true)
+                                string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true),
+                                booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                             ],
                             propagate: false
                         def result = cerberus_job.result.toString()
@@ -329,15 +340,21 @@ pipeline {
     }
     post {
         always {
+          
             println 'Post Section - Always'
             archiveArtifacts(
                 artifacts: 'workloads/router-perf-v2/ingress_router.out',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
+            if (params.SEND_SLACK == true ) {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                parameters: [
+                    string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "router-perf"),
+                    text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                ], propagate: false
+            }
         }
-        failure {
-            println 'Post Section - Failure'
-        }
+
     }
 }
