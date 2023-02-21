@@ -347,14 +347,15 @@ pipeline {
                 allowEmptyArchive: true,
                 fingerprint: true
             )
-            if (params.SEND_SLACK == true ) {
-                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
-                parameters: [
-                    string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "router-perf"),
-                    text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
-                ], propagate: false
+            script {
+                if (params.SEND_SLACK == true ) {
+                    build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                    parameters: [
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "router-perf"),
+                        text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
+                    ], propagate: false
+                }
             }
         }
-
     }
 }
