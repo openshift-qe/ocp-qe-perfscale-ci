@@ -10,7 +10,7 @@ def RETURNSTATUS = "default"
 def output = ""
 def status = "FAIL"
 pipeline {
-    agent none
+    agent { label params['JENKINS_AGENT_LABEL'] }
     parameters {
         string(
             name: 'BUILD_NUMBER', 
