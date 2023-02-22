@@ -20,6 +20,10 @@ Pod-Density TC: [OCP-41155](https://polarion.engineering.redhat.com/polarion/#/p
 
 Concurrent-Builds TC: [OCP-49623](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-49623)
 
+Pod Density Heavy TC: [OCP-60355](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-60355)
+
+NetworkPolicy TC: [OCP-60430](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-60430)
+
 ## Parameters
 
 Cluster-density should run with VARIABLE = 4 VARIABLE * worker nodes
