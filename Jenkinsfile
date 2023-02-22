@@ -124,6 +124,15 @@ pipeline {
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
       )
+      booleanParam(
+          name: 'CHURN',
+          defaultValue: false,
+          description: '''Run churn at end of original iterations. <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner#churn>Churning</a> allows you to scale down and then up a percentage of JOB_ITERATIONS after the objects have been created <br>
+          Use the following variables in ENV_VARS to set specifics of churn: <br>
+          CHURN_DURATION=60m  <br>
+          CHURN_PERCENT=20 <br>
+          CHURN_DELAY=30s'''
+      )
       string(
           name: 'EMAIL_ID_OVERRIDE',
           defaultValue: '',
