@@ -70,7 +70,7 @@ pipeline {
           pod-density: This will export PODS env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates as many "sleep" pods as configured in this environment variable.<br>
           pod-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many hello-openshift application as configured in this variable*NODE_COUNT - existing number of pods on node - 1.<br>
           cluster-density: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
-          cluster-density-ms: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
+          cluster-density-ms: This will export JOB_ITERATIONS env variable; set to 9 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
           max-namespaces: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
           pods-service-route: This will export NAMESPACE_COUNT env variable; set to ~30 * num_workers. The number of namespaces created by Kube-burner.<br>
           max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace.<br>
@@ -123,6 +123,15 @@ pipeline {
           name: 'GEN_CSV',
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
+      )
+      booleanParam(
+          name: 'CHURN',
+          defaultValue: false,
+          description: '''Run churn at end of original iterations. <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner#churn>Churning</a> allows you to scale down and then up a percentage of JOB_ITERATIONS after the objects have been created <br>
+          Use the following variables in ENV_VARS to set specifics of churn: <br>
+          CHURN_DURATION=60m  <br>
+          CHURN_PERCENT=20 <br>
+          CHURN_DELAY=30s'''
       )
       string(
           name: 'EMAIL_ID_OVERRIDE',
