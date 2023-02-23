@@ -156,6 +156,16 @@ pipeline{
           font-weight: bold;
           font-family: 'Orienta', sans-serif;"""
       )
+      booleanParam(
+          name: 'CHURN',
+          defaultValue: false,
+          description: '''Run churn at end of original iterations. <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner#churn>Churning</a> allows you to scale down and then up a percentage of JOB_ITERATIONS after the objects have been created <br>
+          Use the following variables in ENV_VARS to set specifics of churn: <br>
+          CHURN_DURATION=60m  <br>
+          CHURN_PERCENT=20 <br>
+          CHURN_DELAY=30s
+          NOTE: this only applies to kube-burner workloads'''
+      )
       choice(
         choices: ["","cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","etcd-perf","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
         name: 'CI_TYPE', 
@@ -646,7 +656,8 @@ pipeline{
                             text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
                             string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            booleanParam(name: "CHURN", value: CHURN)
                         ]
                         currentBuild.description += """
                             <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
