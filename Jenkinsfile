@@ -173,6 +173,9 @@ pipeline{
         max-services: This will export SERVICE_COUNT env variable; set to 200 * num_workers, work up to 250 * num_workers. Creates n-replicas of an application deployment (hello-openshift) and a service in a single namespace. <br>
         node-density: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node. <br>
         node-density-heavy: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2 <br>
+        networkpolicy-case1: This will export JOB_ITERATIONS env variable; set to 5 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
+        networkpolicy-case2: This will export JOB_ITERATIONS env variable; set to 1 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
+        networkpolicy-case3: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br> 
         regression-test: This will pass this value to PARAMETERS; Parameter or an array of parameters to pass to the TEST_CASE script <br>
         Read here for detail of each variable: <br>
         https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md <br>
