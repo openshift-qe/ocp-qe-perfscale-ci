@@ -32,15 +32,11 @@ deploy_netobserv() {
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     deploy_main_catalogsource
   fi
-  echo "====> Creating NetObserv OperatorGroup and Subscription"
-  oc apply -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
+  echo "====> Creating NetObserv Subscription"
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
-  if [[ $INSTALLATION_SOURCE == "Official" ]] || [[ $INSTALLATION_SOURCE == "Internal" ]]; then
-    oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
-  else
-    oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n netobserv
-  fi
+  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
+
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
@@ -77,7 +73,7 @@ deploy_lokistack() {
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   fi
-  
+
   echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
@@ -235,14 +231,13 @@ delete_flowcollector() {
 }
 
 delete_netobserv() {
-  echo "====> Deleting NetObserv Subscription, CSV, OperatorGroup, and Project"
+  echo "====> Deleting NetObserv Subscription, CSV, and Project"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
   oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing CatalogSource"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace

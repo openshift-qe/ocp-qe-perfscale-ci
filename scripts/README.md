@@ -66,8 +66,8 @@ You can update common parameters of flowcollector with the following commands:
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
 
-### Enabling Kafka
-TODO
+### Install Kafka
+To install Kafka, run `./env.sh` to set environment variables required to deploy kafka. Run `$ source netobserv.sh ; deploy_kafka`
 
 ### Using Dittybopper
 1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
