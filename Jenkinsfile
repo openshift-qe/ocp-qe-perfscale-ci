@@ -39,7 +39,7 @@ pipeline {
       )
       choice(
           name: 'WORKLOAD',
-          choices: ["cluster-density", "node-density", "node-density-heavy","node-density-cni"],
+          choices: ["cluster-density", "cluster-density-v2", "node-density", "node-density-heavy","node-density-cni"],
           description: 'Type of kube-burner job to run'
       )
       booleanParam(
@@ -71,18 +71,17 @@ pipeline {
           defaultValue: '1000', 
           description: '''
           This variable configures parameter needed for each type of workload. By default 1000.<br>
-          cluster-density-v2: This will export JOB_ITERATIONS env variable. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
-          cluster-density-ms: This will export JOB_ITERATIONS env variable. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
+          cluster-density: This will export JOB_ITERATIONS env variable, set to 9 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
+          cluster-density-v2: This will export JOB_ITERATIONS env variable, set to 9 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br>
           node-density: This will export JOB_ITERATIONS env variable; set to 200, work up to 250. Creates as many "sleep" pods as configured in this variable - existing number of pods on node.<br>
           node-density-heavy: This will export JOB_ITERATIONS env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
           node-density-cni: This will export JOB_ITERATIONS env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
-          node-density-cni-networkpolicy: This will export JOB_ITERATIONS env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br>
           Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
           '''
       )
       string(
           name: 'JENKINS_AGENT_LABEL',
-          defaultValue: 'oc412',
+          defaultValue: 'oc413',
           description: '''
             scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
             4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -131,9 +130,9 @@ pipeline {
           '''
       )
       string(
-          name: 'KUBE_BURNER_URL',
+          name: 'KUBE_BURNER_BINARY',
           defaultValue: 'https://github.com/cloud-bulldozer/kube-burner/releases/download/v1.3/kube-burner-1.3-Linux-x86_64.tar.gz',
-          description: 'You can change this to point to your fork if needed.'
+          description: 'You can change this to point to your own kube burner binary file if needed.'
       )
   }
   stages {  
@@ -233,7 +232,7 @@ pipeline {
                         echo "workspace $WORKSPACE"
                         KUBE_DIR=$(mktemp -d)
  
-                        curl -sS -L ${KUBE_BURNER_URL} | tar -xzC ${KUBE_DIR}/ kube-burner
+                        curl -sS -L ${KUBE_BURNER_BINARY} | tar -xzC ${KUBE_DIR}/ kube-burner
 
                         if [[ $CHURN ]]; then
                             churn_val="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
