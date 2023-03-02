@@ -21,7 +21,7 @@ NODE_COUNT: number of worker nodes on your cluster
 PODS_PER_NODE: Work up to 250
 ```
 
-cluster-density: Set VARIABLE to 4 * num_workers, 1 namespace per iteration
+cluster-density and cluster-density-v2: Set VARIABLE to 9 * num_workers, 1 namespace per iteration
 
 
 ### Scaling and Adding Infra/Workload Nodes
