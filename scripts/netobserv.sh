@@ -231,14 +231,13 @@ delete_flowcollector() {
 }
 
 delete_netobserv() {
-  echo "====> Deleting NetObserv Subscription, CSV, OperatorGroup, and Project"
+  echo "====> Deleting NetObserv Subscription, CSV, and Project"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
   oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing CatalogSource"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
