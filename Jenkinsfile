@@ -234,7 +234,8 @@ pipeline {
  
                         curl -sS -L ${KUBE_BURNER_BINARY} | tar -xzC ${KUBE_DIR}/ kube-burner
 
-                        if [[ $CHURN ]]; then
+                        if [[ $CHURN == true ]]; then
+                            echo "churn true"
                             churn_val="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
                         fi
                         pwd
