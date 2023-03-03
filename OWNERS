@@ -1,7 +1,9 @@
 approvers:
 - mffiedler
 - qiliRedHat
+- paigerube14
 reviewers:
+- nathan-weinberg
 - qiliRedHat
 - mffiedler
 - paigerube14
