@@ -61,10 +61,10 @@ pipeline {
           name: 'CHURN',
           defaultValue: false,
           description: '''Run churn at end of original iterations. <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/kube-burner#churn>Churning</a> allows you to scale down and then up a percentage of JOB_ITERATIONS after the objects have been created <br>
-          Use the following variables to set specifics of churn  <br>
-          CHURN_DURATION=60m  <br>
-          CHURN_PERCENT=20 <br>
-          CHURN_DELAY=30s'''
+          Use the following variables in ENV_VARS to set specifics of churn. Otherwise the below will run as default <br>
+          CHURN_DURATION=10m  <br>
+          CHURN_PERCENT=10 <br>
+          CHURN_DELAY=60s'''
       )
       string(
           name: 'VARIABLE',
