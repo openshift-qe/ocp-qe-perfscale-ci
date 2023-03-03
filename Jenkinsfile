@@ -237,7 +237,7 @@ pipeline {
                         if [[ $CHURN ]]; then
                             churn_val="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
                         fi
-                        ${KUBE_DIR}/kube-burner ocp $WORKLOAD --iterations=$VARIABLE --timeout=6h --es-server=$ES_SERVER --es-index=ripsaw-kube-burner $churn_val | tee "kube-burner.out"
+                        ${KUBE_DIR}/kube-burner ocp $WORKLOAD --iterations=$VARIABLE --timeout=6h --es-server=$ES_SERVER --es-index=ripsaw-kube-burner $churn_val |& tee "kube-burner.out"
 
                     ''')
                     output = sh(returnStdout: true, script: 'cat kube-burner.out')
