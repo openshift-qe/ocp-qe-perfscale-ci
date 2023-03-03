@@ -131,7 +131,7 @@ pipeline {
       )
       string(
           name: 'KUBE_BURNER_BINARY',
-          defaultValue: 'https://github.com/cloud-bulldozer/kube-burner/releases/download/v1.3/kube-burner-1.3-Linux-x86_64.tar.gz',
+          defaultValue: 'https://github.com/cloud-bulldozer/kube-burner/releases/download/v1.4.2/kube-burner-1.4.2-Linux-x86_64.tar.gz',
           description: 'You can change this to point to your own kube burner binary file if needed.'
       )
   }
