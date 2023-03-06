@@ -203,17 +203,26 @@ function check_upgrade_version() {
 }
 
 python3 -c "import check_upgrade; check_upgrade.set_max_unavailable($maxUnavail)"
-node_name=`oc get node | grep master| head -1| awk '{print $1}'`
-node_arch=`oc get node $node_name -ojsonpath='{.status.nodeInfo.architecture}'`
+echo ARCH_TYPE is $ARCH_TYPE
+if [[ $ARCH_TYPE == multi* ]];then
+    node_arch="multi"
+else
+    node_name=`oc get node | grep master| head -1| awk '{print $1}'`
+    node_arch=`oc get node $node_name -ojsonpath='{.status.nodeInfo.architecture}'`
+fi
 
 
 if [[ "X$node_arch" == "Xarm64" ]];then
    arch_prefix=aarch64
    release_path=ocp-arm64/release-arm64
+elif [[ "X$node_arch" == "Xmulti" ]];then
+   arch_prefix=multi
+   release_path=ocp/release
 else
    arch_prefix=x86_64
    release_path=ocp/release
 fi
+
 
 for target_build in "${taget_build_arr[@]}"
 do
@@ -224,32 +233,36 @@ do
   then
       echo "target version nightly "
       target_version_prefix=${target_build}   #night build:4.2.0-0.nightly-2020-02-03-234322
+      echo node_arch is $node_arch
+      #Get target ocp image sha256 values
+      #The node arch type is arm64 amd64 and multi
+      if [[ "X$node_arch" == "Xmulti" ]]; then
+	  image_path=$( echo $target_build | cut -d- -f1-3)
+	  target_sha=$(curl -s https://multi.ocp.releases.ci.openshift.org/releasestream/${image_path}/release/${target_build} |grep PullSpec | awk -F'@' '{print $2}' | awk -F'<' '{print $1}')
+      else
+          target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://${node_arch}.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
+      fi
+
+      if [[ $target_sha == "" ]]; then
+          echo "Could not find target version in 'https://${node_arch}.ocp.releases.ci.openshift.org/graph'"
+          exit 1
+      fi
+
       if [[ "X$eus" == "Xtrue" ]]; then
         python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('true')"
         #Check if the worker node is arm64 or x86_64
-        if [[ "X$node_arch" == "Xarm64" ]];then
-          target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://arm64.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
-          if [[ $target_sha == "" ]]; then
-             echo "Could not find target version in 'https://arm64.ocp.releases.ci.openshift.org/graph'"
-             exit 1
-          fi
-        else
-          target_sha=$(python3 -c "import check_upgrade; check_upgrade.get_sha_url('https://amd64.ocp.releases.ci.openshift.org/graph','$target_version_prefix')")
-          if [[ $target_sha == "" ]]; then
-             echo "Could not find target version in 'https://amd64.ocp.releases.ci.openshift.org/graph'"
-             exit 1
-          fi
-        fi
         if [ "X$enable_force" == "Xtrue" ];then
-          upgrade_line="oc adm upgrade --to-image $target_sha --force --allow-explicit-upgrade"
+           upgrade_line="oc adm upgrade --to-image $target_sha --force --allow-explicit-upgrade"
         else
-          upgrade_line="oc adm upgrade --to-image $target_sha --allow-explicit-upgrade"
+           upgrade_line="oc adm upgrade --to-image $target_sha --allow-explicit-upgrade"
         fi
+      elif [[ "X$node_arch" == "Xmulti" ]]; then
+           upgrade_line="oc adm upgrade --to-image quay.io/openshift-release-dev/ocp-release-nightly@${target_sha} --force --allow-explicit-upgrade"
       else
         if [ "X$enable_force" == "Xtrue" ];then
-          upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/$release_path:$target_version_prefix --force --allow-explicit-upgrade"
+           upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/$release_path:$target_version_prefix --force --allow-explicit-upgrade"
         else
-          upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/$release_path:$target_version_prefix --allow-explicit-upgrade"
+           upgrade_line="oc adm upgrade --to-image registry.ci.openshift.org/$release_path:$target_version_prefix --allow-explicit-upgrade"
         fi
       fi
   else
