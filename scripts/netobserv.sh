@@ -2,6 +2,7 @@
 
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
+
 if [[ $INSTALLATION_SOURCE == "Official" ]]; then
   echo "Using 'Official' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
@@ -121,8 +122,14 @@ deploy_lokistack() {
 deploy_unreleased_catalogsource() {
   echo "====> Creating brew-registry ImageContentSourcePolicy"
   oc apply -f $SCRIPTS_DIR/iscp.yaml
+
+  echo "====> Determining CatalogSource config"
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
+  TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
+  envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
+
   echo "====> Creating qe-unreleased-testing CatalogSource"
-  oc apply -f $SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
+  oc apply -f $TMP_CATALOGCONFIG
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=qe-unreleased-testing -n openshift-marketplace
 }
@@ -154,6 +161,11 @@ deploy_kafka() {
   curl -s -L "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" | envsubst | oc apply -n netobserv -f -
 
   echo "====> Creating network-flows KafkaTopic"
+  if [[ -z $TOPIC_PARTITIONS ]]; then
+    echo "====> No topic partitions config was found - using 6"
+    echo "====> To set config, set TOPIC_PARTITIONS variable to desired number"
+    export TOPIC_PARTITIONS=6
+  fi  
   KAFKA_TOPIC=$SCRIPTS_DIR/amq-streams/kafkaTopic.yaml
   TMP_KAFKA_TOPIC=/tmp/topic.yaml
   envsubst <$KAFKA_TOPIC >$TMP_KAFKA_TOPIC
@@ -165,6 +177,11 @@ deploy_kafka() {
   oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}]"
 
   echo "====> Update flowcollector replicas"
+  if [[ -z $FLP_KAFKA_REPLICAS ]]; then
+    echo "====> No flowcollector replicas config was found - using 3"
+    echo "====> To set config, set FLP_KAFKA_REPLICAS variable to desired number"
+    FLP_KAFKA_REPLICAS=3
+  fi
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
 
   echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
@@ -237,10 +254,13 @@ delete_netobserv() {
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
-  oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
+  if [[ ! -z $NAMESPACE ]]; then
+    oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
+  fi
   oc delete project netobserv
-  echo "====> Deleting netobserv-main-testing CatalogSource"
+  echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
+  oc delete --ignore-not-found catalogsource/qe-unreleased-testing -n openshift-marketplace
 }
 
 delete_loki_operator() {

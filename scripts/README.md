@@ -49,7 +49,7 @@ It is recommended to use Loki operator to create a LokiStack for Network Observa
         - Requirements: `m5.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
-        - Requirments: `m5.8xlarge` machines.
+        - Requirements: `m5.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
 
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
@@ -67,7 +67,7 @@ You can update common parameters of flowcollector with the following commands:
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
 
 ### Install Kafka
-To install Kafka, run `./env.sh` to set environment variables required to deploy kafka. Run `$ source netobserv.sh ; deploy_kafka`
+To install Kafka, run `$ source netobserv.sh ; deploy_kafka`. Ensure you set `TOPIC_PARTITIONS` and `FLP_KAFKA_REPLICAS` environmental variables to your desired values first - otherwise values of `6` and `3` will be used, respectively.
 
 ### Using Dittybopper
 1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
