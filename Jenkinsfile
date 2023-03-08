@@ -32,7 +32,7 @@ pipeline {
         string(name: 'PROFILE', defaultValue: '', description:'The profile name that created the cluster')
         string(name: 'PROFILE_SIZE', defaultValue: '', description:'The size of cluster that got created defined in the profile')
         string(name: 'USER', defaultValue: '', description:'The user who ran the job')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc45',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable
         <br>
@@ -98,19 +98,18 @@ pipeline {
             pip --version
             pip install --upgrade pip
             pip install -U gspread oauth2client datetime pytz pyyaml
-
+            printf "${params.ENV_VARS}"  >> env_vars.out
+            
             export PYTHONIOENCODING=utf8
-            printf '${params.ENV_VARS}' >> env_vars.out
             if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
-                echo "loaded-upgrade"
-                python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
+                python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
             elif [[ "${params.JOB}" == "upgrade" ]]; then
-                python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
+              python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
             elif [[ "${params.JOB}" == "nightly-scale" || "${params.JOB}" == "nightly-longrun" ]]; then
                 python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}', '${params.PROFILE}','${params.PROFILE_SIZE}', '${params.USER}')"
             else
                 echo "else job"
-                printf '${params.JOB_OUTPUT}' >> output_file.out
+                printf "%s\\n" '${params.JOB_OUTPUT}' | sed 's/[[\\(*^\$+?{\"|]/\\ /g'  | sed "s/[']/\\ /g" >> output_file.out
                 python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.CI_JOB_ID}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', 'output_file.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
             fi
             rm -rf ~/.kube

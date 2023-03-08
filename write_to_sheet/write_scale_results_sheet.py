@@ -147,9 +147,10 @@ def get_uuid_from_json(metadata):
 def get_router_perf_uuid(job_output):
     with open(job_output, encoding='utf-8', mode="r") as f:
         job_output_string = f.read()
-    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")[0]
-
-    return get_uuid_from_json(metadata)
+    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
+    find_uuid_md = metadata[0]
+    
+    return get_uuid_from_json(find_uuid_md), metadata[0].replace('\n',"")
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
     scopes = [
