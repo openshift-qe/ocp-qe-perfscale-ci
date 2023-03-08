@@ -309,7 +309,7 @@ pipeline {
   }
   post {
         always {
-          
+          script {
             println 'Post Section - Always'
             if (params.SEND_SLACK == true ) {
                 build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
@@ -319,6 +319,7 @@ pipeline {
                     string(name: 'RESULT', value:currentBuild.currentResult)
                 ], propagate: false
             }
+          }
         }
 
     }
