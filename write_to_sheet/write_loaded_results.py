@@ -4,7 +4,7 @@ from datetime import datetime
 from pytz import timezone
 import write_helper
 
-def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url, loaded_upgrade_url, status, scale, force, env_vars_file, user):
+def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url, loaded_upgrade_url, status, scale, env_vars_file, user, profile, profile_size):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -42,13 +42,6 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     row = [flexy_cell, versions[0], cloud_type, arch_type, network_type, worker_count, ci_cell, upgrade_path_cell, status_cell, str(datetime.now(tz)),env_vars,user]
     ws.insert_row(row, index, "USER_ENTERED")
 
-    return_code, worker_master = write_helper.run("oc get nodes | grep worker | grep master|  wc -l | xargs")
-    worker_master = worker_master.strip()
-    if return_code != 0:
-        worker_master = "ERROR"
-    sno = "no"
-    if worker_master == "1":
-        sno = "yes"
 
     last_version = versions[-1].split(".")
     last_version_string = str(last_version[0]) + "." + str(last_version[1])
@@ -58,6 +51,9 @@ def write_to_sheet(google_sheet_account, flexy_id, scale_ci_job, upgrade_job_url
     if "load-up" in cluster_name: 
         sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1Zp116e0goej2Q8TOF6o9AwsXbWd-WqCsmwhFA1SFdIk/edit#gid=664841475")
         ws = sheet.worksheet(last_version_string + " Upgrade")
+        row[2] = profile
+        row[3] = profile_size
+        row.pop(4)
         ws.insert_row(row, index, "USER_ENTERED")
     
 
