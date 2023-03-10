@@ -88,6 +88,15 @@ pipeline {
             '''
         )
         string(
+            name: 'IIB_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                If using Internal installation, you can specify here a specific internal index image to use in the CatalogSource rathar than using the most recent bundle<br/>
+                These IDs can be found in CVP emails under 'Index Image Location' section<br/>
+                e.g. <b>450360</b>
+            '''
+        )
+        string(
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '800Mi',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
@@ -367,6 +376,13 @@ pipeline {
             }
             steps {
                 script {
+                    // if an 'Internal' installation, determine whether to use aosqe-index image or specific IIB image
+                    if (params.INSTALLATION_SOURCE == 'Internal' && params.IIB_OVERRIDE != '') {
+                        env.IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
+                    }
+                    else {
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                    }
                     // attempt installation of Network Observability from selected source
                     println "Installing Network Observability from ${params.INSTALLATION_SOURCE}..."
                     returnCode = sh(returnStatus: true, script: """

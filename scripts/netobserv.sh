@@ -80,7 +80,7 @@ deploy_lokistack() {
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD"
+    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
@@ -124,6 +124,11 @@ deploy_unreleased_catalogsource() {
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
+  if [[ -z $IMAGE ]]; then
+    echo "====> No image config was found - cannot create CatalogSource"
+    echo "====> To set config, set IMAGE variable to desired endpoint"
+    exit 1
+  fi  
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
   TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
   envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
