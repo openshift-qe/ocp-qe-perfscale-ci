@@ -121,7 +121,7 @@ deploy_lokistack() {
 
 deploy_unreleased_catalogsource() {
   echo "====> Creating brew-registry ImageContentSourcePolicy"
-  oc apply -f $SCRIPTS_DIR/iscp.yaml
+  oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml

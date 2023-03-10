@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue:'oc412',
+            defaultValue:'oc413',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
