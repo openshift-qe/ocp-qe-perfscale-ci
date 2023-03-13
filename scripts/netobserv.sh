@@ -80,7 +80,7 @@ deploy_lokistack() {
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD"
+    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
@@ -103,7 +103,7 @@ deploy_lokistack() {
   elif [[ $LOKISTACK_SIZE == "1x.medium" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
-    echo "====> No LokiStack config was found - using 1x-exsmall"
+    echo "====> No LokiStack config was found - using 1x.extra-small"
     echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
@@ -124,6 +124,14 @@ deploy_unreleased_catalogsource() {
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
+  if [[ -z $IMAGE ]]; then
+    echo "====> No image config was found - cannot create CatalogSource"
+    echo "====> To set config, set IMAGE variable to desired endpoint"
+    exit 1
+  else
+    echo "====> Using image $IMAGE for CatalogSource"
+  fi
+
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
   TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
   envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
