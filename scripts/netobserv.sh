@@ -103,7 +103,7 @@ deploy_lokistack() {
   elif [[ $LOKISTACK_SIZE == "1x.medium" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
-    echo "====> No LokiStack config was found - using 1x-exsmall"
+    echo "====> No LokiStack config was found - using 1x.extra-small"
     echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
@@ -128,7 +128,10 @@ deploy_unreleased_catalogsource() {
     echo "====> No image config was found - cannot create CatalogSource"
     echo "====> To set config, set IMAGE variable to desired endpoint"
     exit 1
-  fi  
+  else
+    echo "====> Using image $IMAGE for CatalogSource"
+  fi
+
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
   TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
   envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
