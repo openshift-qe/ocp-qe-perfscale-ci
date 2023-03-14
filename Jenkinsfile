@@ -102,7 +102,7 @@ pipeline {
             
             export PYTHONIOENCODING=utf8
             if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
-                python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
+                python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
             elif [[ "${params.JOB}" == "upgrade" ]]; then
               python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
             elif [[ "${params.JOB}" == "nightly-scale" || "${params.JOB}" == "nightly-longrun" ]]; then
