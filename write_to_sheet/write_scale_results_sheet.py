@@ -14,12 +14,13 @@ import re
 creation_time = ""
 data_source = "QE%20kube-burner"
 uuid = ""
+
 def get_benchmark_uuid():
     return_code, namespace = write_helper.run("oc get ns -l kube-burner-uuid -o name --sort-by='.metadata.creationTimestamp' --no-headers | head -1")
     print('namespace ' + str(namespace))
     return_code, namespace_str = write_helper.run("oc get " + namespace.strip() + " -o json")
     print("namespace_str " + str(namespace_str))
-    if return_code == 0:
+    if return_code == 0 and namespace != "":
         namespace_json = json.loads(namespace_str.strip())
         if "kube-burner-uuid" in namespace_json['metadata']['labels']:
             global uuid
@@ -86,7 +87,7 @@ def parse_output_for_starttime(job_output):
 
     time_sub = split_output[0].split("\n")[-1]
     time_sub = re.sub("[ ]+", " ", time_sub)
-    time_sub = time_sub.split('time"')[-1].split('"')[1]
+    time_sub = time_sub.split('time=')[-1].split(' level')[0].strip(" ")
     d = datetime.strptime(time_sub, "%Y-%m-%d %H:%M:%S")
     date_string = d.strftime("%Y-%m-%dT%H:%M:%S%Z")
     return date_string
