@@ -119,7 +119,7 @@ pipeline {
       )
       string(
           name: "COMPARISON_CONFIG",
-          defaultValue: "clusterVersion.json podLatency.json containerMetrics.json",
+          defaultValue: "clusterVersion.json podLatency.json containerMetrics.json kubelet.json etcd.json crio.json nodeMasters-max.json nodeWorkers.json",
           description: 'JSON config files of what data to output into a Google Sheet'
       )
       booleanParam(
@@ -311,6 +311,14 @@ pipeline {
                         elif [[ $WORKLOAD == *"node-density"* ]] || [[ $WORKLOAD == "pod-density-heavy" ]]; then
                             export PODS_PER_NODE=$VARIABLE
                         fi
+
+                        if [[ $WORKLOAD == "max-services" ]] || [[ $WORKLOAD == "max-namespaces" ]] || [[ $WORKLOAD == "cluster-density" ]] || [[ $WORKLOAD == "concurrent-builds" ]]; then 
+                            export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/nodeWorkers/nodeAggWorkers})
+                            ## kubelet and crio metrics aren't in aggregated metrics files
+                            export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/kubelet.json/})
+                            export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/crio.json/})
+                        fi
+
                         set -o pipefail
                         pwd
                         echo "workspace $WORKSPACE"
