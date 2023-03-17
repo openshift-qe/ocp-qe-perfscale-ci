@@ -3,47 +3,52 @@
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
-if [[ $INSTALLATION_SOURCE == "Official" ]]; then
-  echo "Using 'Official' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
-elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
-  echo "Using 'Internal' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
-elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
-  echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
-elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
-  echo "Using 'Source' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
-else
-  echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
-  echo "Don't forget to source 'netobserv.sh' again after doing so!"
-fi
-
 deploy_netobserv() {
-  echo "====> Deploying LokiStack"
-  deploy_lokistack
   echo "====> Deploying NetObserv"
-  if [[ $INSTALLATION_SOURCE == "Internal" ]]; then
+  if [[ -z $INSTALLATION_SOURCE ]]; then
+    echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+    echo "Don't forget to source 'netobserv.sh' again after doing so!"
+    exit 1
+  elif [[ $INSTALLATION_SOURCE == "Official" ]]; then
+    echo "Using 'Official' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
+    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
+  elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
+    echo "Using 'Internal' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
+    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
     deploy_unreleased_catalogsource
+  elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
+    echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
+    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
+    echo "Using 'Source' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
+    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
     deploy_main_catalogsource
+  else
+    echo "$INSTALLATION_SOURCE is not a valid value for INSTALLATION_SOURCE"
+    echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+    echo "Don't forget to source 'netobserv.sh' again after doing so!"
+    exit 1
   fi
+
+  echo "====> Creating NetObserv Project (if it does not already exist)"
+  oc new-project netobserv || true
+
   echo "====> Creating NetObserv Subscription"
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
-
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
   done
+
   echo "====> Creating Flow Collector"
   oc apply -f $FLOWCOLLECTOR
+
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
     oc get daemonset flowlogs-pipeline -n netobserv && break
@@ -52,18 +57,19 @@ deploy_netobserv() {
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
 
-  echo "====> Adding RBACs for authToken HOST"
-  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
+  echo "====> Adding RBACs for authToken FORWARD"
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-FORWARD.yaml
 }
 
 deploy_lokistack() {
+  echo "====> Deploying LokiStack"
   echo "====> Creating NetObserv Project (if it does not already exist)"
   oc new-project netobserv || true
 
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
 
-  echo "====> Creating loki-operator CatalogSource (if applicable) and Subscription"
+  echo "====> Creating qe-unreleased-testing CatalogSource (if applicable) and Loki Operator Subscription"
   if [[ $LOKI_OPERATOR == "Released" ]]; then
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
@@ -193,7 +199,7 @@ deploy_kafka() {
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
 
   echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
-  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST-kafka.yaml
+  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-FORWARD-kafka.yaml
 
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }

@@ -95,7 +95,7 @@ spec:
         type: secret
     topic: network-flows
   loki:
-    authToken: HOST
+    authToken: FORWARD
     batchSize: 10485760
     batchWait: 1s
     maxBackoff: 5s
