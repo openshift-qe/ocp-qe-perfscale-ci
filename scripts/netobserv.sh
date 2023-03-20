@@ -37,6 +37,9 @@ deploy_netobserv() {
   echo "====> Creating NetObserv Project (if it does not already exist)"
   oc new-project netobserv || true
 
+  echo "====> Checking if LokiStack prerequisite has been satisfied"
+  oc wait --timeout=30s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+
   echo "====> Creating NetObserv Subscription"
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
