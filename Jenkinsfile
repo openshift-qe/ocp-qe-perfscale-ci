@@ -386,7 +386,7 @@ pipeline {
             }
             steps {
                 script {
-                    // attempt installation of Loki Observability from selected source
+                    // attempt installation of Loki Operator from selected source
                     println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
