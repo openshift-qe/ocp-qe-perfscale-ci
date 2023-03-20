@@ -25,6 +25,3 @@ subjects:
 - kind: ServiceAccount
   name: flowlogs-pipeline
   namespace: netobserv
-- kind: ServiceAccount
-  name: netobserv-plugin
-  namespace: netobserv
