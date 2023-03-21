@@ -386,6 +386,10 @@ pipeline {
             }
             steps {
                 script {
+                    // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
+                    if (params.LOKI_OPERATOR == 'Unreleased') {
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                    }
                     // attempt installation of Loki Operator from selected source
                     println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
                     returnCode = sh(returnStatus: true, script: """

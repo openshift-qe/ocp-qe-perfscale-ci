@@ -28,7 +28,7 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
-$ export IMAGE               # only needed if deploying from 'Internal'
+$ export IMAGE               # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
 $ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export LOKI_OPERATOR       # will use 'Released' if not set otherwise
