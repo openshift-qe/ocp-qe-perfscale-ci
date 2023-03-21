@@ -18,16 +18,27 @@ Below are the metrics that are collected as part of the tests:
 * Number of log lines (flow logs) processed
 
 ## Prerequisites
-1. Create an OCP4 cluster with OVN enabled
+1. Create an OCP4 cluster
 2. Set your `kubeconfig` and login to your cluster as `kubeadmin` - you can verify that you are successfully connected to the cluster by running the simple check below:
 ```bash
 $ oc whoami
 kube:admin
 ```
 3. Depending on which functions within `netobserv.sh` you plan to use, you may also need to install the AWS CLI and properly set your credentials
+4. If you're doing an installation, make sure you set the following env variables
+```bash
+$ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
+$ export IMAGE               # only needed if deploying from 'Internal'
+$ export MAJOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
+$ export MINOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
+```
 
 ### Installing the Network Observability Operator
-There are two methods you can use to install the operator:
+There are four methods you can use to install the operator:
+
+#### Official
+
+#### Internal
 
 #### OperatorHub
 To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
@@ -38,7 +49,9 @@ GitHub Actions is used to [build and push images from the upstream operator repo
 To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_netobserv`
 
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki operator to create a LokiStack for Network Observability. `$ deploy_netobserv` function in [section](#installing-the-network-observability-operator) takes care of deploying LokiStack. To create LokiStack manually, the following steps can be performed:
+It is recommended to use Loki Operator to create a LokiStack for Network Observability. To install Loki Operator and create a LokiStack, run `$ source netobserv.sh ; deploy_lokistack`. Ensure you set the `LOKISTACK_SIZE` environmental variable to your desired value first - otherwise `1x.extra-small` will be used.
+
+To create LokiStack manually, the following steps can be performed:
 1. Create a loki-operator subscription `$ oc apply -f loki/loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
 2. Create a AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
@@ -49,7 +62,7 @@ It is recommended to use Loki operator to create a LokiStack for Network Observa
         - Requirements: `m5.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
-        - Requirments: `m5.8xlarge` machines.
+        - Requirements: `m5.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
 
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
@@ -66,8 +79,8 @@ You can update common parameters of flowcollector with the following commands:
 - **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
 - **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
 
-### Enabling Kafka
-TODO
+### Install Kafka
+To install Kafka, run `$ source netobserv.sh ; deploy_kafka`. Ensure you set `TOPIC_PARTITIONS` and `FLP_KAFKA_REPLICAS` environmental variables to your desired values first - otherwise values of `6` and `3` will be used, respectively.
 
 ### Using Dittybopper
 1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`

@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue:'oc412',
+            defaultValue:'oc413',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -85,6 +85,15 @@ pipeline {
                 <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
                 <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
                 If <b>None</b> is selected the installation will be skipped (Loki Operator installation will also be skipped)
+            '''
+        )
+        string(
+            name: 'IIB_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                If using Internal installation, you can specify here a specific internal index image to use in the CatalogSource rathar than using the most recent bundle<br/>
+                These IDs can be found in CVP emails under 'Index Image Location' section<br/>
+                e.g. <b>450360</b>
             '''
         )
         string(
@@ -201,6 +210,11 @@ pipeline {
                 Should be the number of worker nodes on your cluster (after scaling)
             '''
         )
+        booleanParam(
+            name: 'CERBERUS_CHECK',
+            defaultValue: true,
+            description: 'Check cluster health status after workload runs'
+        )
         separator(
             name: 'NOPE_CONFIG_OPTIONS',
             sectionHeader: 'NOPE Configuration Options',
@@ -298,9 +312,12 @@ pipeline {
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
                         buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
+                        buildinfo.params.each { env.setProperty(it.key, it.value) }
                         currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
                         currentBuild.description = "Flexy-install Job: <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a><br/>"
-                        buildinfo.params.each { env.setProperty(it.key, it.value) }
+                        installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
+                        env.MAJOR_VERSION = installData.INSTALLER.VER_X
+                        env.MINOR_VERSION = installData.INSTALLER.VER_Y
                         returnCode = sh(returnStatus: true, script: """
                             mkdir -p ~/.kube
                             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
@@ -341,22 +358,31 @@ pipeline {
                         println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
                         currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                         if (params.INFRA_WORKLOAD_INSTALL) {
-                            println 'Successfully installed infrastructure nodes :)'
+                            println 'Successfully installed infrastructure and workload nodes :)'
                         }
                         sh(returnStatus: true, script: '''
                             oc get nodes
-                            echo "Total Workers: `oc get nodes | grep worker | wc -l`"
+                            echo "Total Worker Nodes: `oc get nodes | grep worker | wc -l`"
+                            echo "Total Infra Nodes: `oc get nodes | grep infra | wc -l`"
+                            echo "Total Workload Nodes: `oc get nodes | grep workload | wc -l`"
                         ''')
                     }
                 }
             }
         }
-        stage('Install Netobserv Operator') {
+        stage('Install NetObserv Operator') {
             when {
                 expression { params.INSTALLATION_SOURCE != 'None' }
             }
             steps {
                 script {
+                    // if an 'Internal' installation, determine whether to use aosqe-index image or specific IIB image
+                    if (params.INSTALLATION_SOURCE == 'Internal' && params.IIB_OVERRIDE != '') {
+                        env.IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
+                    }
+                    else {
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                    }
                     // attempt installation of Network Observability from selected source
                     println "Installing Network Observability from ${params.INSTALLATION_SOURCE}..."
                     returnCode = sh(returnStatus: true, script: """
@@ -382,13 +408,16 @@ pipeline {
         stage('Configure NOO, flowcollector, and Kafka') {
             steps {
                 script {
+                    // capture NetObserv release and add it to build description
+                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
+                    currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
                     // attempt updating common parameters of NOO and flowcollector
                     println 'Updating common parameters of NOO and flowcollector...'
                     env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n ${NAMESPACE}").trim()
                     returnCode = sh(returnStatus: true, script: """
                         oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/type", "value": "EBPF"}] -n netobserv"
+                        sleep 60
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
                         oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
@@ -491,7 +520,8 @@ pipeline {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
-                            booleanParam(name: 'CERBERUS_CHECK', value: true),
+                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                            booleanParam(name: 'MUST_GATHER', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false)
                         ]
@@ -502,7 +532,7 @@ pipeline {
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
                             booleanParam(name: 'CLEANUP', value: true),
-                            booleanParam(name: 'CERBERUS_CHECK', value: true),
+                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
                             booleanParam(name: 'GEN_CSV', value: false),

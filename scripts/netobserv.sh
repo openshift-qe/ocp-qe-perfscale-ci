@@ -2,6 +2,7 @@
 
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
+
 if [[ $INSTALLATION_SOURCE == "Official" ]]; then
   echo "Using 'Official' as INSTALLATION_SOURCE"
   NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
@@ -32,15 +33,11 @@ deploy_netobserv() {
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     deploy_main_catalogsource
   fi
-  echo "====> Creating NetObserv OperatorGroup and Subscription"
-  oc apply -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
+  echo "====> Creating NetObserv Subscription"
   oc apply -f $NOO_SUBSCRIPTION
   sleep 60
-  if [[ $INSTALLATION_SOURCE == "Official" ]] || [[ $INSTALLATION_SOURCE == "Internal" ]]; then
-    oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
-  else
-    oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n netobserv
-  fi
+  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
+
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
@@ -77,13 +74,13 @@ deploy_lokistack() {
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
     oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
   fi
-  
+
   echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
     export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD"
+    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
@@ -106,7 +103,7 @@ deploy_lokistack() {
   elif [[ $LOKISTACK_SIZE == "1x.medium" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
-    echo "====> No LokiStack config was found - using 1x-exsmall"
+    echo "====> No LokiStack config was found - using 1x.extra-small"
     echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
@@ -124,9 +121,23 @@ deploy_lokistack() {
 
 deploy_unreleased_catalogsource() {
   echo "====> Creating brew-registry ImageContentSourcePolicy"
-  oc apply -f $SCRIPTS_DIR/iscp.yaml
+  oc apply -f $SCRIPTS_DIR/icsp.yaml
+
+  echo "====> Determining CatalogSource config"
+  if [[ -z $IMAGE ]]; then
+    echo "====> No image config was found - cannot create CatalogSource"
+    echo "====> To set config, set IMAGE variable to desired endpoint"
+    exit 1
+  else
+    echo "====> Using image $IMAGE for CatalogSource"
+  fi
+
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
+  TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
+  envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
+
   echo "====> Creating qe-unreleased-testing CatalogSource"
-  oc apply -f $SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
+  oc apply -f $TMP_CATALOGCONFIG
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=qe-unreleased-testing -n openshift-marketplace
 }
@@ -158,6 +169,11 @@ deploy_kafka() {
   curl -s -L "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/default.yaml" | envsubst | oc apply -n netobserv -f -
 
   echo "====> Creating network-flows KafkaTopic"
+  if [[ -z $TOPIC_PARTITIONS ]]; then
+    echo "====> No topic partitions config was found - using 6"
+    echo "====> To set config, set TOPIC_PARTITIONS variable to desired number"
+    export TOPIC_PARTITIONS=6
+  fi  
   KAFKA_TOPIC=$SCRIPTS_DIR/amq-streams/kafkaTopic.yaml
   TMP_KAFKA_TOPIC=/tmp/topic.yaml
   envsubst <$KAFKA_TOPIC >$TMP_KAFKA_TOPIC
@@ -169,6 +185,11 @@ deploy_kafka() {
   oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}]"
 
   echo "====> Update flowcollector replicas"
+  if [[ -z $FLP_KAFKA_REPLICAS ]]; then
+    echo "====> No flowcollector replicas config was found - using 3"
+    echo "====> To set config, set FLP_KAFKA_REPLICAS variable to desired number"
+    FLP_KAFKA_REPLICAS=3
+  fi
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
 
   echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
@@ -235,17 +256,19 @@ delete_flowcollector() {
 }
 
 delete_netobserv() {
-  echo "====> Deleting NetObserv Subscription, CSV, OperatorGroup, and Project"
+  echo "====> Deleting NetObserv Subscription, CSV, and Project"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
   NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
-  oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv-operatorgroup.yaml
+  if [[ ! -z $NAMESPACE ]]; then
+    oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
+  fi
   oc delete project netobserv
-  echo "====> Deleting netobserv-main-testing CatalogSource"
+  echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
+  oc delete --ignore-not-found catalogsource/qe-unreleased-testing -n openshift-marketplace
 }
 
 delete_loki_operator() {
