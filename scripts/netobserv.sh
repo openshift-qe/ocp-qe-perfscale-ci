@@ -2,6 +2,7 @@
 
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
+FLOWCOLLECTOR=$SCRIPTS_DIR/flows_v1alpha1_flowcollector.yaml
 
 deploy_netobserv() {
   echo "====> Deploying NetObserv"
@@ -12,20 +13,16 @@ deploy_netobserv() {
   elif [[ $INSTALLATION_SOURCE == "Official" ]]; then
     echo "Using 'Official' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
-    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
   elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
     echo "Using 'Internal' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
-    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
     deploy_unreleased_catalogsource
   elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
     echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
-    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     echo "Using 'Source' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
-    FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
     deploy_main_catalogsource
   else
     echo "$INSTALLATION_SOURCE is not a valid value for INSTALLATION_SOURCE"
@@ -38,7 +35,7 @@ deploy_netobserv() {
   oc new-project netobserv || true
 
   echo "====> Checking if LokiStack prerequisite has been satisfied"
-  oc wait --timeout=30s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+  oc wait --timeout=60s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
   echo "====> Creating NetObserv Subscription"
   oc apply -f $NOO_SUBSCRIPTION

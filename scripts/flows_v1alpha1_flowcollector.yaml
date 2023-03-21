@@ -103,7 +103,7 @@ spec:
     minBackoff: 1s
     staticLabels:
       app: netobserv-flowcollector
-    tenantID: netobserv
+    tenantID: network
     timeout: 10s
     tls:
       caCert:
