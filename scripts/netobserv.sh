@@ -84,9 +84,9 @@ deploy_lokistack() {
   echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
+    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD-$RAND_SUFFIX"
+    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket

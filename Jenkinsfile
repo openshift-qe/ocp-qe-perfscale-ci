@@ -390,6 +390,13 @@ pipeline {
                     if (params.LOKI_OPERATOR == 'Unreleased') {
                         env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
                     }
+                    // set USER variable to be included in AWS bucket name
+                    if (userId) {
+                        env.USER = userId
+                    }
+                    else {
+                        env.USER = 'auto'
+                    }
                     // attempt installation of Loki Operator from selected source
                     println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
                     returnCode = sh(returnStatus: true, script: """
