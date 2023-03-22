@@ -95,7 +95,7 @@ spec:
         type: secret
     topic: network-flows
   loki:
-    authToken: HOST
+    authToken: FORWARD
     batchSize: 10485760
     batchWait: 1s
     maxBackoff: 5s
@@ -103,7 +103,7 @@ spec:
     minBackoff: 1s
     staticLabels:
       app: netobserv-flowcollector
-    tenantID: netobserv
+    tenantID: network
     timeout: 10s
     tls:
       caCert:

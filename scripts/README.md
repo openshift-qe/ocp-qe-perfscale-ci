@@ -28,45 +28,48 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
-$ export IMAGE               # only needed if deploying from 'Internal'
-$ export MAJOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
-$ export MINOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
+$ export IMAGE               # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
+$ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
+$ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
+$ export LOKI_OPERATOR       # will use 'Released' if not set otherwise
+$ export LOKISTACK_SIZE      # will use '1x.extra-small' if not set otherwise
 ```
 
-### Installing the Network Observability Operator
-There are four methods you can use to install the operator:
-
-#### Official
-
-#### Internal
-
-#### OperatorHub
-To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
-
-#### Source
-GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
-
-To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_netobserv`
-
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki Operator to create a LokiStack for Network Observability. To install Loki Operator and create a LokiStack, run `$ source netobserv.sh ; deploy_lokistack`. Ensure you set the `LOKISTACK_SIZE` environmental variable to your desired value first - otherwise `1x.extra-small` will be used.
+It is recommended to use Loki Operator to create a LokiStack for Network Observability. To install Loki Operator and create a LokiStack, run `$ source netobserv.sh ; deploy_lokistack`. Ensure you set the `LOKI_OPERATOR` and `LOKISTACK_SIZE` environmental variables to your desired values first - otherwise `Released` and `1x.extra-small` will be used, respectively.
 
 To create LokiStack manually, the following steps can be performed:
-1. Create a loki-operator subscription `$ oc apply -f loki/loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
-2. Create a AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
+1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
-        - Use case: For demos, development and feature testing. Should NOT be used for  testing.
+        - Use case: For demos, development and feature testing. Should NOT be used for testing.
     * lokistack-1x-small.yaml - Small t-shirt size LokiStack
         - Requirements: `m5.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
         - Requirements: `m5.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
-
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
-4. LokiStack should be created under `openshift-operators-redhat` namespace
+4. LokiStack should be created under `netobserv` namespace
+
+### Installing the Network Observability Operator
+There are four sources from which you can install the operator which are detailed in the below sections. The installation source is determined by the value of the `INSTALLATION_SOURCE` env variable. Once this and the other nessessary variables are set, you can proceed with the installation by navigating to the `scripts/` directory and running `$ source netobserv.sh ; deploy_netobserv`
+
+#### Official
+The latest officially-released version of the downstream operator. It is hosted on the [Red Hat Catalog](https://catalog.redhat.com/software/containers/network-observability/network-observability-operator-bundle) and is the productized version of the operator available to Red Hat customers.
+
+#### Internal
+Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$IMAGE` env variable mentioned in the 'Prerequisites' section).
+
+#### OperatorHub
+The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
+
+To install from OperatorHub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
+
+#### Source
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
 
 ### Setting up FLP service and creating service-monitor
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`

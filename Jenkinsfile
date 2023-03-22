@@ -67,6 +67,35 @@ pipeline {
             description: 'You can change this to point to a branch on your fork if needed'
         )
         separator(
+            name: 'LOKI_CONFIG_OPTIONS',
+            sectionHeader: 'Loki Operator Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        choice(
+            name: 'LOKI_OPERATOR',
+            choices: ['Released', 'Unreleased', 'None'],
+            description: '''
+                You can use either the latest released or unreleased version of Loki Operator:<br/>
+                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
+                If <b>None</b> is selected the installation will be skipped
+            '''
+        )
+        choice(
+            name: 'LOKISTACK_SIZE',
+            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            description: '''
+                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
+                1x.extra-small - Nodes size < m5.4xlarge<br/>
+                1x.small - Nodes size >= m5.4xlarge<br/>
+                1x.medium - Nodes size >= m5.8xlarge<br/>
+            '''
+        )
+        separator(
             name: 'NETOBSERV_CONFIG_OPTIONS',
             sectionHeader: 'Network Observability Configuration Options',
             sectionHeaderStyle: '''
@@ -84,7 +113,7 @@ pipeline {
                 <b>Internal</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
                 <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
                 <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
-                If <b>None</b> is selected the installation will be skipped (Loki Operator installation will also be skipped)
+                If <b>None</b> is selected the installation will be skipped
             '''
         )
         string(
@@ -100,25 +129,6 @@ pipeline {
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '800Mi',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
-        )
-        choice(
-            name: 'LOKI_OPERATOR',
-            choices: ['Released', 'Unreleased'],
-            description: '''
-                You can use either the latest released or unreleased version of Loki Operator:<br/>
-                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
-                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
-            '''
-        )
-        choice(
-            name: 'LOKISTACK_SIZE',
-            choices: ['1x.extra-small', '1x.small', '1x.medium'],
-            description: '''
-                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
-                1x.extra-small - Nodes size < m5.4xlarge<br/>
-                1x.small - Nodes size >= m5.4xlarge<br/>
-                1x.medium - Nodes size >= m5.8xlarge<br/>
-            '''
         )
         booleanParam(
             name: 'USER_WORKLOADS',
@@ -365,6 +375,38 @@ pipeline {
                             echo "Total Worker Nodes: `oc get nodes | grep worker | wc -l`"
                             echo "Total Infra Nodes: `oc get nodes | grep infra | wc -l`"
                             echo "Total Workload Nodes: `oc get nodes | grep workload | wc -l`"
+                        ''')
+                    }
+                }
+            }
+        }
+        stage('Install Loki Operator') {
+            when {
+                expression { params.LOKI_OPERATOR != 'None' }
+            }
+            steps {
+                script {
+                    // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
+                    if (params.LOKI_OPERATOR == 'Unreleased') {
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                    }
+                    // attempt installation of Loki Operator from selected source
+                    println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
+                    returnCode = sh(returnStatus: true, script: """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        deploy_lokistack
+                    """)
+                    // fail pipeline if installation failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error("${params.LOKI_OPERATOR} version of Loki Operator installation failed :(")
+                    }
+                    else {
+                        println "Successfully installed ${LOKI_OPERATOR} version of Loki Operator :)"
+                        sh(returnStatus: true, script: '''
+                            oc get pods -n netobserv
+                            oc get pods -n netobserv-privileged
+                            oc get pods -n openshift-operators
+                            oc get pods -n openshift-operators-redhat
                         ''')
                     }
                 }
@@ -646,6 +688,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
                         env.COMPARISON_CONFIG = 'netobserv_touchstone.json'
+                        //env.TOLERANCY_RULES = ''
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
