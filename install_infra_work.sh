@@ -185,8 +185,15 @@ while [[ $(oc get nodes -l 'node-role.kubernetes.io/workload=' --no-headers -o j
     fi
 done
 oc get nodes
+# this infra node will not be managed by any default MCP after removing the default worker role,
+# it will leads to some configs cannot be applied to this infra node, such as, ICSP, details: https://issues.redhat.com/browse/OCPBUGS-10596
 oc label nodes --overwrite -l 'node-role.kubernetes.io/infra=' node-role.kubernetes.io/worker-
+# create a infra MCP here inherit machine configs from the worker pool.
+cat mcp-infra.yaml | oc apply -f -
+
 oc label nodes --overwrite -l 'node-role.kubernetes.io/workload=' node-role.kubernetes.io/worker-
+# add a workload MCP too
+cat mcp-workload.yaml |oc apply -f -
 
 echo "Moving ingress pods to infra nodes"
 oc patch -n openshift-ingress-operator ingresscontrollers.operator.openshift.io default -p '{"spec": {"nodePlacement": {"nodeSelector": {"matchLabels": {"node-role.kubernetes.io/infra": ""}}}}}' --type merge
