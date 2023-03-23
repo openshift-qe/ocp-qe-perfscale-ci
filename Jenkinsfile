@@ -728,7 +728,7 @@ pipeline{
                         string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),text(name: "ENV_VARS", value: ENV_VARS),
                         string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),booleanParam(name: 'SCALE', value: SCALE),
                         string(name: 'LOADED_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "loaded-upgrade"), 
-                        booleanParam(name: 'PROFILE', value: CI_PROFILE),booleanParam(name: 'PROFILE_SIZE', value: PROFILE_SCALE_SIZE),
+                        string(name: 'PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SIZE', value: PROFILE_SCALE_SIZE),
                     ], propagate: false
 
                 }
