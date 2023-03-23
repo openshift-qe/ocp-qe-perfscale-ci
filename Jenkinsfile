@@ -146,7 +146,7 @@ pipeline {
         )
         string(
             name: 'FLP_SAMPLING_RATE',
-            defaultValue: '',
+            defaultValue: '1',
             description: 'Rate at which to sample flows'
         )
         string(
