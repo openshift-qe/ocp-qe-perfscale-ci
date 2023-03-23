@@ -127,7 +127,7 @@ pipeline {
         )
         string(
             name: 'CONTROLLER_MEMORY_LIMIT',
-            defaultValue: '800Mi',
+            defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         booleanParam(
@@ -151,12 +151,12 @@ pipeline {
         )
         string(
             name: 'FLP_CPU_LIMIT',
-            defaultValue: '8000m',
+            defaultValue: '',
             description: 'Note that 1000m = 1000 millicores, i.e. 1 core'
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '8000Mi',
+            defaultValue: '',
             description: 'Note that 500Mi = 500 mebibytes, i.e. 0.5 Gi'
         )
         booleanParam(
@@ -194,7 +194,7 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['cluster-density', 'node-density', 'node-density-heavy', 'pod-density', 'pod-density-heavy', 'max-namespaces', 'max-services', 'concurrent-builds', 'router-perf', 'None'],
+            choices: ['None', 'cluster-density', 'node-density', 'node-density-heavy', 'pod-density', 'pod-density-heavy', 'max-namespaces', 'max-services', 'concurrent-builds', 'router-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
                 Note that all options excluding "router-perf" and "None" will trigger "kube-burner" job<br/>
@@ -361,12 +361,12 @@ pipeline {
                         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: params.INFRA_WORKLOAD_INSTALL),
                         booleanParam(name: 'INSTALL_DITTYBOPPER', value: false),
                     ]
+                    currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                     if (scaleJob.result != 'SUCCESS') {
                         error 'Scale job failed :('
                     }
                     else {
                         println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
-                        currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                         if (params.INFRA_WORKLOAD_INSTALL) {
                             println 'Successfully installed infrastructure and workload nodes :)'
                         }
@@ -460,24 +460,46 @@ pipeline {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
                     currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
-                    // attempt updating common parameters of NOO and flowcollector
-                    println 'Updating common parameters of NOO and flowcollector...'
-                    env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
-                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n ${NAMESPACE}").trim()
-                    returnCode = sh(returnStatus: true, script: """
-                        oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
-                        sleep 60
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
-                    """)
-                    // fail pipeline if setup failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
-                        error('Updating common parameters of NOO and flowcollector failed :(')
+
+                    // attempt updating common parameters of NOO and flowcollector where specified
+                    println 'Updating common parameters of NOO and flowcollector where specified...'
+                    if (params.CONTROLLER_MEMORY_LIMIT != '') {
+                        env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
+                        returnCode = sh(returnStatus: true, script: """
+                            oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
+                            sleep 60
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating controller memory limit failed :(')
+                        }
                     }
-                    else {
-                        println 'Successfully updated common parameters of NOO and flowcollector :)'
+                    if (params.FLP_SAMPLING_RATE != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP sampling rate failed :(')
+                        }
                     }
+                    if (params.FLP_CPU_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP CPU limit failed :(')
+                        }
+                    }
+                    if (params.FLP_MEMORY_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP memory limit failed :(')
+                        }
+                    }
+                    println 'Successfully updated common parameters of NOO and flowcollector :)'
+
+                    // attempt to enable or update Kafka if applicable
                     println "Checking if Kafka needs to be enabled or updated..."
                     if (params.ENABLE_KAFKA == true) {
                         println "Configuring Kafka in flowcollector..."
