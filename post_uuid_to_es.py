@@ -14,6 +14,7 @@ import subprocess
 import coloredlogs
 from elasticsearch import Elasticsearch
 import helper_uuid
+import update_es_uuid
 
 # disable SSL and warnings
 os.environ['PYTHONHTTPSVERIFY'] = '0'
@@ -122,7 +123,7 @@ def set_es_obj_info():
         return info
     return None
 
-def get_uuid_data(): 
+def get_scale_ci_data(): 
     info = {}
     build_parameters = get_jenkins_params()
     try: 
@@ -150,6 +151,8 @@ def get_nightly_reg_data():
     info["failed_tests"] = os.getenv('FAILED_JOBS')
     return info
 
+
+# This is a work in progress and needs to be updated with proper data
 def get_loaded_up_data(): 
     info = {}
     build_parameters = get_jenkins_params()
@@ -169,8 +172,8 @@ def get_upgrade_data():
     try: 
         for param in build_parameters:
             del param['_class']
-            if param.get('name') == 'TESTS_TO_RUN':
-                info['tests_ran'] = str(param.get('value'))
+            if param.get('name') == 'UPGRADE_VERSION':
+                info['upgrade_version'] = str(param.get('value'))
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
     info["failed_tests"] = os.getenv('FAILED_JOBS')
@@ -242,6 +245,23 @@ def main():
     sys.exit(0)
 
 
+def search_for_entry(info): 
+    search_params = {
+        "metric_name": METRIC_NAME,
+        "jenkins_job_name": info['jenkins_job_name'],
+        "jenkins_build_num": info['jenkins_build_num'],
+    }
+
+    hits = update_es_uuid.es_search(search_params)
+    
+    if len(hits) == 0: 
+        # return false, no entry was found 
+        return False
+    else: 
+        # returning true that entry was found for the job already
+        return True
+
+
 if __name__ == '__main__':
 
     # initialize argument parser
@@ -309,8 +329,24 @@ if __name__ == '__main__':
             logging.error("Error connecting to Jenkins server: ", e)
             sys.exit(1)
 
+    if search_for_entry(info): 
+        logging.info(f"Jenkins build job: {JENKINS_JOB} was already found logged in ElasticSearch")
+        sys.exit(1)
+
     if workload == "nightly-regression":
         jenkins_info = get_nightly_reg_data()
+        for k,v in jenkins_info.items(): 
+            info[k] = v
+    elif workload == "upgrade":
+        jenkins_info = get_upgrade_data()
+        for k,v in jenkins_info.items(): 
+            info[k] = v
+    elif workload == "loaded-upgrade": 
+        jenkins_info = get_loaded_up_data()
+        for k,v in jenkins_info.items(): 
+            info[k] = v
+    elif "nightly" not in workload:
+        jenkins_info = get_scale_ci_data()
         for k,v in jenkins_info.items(): 
             info[k] = v
     RESULTS['data'].append(info)
