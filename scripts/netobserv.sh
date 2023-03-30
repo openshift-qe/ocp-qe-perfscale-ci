@@ -276,7 +276,7 @@ delete_netobserv() {
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
   oc delete crd/flowcollectors.flows.netobserv.io
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
   oc delete project openshift-netobserv-operator
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
