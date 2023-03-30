@@ -39,8 +39,9 @@ deploy_netobserv() {
   echo "====> Adding RBACs for authToken FORWARD"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
 
-  echo "====> Creating NetObserv OperatorGroup and Subscription"
-  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-operatorgroup.yaml
+  echo "====> Creating openshift-netobserv-operator namespace, RoleBindings, and OperatorGroup"
+  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  echo "====> Creating NetObserv subscription"
   oc apply -f $SCRIPTS_DIR/netobserv/$NOO_SUBSCRIPTION
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-netobserv-operator
@@ -50,7 +51,7 @@ deploy_netobserv() {
   done
 
   echo "====> Creating Flow Collector"
-  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1alpha1_flowcollector.yaml
+  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta1_flowcollector.yaml
 
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
@@ -265,17 +266,18 @@ delete_flowcollector() {
   echo "====> Deleting Flow Collector"
   # note 'cluster' is the default Flow Collector name, but that may not always be the case
   oc delete --ignore-not-found flowcollector/cluster
-  oc delete crd/flowcollectors.flows.netobserv.io
 }
 
 delete_netobserv() {
-  echo "====> Deleting NetObserv Subscription, CSV, OperatorGroup, and Project"
+  echo "====> Deleting all NetObserv resources"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-internal-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-operatorgroup.yaml
+  oc delete crd/flowcollectors.flows.netobserv.io
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml.yaml
+  oc delete project openshift-netobserv-operator
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
