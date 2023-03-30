@@ -130,11 +130,6 @@ pipeline {
             defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
-        booleanParam(
-            name: 'USER_WORKLOADS',
-            defaultValue: true,
-            description: 'Check this box to setup FLP service and create service-monitor or to include user workload metrics in a NOPE run even if they are already set up'
-        )
         separator(
             name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
             sectionHeader: 'Flowcollector Configuration Options',
@@ -410,10 +405,8 @@ pipeline {
                     else {
                         println "Successfully installed ${LOKI_OPERATOR} version of Loki Operator :)"
                         sh(returnStatus: true, script: '''
-                            oc get pods -n netobserv
-                            oc get pods -n netobserv-privileged
-                            oc get pods -n openshift-operators
                             oc get pods -n openshift-operators-redhat
+                            oc get pods -n netobserv
                         ''')
                     }
                 }
@@ -445,10 +438,10 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                         sh(returnStatus: true, script: '''
+                            oc get pods -n openshift-netobserv-operator
+                            oc get pods -n openshift-operators-redhat
                             oc get pods -n netobserv
                             oc get pods -n netobserv-privileged
-                            oc get pods -n openshift-operators
-                            oc get pods -n openshift-operators-redhat
                         ''')
                     }
                 }
@@ -459,14 +452,14 @@ pipeline {
                 script {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
-                    currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
+                    env.IS_DOWNSTREAM = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A").trim()
+                    currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
 
                     // attempt updating common parameters of NOO and flowcollector where specified
                     println 'Updating common parameters of NOO and flowcollector where specified...'
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
-                        env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
                         returnCode = sh(returnStatus: true, script: """
-                            oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
+                            oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
                             sleep 60
                         """)
                         if (returnCode.toInteger() != 0) {
@@ -513,10 +506,11 @@ pipeline {
                         else {
                             println 'Successfully enabled Kafka with flowcollector :)'
                             sh(returnStatus: true, script: '''
-                                oc get pods -n netobserv
-                                oc get pods -n netobserv-privileged
-                                oc get pods -n openshift-operators
-                                oc get pods -n openshift-operators-redhat
+                            oc get pods -n openshift-netobserv-operator
+                            oc get pods -n openshift-operators-redhat
+                            oc get pods -n openshift-operators
+                            oc get pods -n netobserv
+                            oc get pods -n netobserv-privileged
                             ''')
                         }
                     }
@@ -528,7 +522,7 @@ pipeline {
         }
         stage('Setup FLP service and service-monitor') {
             when {
-                expression { params.USER_WORKLOADS == true }
+                expression { env.IS_DOWNSTREAM == 'false' }
             }
             steps {
                 script {
@@ -560,8 +554,14 @@ pipeline {
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'performance-dashboards']]
                 ])
                 script {
+                    // if an upstream installation, use custom Dittybopper template
+                    if (env.IS_DOWNSTREAM == 'false') {
+                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_upstream.json"
+                    }
+                    else {
+                        DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json"
+                    }
                     // attempt installation of dittybopper
-                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_ebpf.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
@@ -671,9 +671,6 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
-                        if (params.USER_WORKLOADS == true) {
-                            NOPE_ARGS += " --user-workloads"
-                        }
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
                         }
@@ -752,7 +749,7 @@ pipeline {
         always {
             println 'Post Section - Always'
             archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml',
+                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
