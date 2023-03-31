@@ -453,7 +453,9 @@ pipeline {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
                     env.IS_DOWNSTREAM = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A").trim()
-                    currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
+                    if (env.RELEASE != '') {
+                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
+                    }
 
                     // attempt updating common parameters of NOO and flowcollector where specified
                     println 'Updating common parameters of NOO and flowcollector where specified...'
