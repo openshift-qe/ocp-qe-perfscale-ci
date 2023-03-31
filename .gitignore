@@ -1,5 +1,5 @@
 data/
 kubeconfig
 kubeadmin-password
-scripts/netobserv-dittybopper.yaml
+scripts/netobserv/netobserv-dittybopper.yaml
 *.out

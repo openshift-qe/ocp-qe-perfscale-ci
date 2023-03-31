@@ -113,7 +113,7 @@ def run_query(query):
     # make request and return data
     data = requests.get(endpoint, headers=headers, params=params, verify=False)
     if data.status_code != 200:
-        raise Exception(f"Query to fetch Prometheus data failed: {data.reason}\nTry again using `--user-workloads` argument for Prometheus user workloads if you did not already.") 
+        raise Exception(f"Query to fetch Prometheus data failed: {data.reason}") 
     return data.json()
 
 
@@ -359,8 +359,7 @@ if __name__ == '__main__':
 
     # set standard mode flags
     standard = parser.add_argument_group("Standard Mode", "Connect to an OCP cluster and gather data via Prometheus queries")
-    standard.add_argument("--yaml-file", type=str, default='netobserv_queries_ebpf.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_queries_ebpf.yaml"')
-    standard.add_argument("--user-workloads", default=False, action='store_true', help='Flag to query userWorkload metrics. Ensure FLP service and service-monitor are enabled and some network traffic exists.')
+    standard.add_argument("--yaml-file", type=str, default='netobserv_prometheus_queries.yaml', help='YAML file from which to source Prometheus queries - defaults to "netobserv_prometheus_queries.yaml"')
     standard.add_argument("--starttime", type=str, help='Start time for range query')
     standard.add_argument("--endtime", type=str, help='End time for range query')
     standard.add_argument("--step", type=str, default='60', help='Step time for range query')
@@ -462,15 +461,16 @@ if __name__ == '__main__':
     logging.info(f"THANOS_URL: {THANOS_URL}")
 
     # get token from cluster
-    user_workloads = args.user_workloads
-    if user_workloads:
-        TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
-        if TOKEN == '':
-            logging.error("No token could be found - ensure all the Prerequisite steps in the README were followed")
-            sys.exit(1)
+    IS_DOWNSTREAM = subprocess.run(['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[0].env[-2].value}"', '-A'], capture_output=True, text=True).stdout
+    if IS_DOWNSTREAM == '"true"':
+        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
     else:
-        raw_token = subprocess.run(['oc', 'whoami', '-t'], capture_output=True, text=True).stdout
-        TOKEN = raw_token[:-1]
+        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+
+    # log token or exit if no token could be found
+    if TOKEN == '':
+        logging.error("No token could be found - ensure all the Prerequisite steps in the README were followed")
+        sys.exit(1)
     logging.info(f"TOKEN: {TOKEN}")
 
     # determine if data will be dumped locally or uploaded to Elasticsearch
