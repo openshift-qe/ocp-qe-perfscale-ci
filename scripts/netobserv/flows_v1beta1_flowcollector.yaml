@@ -20,6 +20,8 @@ spec:
           cpu: 100m
           memory: 50Mi
       sampling: 1
+      env:
+        PROFILE_PORT: "6060"
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
