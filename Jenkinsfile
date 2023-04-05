@@ -634,7 +634,7 @@ pipeline {
                             booleanParam(name: 'MUST_GATHER', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS ),
+                            string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
                             string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
                         ]
                     }
@@ -817,7 +817,7 @@ pipeline {
                 if (params.DESTROY_CLUSTER ==  true) {
                     println "Destroying Flexy cluster..."
                     build job: 'ocp-common/Flexy-destroy', parameters: [
-                        string(name: 'BUILD_NUMBER', value: "${FLEXY_BUILD_NUM}")
+                        string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER)
                     ]
                 }
             }
