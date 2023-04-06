@@ -48,7 +48,7 @@ pipeline {
 			"""
         )
         choice(
-            choices: ["cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3"],
+            choices: ["","cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3"],
             name: 'CI_TYPE', 
             description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
             Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
@@ -504,29 +504,6 @@ pipeline {
 
                     }
                 }
-            }
-        }
-    }
-    stage('Upgrade'){
-        agent { label params['JENKINS_AGENT_LABEL'] }
-        when {
-            expression { UPGRADE_VERSION != "" }
-        }
-        steps{
-            script{
-                currentBuild.description += """
-                    <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
-                """
-                upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
-                    string(name: "BUILD_NUMBER", value: BUILD_NUMBER),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
-                    string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
-                    booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),booleanParam(name: "WRITE_TO_FILE", value: false),
-                    text(name: "ENV_VARS", value: ENV_VARS)
-                ]
-                currentBuild.description += """
-                    <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
-                """
-                
             }
         }
     }
