@@ -38,7 +38,7 @@ function set_storage_class() {
 }
 
 function wait_for_prometheus_status() {
-    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h)
+    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h || oc sa get-token -n openshift-monitoring prometheus-k8s || oc sa new-token -n openshift-monitoring prometheus-k8s)
  
     URL=https://$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath="{.spec.host}")
     prom_status="not_started"
@@ -47,6 +47,10 @@ function wait_for_prometheus_status() {
         prom_status=$(curl -s -g -k -X GET -H "Authorization: Bearer $token" -H 'Accept: application/json' -H 'Content-Type: application/json' "$URL/api/v1/query?query=up" | jq -r '.status')
         sleep 5
         echo "Prometheus status not ready yet, retrying in 5s..."
+        if [ -z $prom_status ]; then
+            echo "Problem creating token. Exiting!"
+            exit
+        fi
     done 
 }
 
