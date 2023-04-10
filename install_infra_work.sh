@@ -38,8 +38,11 @@ function set_storage_class() {
 }
 
 function wait_for_prometheus_status() {
-    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h)
- 
+    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h || oc sa get-token -n openshift-monitoring prometheus-k8s || oc sa new-token -n openshift-monitoring prometheus-k8s)
+    if [ -z $token ]; then
+        echo "Problem creating token to access prometheus. Exiting!"
+        exit
+    fi
     URL=https://$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath="{.spec.host}")
     prom_status="not_started"
     sleep 30
