@@ -3,47 +3,56 @@
 SCRIPTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
-if [[ $INSTALLATION_SOURCE == "Official" ]]; then
-  echo "Using 'Official' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
-elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
-  echo "Using 'Internal' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
-elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
-  echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_released.yaml
-elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
-  echo "Using 'Source' as INSTALLATION_SOURCE"
-  NOO_SUBSCRIPTION=$SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
-  FLOWCOLLECTOR=$SCRIPTS_DIR/flowcollector/flows_v1alpha1_flowcollector_unreleased.yaml
-else
-  echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
-  echo "Don't forget to source 'netobserv.sh' again after doing so!"
-fi
-
 deploy_netobserv() {
-  echo "====> Deploying LokiStack"
-  deploy_lokistack
   echo "====> Deploying NetObserv"
-  if [[ $INSTALLATION_SOURCE == "Internal" ]]; then
+  if [[ -z $INSTALLATION_SOURCE ]]; then
+    echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+    echo "Don't forget to source 'netobserv.sh' again after doing so!"
+    exit 1
+  elif [[ $INSTALLATION_SOURCE == "Official" ]]; then
+    echo "Using 'Official' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=netobserv-official-subscription.yaml
+  elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
+    echo "Using 'Internal' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=netobserv-internal-subscription.yaml
     deploy_unreleased_catalogsource
+  elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
+    echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=netobserv-operatorhub-subscription.yaml
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
+    echo "Using 'Source' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=netobserv-source-subscription.yaml
     deploy_main_catalogsource
+  else
+    echo "'$INSTALLATION_SOURCE' is not a valid value for INSTALLATION_SOURCE"
+    echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
+    echo "Don't forget to source 'netobserv.sh' again after doing so!"
+    exit 1
   fi
-  echo "====> Creating NetObserv Subscription"
-  oc apply -f $NOO_SUBSCRIPTION
-  sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-operators
 
+  echo "====> Creating NetObserv Project (if it does not already exist)"
+  oc new-project netobserv || true
+
+  echo "====> Checking if LokiStack prerequisite has been satisfied"
+  oc wait --timeout=60s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+
+  echo "====> Adding RBACs for authToken FORWARD"
+  oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
+
+  echo "====> Creating openshift-netobserv-operator namespace, RoleBindings, and OperatorGroup"
+  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  echo "====> Creating NetObserv subscription"
+  oc apply -f $SCRIPTS_DIR/netobserv/$NOO_SUBSCRIPTION
+  sleep 60
+  oc wait --timeout=180s --for=condition=ready pod -l app=netobserv-operator -n openshift-netobserv-operator
   while :; do
     oc get crd/flowcollectors.flows.netobserv.io && break
     sleep 1
   done
+
   echo "====> Creating Flow Collector"
-  oc apply -f $FLOWCOLLECTOR
+  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta1_flowcollector.yaml
+
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
     oc get daemonset flowlogs-pipeline -n netobserv && break
@@ -51,36 +60,34 @@ deploy_netobserv() {
   done
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
-
-  echo "====> Adding RBACs for authToken HOST"
-  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST.yaml
 }
 
 deploy_lokistack() {
+  echo "====> Deploying LokiStack"
   echo "====> Creating NetObserv Project (if it does not already exist)"
   oc new-project netobserv || true
 
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
 
-  echo "====> Creating loki-operator CatalogSource (if applicable) and Subscription"
+  echo "====> Creating qe-unreleased-testing CatalogSource (if applicable) and Loki Operator Subscription"
   if [[ $LOKI_OPERATOR == "Released" ]]; then
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
+    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
     deploy_unreleased_catalogsource
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
+    oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
   else
     echo "====> No Loki Operator config was found - using Released"
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
-    oc apply -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
+    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   fi
 
   echo "====> Generate S3_BUCKETNAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$RAND_SUFFIX"
+    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-perf-loki-$WORKLOAD-$RAND_SUFFIX"
+    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
@@ -192,8 +199,8 @@ deploy_kafka() {
   fi
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
 
-  echo "====> Update clusterrolebinding Service Account from flowlogs-pipeline to flowlogs-pipeline-transformer"
-  oc apply -f $SCRIPTS_DIR/clusterRoleBinding-HOST-kafka.yaml
+  echo "====> Update ClusterRoleBinding ServiceAccount from flowlogs-pipeline to flowlogs-pipeline-transformer"
+  oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD-kafka.yaml
 
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
@@ -201,7 +208,7 @@ deploy_kafka() {
 populate_netobserv_metrics() {
   echo "====> Creating cluster-monitoring-config ConfigMap"
   oc apply -f $SCRIPTS_DIR/cluster-monitoring-config.yaml
-  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv)
+  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
     echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
     oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
@@ -212,13 +219,19 @@ populate_netobserv_metrics() {
 }
 
 setup_dittybopper_template() {
-  echo "====> Setting up dittybopper template"
-  sleep 30
-  oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
-  oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
-  export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
-  export THANOS_URL=https://$(oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host')
-  envsubst "$PROMETHEUS_USER_WORKLOAD_BEARER $THANOS_URL" <$SCRIPTS_DIR/netobserv-dittybopper.yaml.template >$SCRIPTS_DIR/netobserv-dittybopper.yaml
+  echo "====> Checking NetObserv installation..."
+  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A)
+  if [[ $IS_DOWNSTREAM == "true" ]]; then
+    echo "===> Downstream installation was detected - no custom Dittybopper template is needed"
+  else
+    echo "====> Setting up dittybopper template"
+    sleep 30
+    oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
+    oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
+    export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
+    export THANOS_URL=https://$(oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host')
+    envsubst "$PROMETHEUS_USER_WORKLOAD_BEARER $THANOS_URL" <$SCRIPTS_DIR/netobserv/netobserv-dittybopper.yaml.template >$SCRIPTS_DIR/netobserv/netobserv-dittybopper.yaml
+  fi
 }
 
 delete_s3() {
@@ -239,7 +252,7 @@ delete_lokistack() {
 delete_kafka() {
   echo "====> Deleting Kafka (if applicable)"
   echo "====> Getting Deployment Model"
-  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv)
+  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
     oc delete kafka/kafka-cluster -n netobserv
@@ -256,15 +269,14 @@ delete_flowcollector() {
 }
 
 delete_netobserv() {
-  echo "====> Deleting NetObserv Subscription, CSV, and Project"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-official-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-internal-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-operatorhub-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/netobserv-source-subscription.yaml
-  NAMESPACE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A)
-  if [[ ! -z $NAMESPACE ]]; then
-    oc delete csv -l operators.coreos.com/netobserv-operator.$NAMESPACE -n $NAMESPACE
-  fi
+  echo "====> Deleting all NetObserv resources"
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-official-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-internal-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-operatorhub-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
+  oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
+  oc delete crd/flowcollectors.flows.netobserv.io
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
@@ -273,8 +285,8 @@ delete_netobserv() {
 
 delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-released-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/subscriptions/loki-unreleased-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
   oc delete csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 

@@ -67,6 +67,35 @@ pipeline {
             description: 'You can change this to point to a branch on your fork if needed'
         )
         separator(
+            name: 'LOKI_CONFIG_OPTIONS',
+            sectionHeader: 'Loki Operator Configuration Options',
+            sectionHeaderStyle: '''
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Orienta', sans-serif;
+            '''
+        )
+        choice(
+            name: 'LOKI_OPERATOR',
+            choices: ['Released', 'Unreleased', 'None'],
+            description: '''
+                You can use either the latest released or unreleased version of Loki Operator:<br/>
+                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
+                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
+                If <b>None</b> is selected the installation will be skipped
+            '''
+        )
+        choice(
+            name: 'LOKISTACK_SIZE',
+            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            description: '''
+                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
+                1x.extra-small - Nodes size < m5.4xlarge<br/>
+                1x.small - Nodes size >= m5.4xlarge<br/>
+                1x.medium - Nodes size >= m5.8xlarge<br/>
+            '''
+        )
+        separator(
             name: 'NETOBSERV_CONFIG_OPTIONS',
             sectionHeader: 'Network Observability Configuration Options',
             sectionHeaderStyle: '''
@@ -84,7 +113,7 @@ pipeline {
                 <b>Internal</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
                 <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
                 <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
-                If <b>None</b> is selected the installation will be skipped (Loki Operator installation will also be skipped)
+                If <b>None</b> is selected the installation will be skipped
             '''
         )
         string(
@@ -98,32 +127,8 @@ pipeline {
         )
         string(
             name: 'CONTROLLER_MEMORY_LIMIT',
-            defaultValue: '800Mi',
+            defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
-        )
-        choice(
-            name: 'LOKI_OPERATOR',
-            choices: ['Released', 'Unreleased'],
-            description: '''
-                You can use either the latest released or unreleased version of Loki Operator:<br/>
-                <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
-                <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
-            '''
-        )
-        choice(
-            name: 'LOKISTACK_SIZE',
-            choices: ['1x.extra-small', '1x.small', '1x.medium'],
-            description: '''
-                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
-                1x.extra-small - Nodes size < m5.4xlarge<br/>
-                1x.small - Nodes size >= m5.4xlarge<br/>
-                1x.medium - Nodes size >= m5.8xlarge<br/>
-            '''
-        )
-        booleanParam(
-            name: 'USER_WORKLOADS',
-            defaultValue: true,
-            description: 'Check this box to setup FLP service and create service-monitor or to include user workload metrics in a NOPE run even if they are already set up'
         )
         separator(
             name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
@@ -141,12 +146,12 @@ pipeline {
         )
         string(
             name: 'FLP_CPU_LIMIT',
-            defaultValue: '8000m',
+            defaultValue: '',
             description: 'Note that 1000m = 1000 millicores, i.e. 1 core'
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '8000Mi',
+            defaultValue: '',
             description: 'Note that 500Mi = 500 mebibytes, i.e. 0.5 Gi'
         )
         booleanParam(
@@ -184,7 +189,7 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['cluster-density', 'node-density', 'node-density-heavy', 'pod-density', 'pod-density-heavy', 'max-namespaces', 'max-services', 'concurrent-builds', 'router-perf', 'None'],
+            choices: ['None', 'cluster-density', 'node-density', 'node-density-heavy', 'pod-density', 'pod-density-heavy', 'max-namespaces', 'max-services', 'concurrent-builds', 'router-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
                 Note that all options excluding "router-perf" and "None" will trigger "kube-burner" job<br/>
@@ -351,12 +356,12 @@ pipeline {
                         booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: params.INFRA_WORKLOAD_INSTALL),
                         booleanParam(name: 'INSTALL_DITTYBOPPER', value: false),
                     ]
+                    currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                     if (scaleJob.result != 'SUCCESS') {
                         error 'Scale job failed :('
                     }
                     else {
                         println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
-                        currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                         if (params.INFRA_WORKLOAD_INSTALL) {
                             println 'Successfully installed infrastructure and workload nodes :)'
                         }
@@ -365,6 +370,43 @@ pipeline {
                             echo "Total Worker Nodes: `oc get nodes | grep worker | wc -l`"
                             echo "Total Infra Nodes: `oc get nodes | grep infra | wc -l`"
                             echo "Total Workload Nodes: `oc get nodes | grep workload | wc -l`"
+                        ''')
+                    }
+                }
+            }
+        }
+        stage('Install Loki Operator') {
+            when {
+                expression { params.LOKI_OPERATOR != 'None' }
+            }
+            steps {
+                script {
+                    // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
+                    if (params.LOKI_OPERATOR == 'Unreleased') {
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                    }
+                    // set USER variable to be included in AWS bucket name
+                    if (userId) {
+                        env.USER = userId
+                    }
+                    else {
+                        env.USER = 'auto'
+                    }
+                    // attempt installation of Loki Operator from selected source
+                    println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
+                    returnCode = sh(returnStatus: true, script: """
+                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                        deploy_lokistack
+                    """)
+                    // fail pipeline if installation failed, continue otherwise
+                    if (returnCode.toInteger() != 0) {
+                        error("${params.LOKI_OPERATOR} version of Loki Operator installation failed :(")
+                    }
+                    else {
+                        println "Successfully installed ${LOKI_OPERATOR} version of Loki Operator :)"
+                        sh(returnStatus: true, script: '''
+                            oc get pods -n openshift-operators-redhat
+                            oc get pods -n netobserv
                         ''')
                     }
                 }
@@ -396,10 +438,10 @@ pipeline {
                     else {
                         println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
                         sh(returnStatus: true, script: '''
+                            oc get pods -n openshift-netobserv-operator
+                            oc get pods -n openshift-operators-redhat
                             oc get pods -n netobserv
                             oc get pods -n netobserv-privileged
-                            oc get pods -n openshift-operators
-                            oc get pods -n openshift-operators-redhat
                         ''')
                     }
                 }
@@ -410,25 +452,49 @@ pipeline {
                 script {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
-                    currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
-                    // attempt updating common parameters of NOO and flowcollector
-                    println 'Updating common parameters of NOO and flowcollector...'
-                    env.NAMESPACE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].metadata.namespace}' -A").trim()
-                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -n ${NAMESPACE}").trim()
-                    returnCode = sh(returnStatus: true, script: """
-                        oc -n $NAMESPACE patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
-                        sleep 60
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
-                        oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
-                    """)
-                    // fail pipeline if setup failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
-                        error('Updating common parameters of NOO and flowcollector failed :(')
+                    env.IS_DOWNSTREAM = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A").trim()
+                    if (env.RELEASE != '') {
+                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
                     }
-                    else {
-                        println 'Successfully updated common parameters of NOO and flowcollector :)'
+
+                    // attempt updating common parameters of NOO and flowcollector where specified
+                    println 'Updating common parameters of NOO and flowcollector where specified...'
+                    if (params.CONTROLLER_MEMORY_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
+                            sleep 60
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating controller memory limit failed :(')
+                        }
                     }
+                    if (params.FLP_SAMPLING_RATE != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP sampling rate failed :(')
+                        }
+                    }
+                    if (params.FLP_CPU_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP CPU limit failed :(')
+                        }
+                    }
+                    if (params.FLP_MEMORY_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating FLP memory limit failed :(')
+                        }
+                    }
+                    println 'Successfully updated common parameters of NOO and flowcollector :)'
+
+                    // attempt to enable or update Kafka if applicable
                     println "Checking if Kafka needs to be enabled or updated..."
                     if (params.ENABLE_KAFKA == true) {
                         println "Configuring Kafka in flowcollector..."
@@ -442,10 +508,11 @@ pipeline {
                         else {
                             println 'Successfully enabled Kafka with flowcollector :)'
                             sh(returnStatus: true, script: '''
-                                oc get pods -n netobserv
-                                oc get pods -n netobserv-privileged
-                                oc get pods -n openshift-operators
-                                oc get pods -n openshift-operators-redhat
+                            oc get pods -n openshift-netobserv-operator
+                            oc get pods -n openshift-operators-redhat
+                            oc get pods -n openshift-operators
+                            oc get pods -n netobserv
+                            oc get pods -n netobserv-privileged
                             ''')
                         }
                     }
@@ -457,7 +524,7 @@ pipeline {
         }
         stage('Setup FLP service and service-monitor') {
             when {
-                expression { params.USER_WORKLOADS == true }
+                expression { env.IS_DOWNSTREAM == 'false' }
             }
             steps {
                 script {
@@ -489,8 +556,14 @@ pipeline {
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'performance-dashboards']]
                 ])
                 script {
+                    // if an upstream installation, use custom Dittybopper template
+                    if (env.IS_DOWNSTREAM == 'false') {
+                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_upstream.json"
+                    }
+                    else {
+                        DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json"
+                    }
                     // attempt installation of dittybopper
-                    DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_ebpf.json"
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
@@ -600,9 +673,6 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
-                        if (params.USER_WORKLOADS == true) {
-                            NOPE_ARGS += " --user-workloads"
-                        }
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
                         }
@@ -645,7 +715,10 @@ pipeline {
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
-                        env.COMPARISON_CONFIG = 'netobserv_touchstone.json'
+                        // set env variables needed for touchstone
+                        env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
+                        env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
+                        //env.TOLERANCY_RULES = ''
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
@@ -678,7 +751,7 @@ pipeline {
         always {
             println 'Post Section - Always'
             archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml',
+                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml',
                 allowEmptyArchive: true,
                 fingerprint: true
             )

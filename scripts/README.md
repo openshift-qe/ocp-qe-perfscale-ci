@@ -2,20 +2,9 @@
 The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance.
 
 Multiple workloads are run to generate traffic for the cluster:
-1. uperf - pod-to-pod traffic generation.
-2. node-density-heavy (using kube-burner)
-3. router-perf
-
-## Metrics Collection
-Below are the metrics that are collected as part of the tests:
-* CPU usage of pods in `netobserv` namespace
-* Memory usage of pods in `netobserv` namespace
-* Disk usage for LokiStack PVCs
-* Number of NetFlows processed
-* Flow Processing time summary for 0.9 quantile
-* Total sum of number of bytes 
-* Summary of packet size within Flows
-* Number of log lines (flow logs) processed
+1. node-density-heavy
+2. router-perf
+3. cluster-density
 
 ## Prerequisites
 1. Create an OCP4 cluster
@@ -28,74 +17,81 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
-$ export IMAGE               # only needed if deploying from 'Internal'
-$ export MAJOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
-$ export MINOR_VERSION       # only need if deploying 'Internal' and using aosqe-index image
+$ export IMAGE               # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
+$ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
+$ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
+$ export LOKI_OPERATOR       # will use 'Released' if not set otherwise
+$ export LOKISTACK_SIZE      # will use '1x.extra-small' if not set otherwise
 ```
 
-### Installing the Network Observability Operator
-There are four methods you can use to install the operator:
-
-#### Official
-
-#### Internal
-
-#### OperatorHub
-To install from Operator Hub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
-
-#### Source
-GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
-
-To install from Source, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=Source; source netobserv.sh ; deploy_netobserv`
-
 ### Creating LokiStack using Loki Operator
-It is recommended to use Loki Operator to create a LokiStack for Network Observability. To install Loki Operator and create a LokiStack, run `$ source netobserv.sh ; deploy_lokistack`. Ensure you set the `LOKISTACK_SIZE` environmental variable to your desired value first - otherwise `1x.extra-small` will be used.
+It is recommended to use Loki Operator to create a LokiStack for Network Observability. To install Loki Operator and create a LokiStack, run `$ source netobserv.sh ; deploy_lokistack`. Ensure you set the `LOKI_OPERATOR` and `LOKISTACK_SIZE` environmental variables to your desired values first - otherwise `Released` and `1x.extra-small` will be used, respectively.
 
 To create LokiStack manually, the following steps can be performed:
-1. Create a loki-operator subscription `$ oc apply -f loki/loki-subscription.yaml` to install loki-operator. Loki operator pod should be running in `openshift-operators-redhat` namespace
-2. Create a AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
+1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
-        - Use case: For demos, development and feature testing. Should NOT be used for  testing.
+        - Use case: For demos, development and feature testing. Should NOT be used for testing.
     * lokistack-1x-small.yaml - Small t-shirt size LokiStack
         - Requirements: `m5.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
         - Requirements: `m5.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
-
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
-4. LokiStack should be created under `openshift-operators-redhat` namespace
+4. LokiStack should be created under `netobserv` namespace
+
+### Installing the Network Observability Operator
+There are four sources from which you can install the operator which are detailed in the below sections. The installation source is determined by the value of the `INSTALLATION_SOURCE` env variable. Once this and the other nessessary variables are set, you can proceed with the installation by navigating to the `scripts/` directory and running `$ source netobserv.sh ; deploy_netobserv`
+
+#### Official
+The latest officially-released version of the downstream operator. It is hosted on the [Red Hat Catalog](https://catalog.redhat.com/software/containers/network-observability/network-observability-operator-bundle) and is the productized version of the operator available to Red Hat customers.
+
+#### Internal
+Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$IMAGE` env variable mentioned in the 'Prerequisites' section).
+
+#### OperatorHub
+The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
+
+To install from OperatorHub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
+
+#### Source
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
 
 ### Setting up FLP service and creating service-monitor
+Note this is only nessessary if you're running an upstream version of the operator.
+
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
 - **Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
-- **CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
+- **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
-- **Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
-- **Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
+- **FLP Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
+- **FLP Replicas:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/replicas", "value": <value>}]"`
 
 ### Install Kafka
 To install Kafka, run `$ source netobserv.sh ; deploy_kafka`. Ensure you set `TOPIC_PARTITIONS` and `FLP_KAFKA_REPLICAS` environmental variables to your desired values first - otherwise values of `6` and `3` will be used, respectively.
 
-### Using Dittybopper
-1. Navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
-2. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_<collector agent>.json`
-4. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
+### Dittybopper
+Dittybopper allows for live viewing of the following metrics:
+* Flows processed per minute
+* Flows processed/written/dropped per second
+* Node traffic received per second
+* Ingress Bytes processed per second
+* CPU usage of eBPF, FLP, Kafka, Loki, and the NetObserv Controller and Console Plugin
+* Memory (RSS) usage of eBPF, FLP, Kafka, Loki, and the NetObserv Controller and Console Plugin
+* Kafka and Loki PVC usage
+* Loki Data Rate
 
-### Example simulating pod2pod network traffic
-1. Install the [Benchmark Operator](https://github.com/cloud-bulldozer/benchmark-operator) via [Ripsaw CLI](https://github.com/cloud-bulldozer/benchmark-operator/tree/master/cli) by cloning the operator, installing Ripsaw CLI, and running `$ ripsaw operator install`
-2. Once the operator is installed, run the commands below to begin simulating network traffic:
-```bash
-$ source scripts/uperf_env.sh <duration in seconds>
-$ tmpfile=$(mktemp); envsubst < scripts/uperf_pod2pod.yaml > $tmpfile && echo $tmpfile
-$ ripsaw benchmark run -f $tmpfile -t 7200
-```
+To install Dittybopper, follow the steps below:
+1. If you're using the upstream operator, navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
+2. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
+3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_upstream.json` if you're using the upstream operator, otherwise run `$ ./deploy.sh -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_downstream.json` if you're using the downstream operator
+4. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
 
 ## Testing with Scale CI
 You can use the OCP QE PerfScale team's [scale-ci Jenkins jobs](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/) to run performance and scale tests against NO-enabled clusters
@@ -110,7 +106,7 @@ MAX_WAIT_TIMEOUT=10m
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
 The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for sharing.
 
-Queries are sourced from the `netobserv_queries_ebpf.yaml` file within the `scripts/queries/` directory by default, but this can be overriden with the `--yaml-file` flag to run other queries from within other files.
+Queries are sourced from the `netobserv_prometheus_queries.yaml` file within the `scripts/queries/` directory by default - check out that file to see what data the NOPE tool is collecting. Note this can be overriden with the `--yaml-file` flag to run other queries from within other files.
 
 Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
 
@@ -134,4 +130,4 @@ Note that if you are running the NOPE tool in Upload mode by passing the `--uplo
 Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
 ## Fetching metrics using Touchstone 
-NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have touchstone setup, you can run it with any given UUID using the `netobserv_touchstone.json` file in the [e2e-benchmarking](https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/utils/touchstone-configs) repo.
+NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_config.json` file in the `queries/` directory under `scripts/`

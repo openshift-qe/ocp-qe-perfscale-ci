@@ -23,8 +23,5 @@ roleRef:
   name: lokistack-netobserv-tenant-logs
 subjects:
 - kind: ServiceAccount
-  name: flowlogs-pipeline-transformer
-  namespace: netobserv
-- kind: ServiceAccount
-  name: netobserv-plugin
+  name: flowlogs-pipeline
   namespace: netobserv
