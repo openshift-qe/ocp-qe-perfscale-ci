@@ -5,6 +5,7 @@ import get_es_data
 
 def run(command):
     try:
+        print("command " + str(command))
         output = subprocess.check_output(command, shell=True, universal_newlines=True)
     except subprocess.CalledProcessError as exc:
         print("Status : ", command, exc.output)
