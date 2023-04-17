@@ -68,7 +68,7 @@ pipeline {
   stages {
     stage('Run Workload and Mr. Sandman') {
         when {
-            expression { (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.WORKLOAD)) }
+            expression { (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) }
         }
         agent { label params['JENKINS_AGENT_LABEL'] }
         steps {
@@ -140,54 +140,57 @@ pipeline {
             target: 'flexy-artifacts'
         )
         script {
+
+          if (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) {
+            copyArtifacts(
+                    fingerprintArtifacts: true, 
+                    projectName: JENKINS_JOB_PATH,
+                    selector: specific(JENKINS_JOB_NUMBER),
+                    target: 'workload-artifacts'
+                )
+          }
+        }
+        script {
           buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
           currentBuild.description += "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        copyArtifacts(
-            fingerprintArtifacts: true, 
-            projectName: JENKINS_JOB_PATH,
-            selector: specific(JENKINS_JOB_NUMBER),
-            target: 'workload-artifacts'
-        )
-        ansiColor('xterm') {
+        script {
           withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
             file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
-            sh label: '', script: """
-            # Get ENV VARS Supplied by the user to this job and store in .env_override
-            echo "$ENV_VARS" > .env_override
-            cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
-            export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
-            # Export those env vars so they could be used by CI Job
-            set -a && source .env_override && set +a
-            mkdir -p ~/.kube
-            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-            ls
-            cd write_to_sheet
-            python3 --version
-            python3 -m venv venv3
-            source venv3/bin/activate
-            pip --version
-            pip install --upgrade pip
-            pip install -U gspread oauth2client datetime pytz pyyaml
-            printf "${params.ENV_VARS}"  >> env_vars.out
-            
-            export PYTHONIOENCODING=utf8
-            if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
-                python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
-            elif [[ "${params.JOB}" == "upgrade" ]]; then
-              python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
-            elif [[ "${params.JOB}" == "nightly-scale" || "${params.JOB}" == "nightly-longrun" ]]; then
-                python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}', '${params.PROFILE}','${params.PROFILE_SIZE}', '${params.USER}')"
-            else
-                echo "else job"
-                ls $WORKSPACE/workload-artifacts/workloads/
-                ls $WORKSPACE/workload-artifacts/workloads/**/
-                python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.JENKINS_JOB_NUMBER}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', '$WORKSPACE/workload-artifacts/workloads/**/*.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
-            fi
-            rm -rf ~/.kube
-            """
+              sh label: '', script: """
+                # Get ENV VARS Supplied by the user to this job and store in .env_override
+                echo "$ENV_VARS" > .env_override
+                cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
+                export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
+                # Export those env vars so they could be used by CI Job
+                set -a && source .env_override && set +a
+                mkdir -p ~/.kube
+                cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                ls
+                cd write_to_sheet
+                python3 --version
+                python3 -m venv venv3
+                source venv3/bin/activate
+                pip --version
+                pip install --upgrade pip
+                pip install -U gspread oauth2client datetime pytz pyyaml
+                printf "${params.ENV_VARS}"  >> env_vars.out
+              
+                export PYTHONIOENCODING=utf8
+                if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
+                    python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
+                elif [[ "${params.JOB}" == "upgrade" ]]; then
+                  python -c "import write_to_sheet; write_to_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.UPGRADE_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', '${params.ENABLE_FORCE}', 'env_vars.out', '${params.USER}')"
+                elif [[ "${params.JOB}" == "nightly-scale" || "${params.JOB}" == "nightly-longrun" ]]; then
+                    python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}', '${params.PROFILE}','${params.PROFILE_SIZE}', '${params.USER}')"
+                else
+                    echo "else job"
+                    python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.JENKINS_JOB_NUMBER}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', '$WORKSPACE/workload-artifacts/workloads/**/*.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
+                fi
+                rm -rf ~/.kube
+              """
           }
         }
       }
