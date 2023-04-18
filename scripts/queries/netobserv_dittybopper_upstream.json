@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1680038288981,
+  "iteration": 1680543931651,
   "links": [],
   "panels": [
     {
@@ -285,6 +285,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -384,6 +386,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -497,6 +501,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -728,6 +734,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1275,6 +1283,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1375,6 +1385,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1589,6 +1601,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1688,6 +1702,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -1943,5 +1959,5 @@
   "timezone": "",
   "title": "NetObserv Upstream Metrics",
   "uid": "hmI9De_nzas",
-  "version": 2
+  "version": 1
 }

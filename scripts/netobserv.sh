@@ -59,7 +59,7 @@ deploy_netobserv() {
     sleep 1
   done
   sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
+  oc wait --timeout=600s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
 }
 
 deploy_lokistack() {
@@ -235,13 +235,15 @@ setup_dittybopper_template() {
 }
 
 delete_s3() {
-  echo "====> Deleting AWS S3 Bucket"
   echo "====> Getting S3 Bucket Name"
   S3_BUCKET_NAME=$(/bin/bash -c 'oc extract cm/lokistack-config -n netobserv --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n')
   echo "====> Got $S3_BUCKET_NAME"
-  aws s3 rm s3://$S3_BUCKET_NAME --recursive
-  sleep 30
-  aws s3 rb s3://$S3_BUCKET_NAME --force
+  echo "====> Deleting AWS S3 Bucket"
+  while :; do
+    aws s3 rb s3://$S3_BUCKET_NAME --force && break
+    sleep 1
+  done
+  echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
 }
 
 delete_lokistack() {

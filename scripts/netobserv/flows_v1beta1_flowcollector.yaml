@@ -20,6 +20,9 @@ spec:
           cpu: 100m
           memory: 50Mi
       sampling: 1
+      debug:
+        env:
+          PORT_PROFILE: "6060"
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
@@ -127,7 +130,7 @@ spec:
     kafkaConsumerBatchSize: 10485760
     kafkaConsumerQueueCapacity: 1000
     kafkaConsumerReplicas: 3
-    logLevel: debug
+    logLevel: info
     metrics:
       ignoreTags:
       - egress

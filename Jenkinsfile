@@ -151,8 +151,13 @@ pipeline {
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '',
-            description: 'Note that 500Mi = 500 mebibytes, i.e. 0.5 Gi'
+            defaultValue: '800Mi',
+            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
+        )
+        string(
+            name: 'EBPF_MEMORY_LIMIT',
+            defaultValue: '800Mi',
+            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
@@ -211,8 +216,24 @@ pipeline {
             name: 'NODE_COUNT',
             defaultValue: '3',
             description: '''
-                Only for node-density and node-density-heavy<br/>
+                Only for <b>node-density</b> and <b>node-density-heavy</b><br/>
                 Should be the number of worker nodes on your cluster (after scaling)
+            '''
+        )
+        string(
+            name: 'LARGE_SCALE_CLIENTS',
+            defaultValue: '1 80',
+            description: '''
+                Only for <b>router-perf</b><br/>
+                Threads/route to use in the large scale scenario
+            '''
+        )
+        string(
+            name: 'LARGE_SCALE_CLIENTS_MIX',
+            defaultValue: '1 25',
+            description: '''
+                Only for <b>router-perf</b><br/>
+                Threads/route to use in the large scale scenario with mix termination
             '''
         )
         booleanParam(
@@ -272,7 +293,15 @@ pipeline {
             defaultValue: false,
             description: '''
                 Check this box to completely remove NetObserv and all related resources at the end of the pipeline run<br/>
-                This includes the AWS S3 Bucket, Kafka (if applicable), LokiStack, and flowcollector
+                This includes the AWS S3 bucket, Kafka (if applicable), LokiStack, and flowcollector
+            '''
+        )
+        booleanParam(
+            name: 'DESTROY_CLUSTER',
+            defaultValue: false,
+            description: '''
+                Check this box to destroy the cluster at the end of the pipeline run<br/>
+                Ensure external resources such as AWS S3 buckets are destroyed as well
             '''
         )
     }
@@ -492,6 +521,14 @@ pipeline {
                             error('Updating FLP memory limit failed :(')
                         }
                     }
+                    if (params.EBPF_MEMORY_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "${params.EBPF_MEMORY_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating eBPF memory limit failed :(')
+                        }
+                    }
                     println 'Successfully updated common parameters of NOO and flowcollector :)'
 
                     // attempt to enable or update Kafka if applicable
@@ -508,11 +545,11 @@ pipeline {
                         else {
                             println 'Successfully enabled Kafka with flowcollector :)'
                             sh(returnStatus: true, script: '''
-                            oc get pods -n openshift-netobserv-operator
-                            oc get pods -n openshift-operators-redhat
-                            oc get pods -n openshift-operators
-                            oc get pods -n netobserv
-                            oc get pods -n netobserv-privileged
+                                oc get pods -n openshift-netobserv-operator
+                                oc get pods -n openshift-operators-redhat
+                                oc get pods -n openshift-operators
+                                oc get pods -n netobserv
+                                oc get pods -n netobserv-privileged
                             ''')
                         }
                     }
@@ -596,7 +633,9 @@ pipeline {
                             booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
                             booleanParam(name: 'MUST_GATHER', value: true),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false)
+                            booleanParam(name: 'GEN_CSV', value: false),
+                            string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
+                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
                         ]
                     }
                     else {
@@ -715,7 +754,7 @@ pipeline {
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
-                        // set env variables needed for touchstone
+                        // set env variables needed for touchstone (note UUID is needed but already set above)
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
                         //env.TOLERANCY_RULES = ''
@@ -774,6 +813,12 @@ pipeline {
                     else {
                         println 'Operator deleted successfully :)'
                     }
+                }
+                if (params.DESTROY_CLUSTER ==  true) {
+                    println "Destroying Flexy cluster..."
+                    build job: 'ocp-common/Flexy-destroy', parameters: [
+                        string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER)
+                    ]
                 }
             }
         }
