@@ -67,7 +67,8 @@ Navigate to the `scripts/` directory of this repository and run `$ populate_neto
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
-- **Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **FLP Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
