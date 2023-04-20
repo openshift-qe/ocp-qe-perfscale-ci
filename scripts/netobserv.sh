@@ -34,7 +34,7 @@ deploy_netobserv() {
   oc new-project netobserv || true
 
   echo "====> Checking if LokiStack prerequisite has been satisfied"
-  oc wait --timeout=60s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+  oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
   echo "====> Adding RBACs for authToken FORWARD"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
