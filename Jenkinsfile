@@ -317,6 +317,8 @@ pipeline {
                             ## kubelet and crio metrics aren't in aggregated metrics files
                             export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/kubelet.json/})
                             export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/crio.json/})
+                            export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/containerMetrics.json/})
+                            
                         fi
 
                         set -o pipefail
