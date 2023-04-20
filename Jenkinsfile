@@ -140,9 +140,14 @@ pipeline {
             '''
         )
         string(
-            name: 'FLP_SAMPLING_RATE',
+            name: 'EBPF_SAMPLING_RATE',
             defaultValue: '1',
             description: 'Rate at which to sample flows'
+        )
+        string(
+            name: 'EBPF_MEMORY_LIMIT',
+            defaultValue: '800Mi',
+            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         string(
             name: 'FLP_CPU_LIMIT',
@@ -151,11 +156,6 @@ pipeline {
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '800Mi',
-            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
-        )
-        string(
-            name: 'EBPF_MEMORY_LIMIT',
             defaultValue: '800Mi',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
@@ -497,12 +497,20 @@ pipeline {
                             error('Updating controller memory limit failed :(')
                         }
                     }
-                    if (params.FLP_SAMPLING_RATE != '') {
+                    if (params.EBPF_SAMPLING_RATE != '') {
                         returnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.FLP_SAMPLING_RATE}}] -n netobserv"
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.EBPF_SAMPLING_RATE}}] -n netobserv"
                         """)
                         if (returnCode.toInteger() != 0) {
-                            error('Updating FLP sampling rate failed :(')
+                            error('Updating eBPF sampling rate failed :(')
+                        }
+                    }
+                    if (params.EBPF_MEMORY_LIMIT != '') {
+                        returnCode = sh(returnStatus: true, script: """
+                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "${params.EBPF_MEMORY_LIMIT}"}] -n netobserv"
+                        """)
+                        if (returnCode.toInteger() != 0) {
+                            error('Updating eBPF memory limit failed :(')
                         }
                     }
                     if (params.FLP_CPU_LIMIT != '') {
@@ -519,14 +527,6 @@ pipeline {
                         """)
                         if (returnCode.toInteger() != 0) {
                             error('Updating FLP memory limit failed :(')
-                        }
-                    }
-                    if (params.EBPF_MEMORY_LIMIT != '') {
-                        returnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "${params.EBPF_MEMORY_LIMIT}"}] -n netobserv"
-                        """)
-                        if (returnCode.toInteger() != 0) {
-                            error('Updating eBPF memory limit failed :(')
                         }
                     }
                     println 'Successfully updated common parameters of NOO and flowcollector :)'
