@@ -12,19 +12,59 @@ pipeline {
   agent none
 
   parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        choice(choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf"], name: 'WORKLOAD', description: '''Type of kube-burner job to run''')
-        string(name: "UUID", defaultValue: "", description: 'Json files of what data to output into a google sheet')
         string(
-          name: "COMPARISON_CONFIG",
-          defaultValue: "podLatency.json",
+          name: 'BUILD_NUMBER', 
+          defaultValue: '', 
+          description: 'Build number of job that has installed the cluster.'
+        )
+        choice(
+          choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf"],
+          name: 'WORKLOAD', 
+          description: '''Type of kube-burner job to run'''
+        )
+        string(
+          name: "UUID", 
+          defaultValue: "", 
+          description: 'UUID of current run to do comparison on'
+        )
+        string(
+          name: "BASELINE_UUID", 
+          defaultValue: "", 
+          description: 'Set a baseline uuid to use for comparison, if blank will find baseline uuid for profile, workload and worker node count to then compare'
+        )
+        booleanParam(
+            name: 'COMPARE_PREVIOUS', 
+            defaultValue: false, 
+            description: "Compare value with previous version"
+        )
+        string(
+          name: "COMPARE_WITH_PROFILE",
+          defaultValue: "",
+          description: 'Specify a profile you want to compare your job results to'
+        )
+        string(
+          name: "COMPARISON_CONFIG_PARAM",
+          defaultValue: "podLatency.json nodeMasters-max.json nodeWorkers.json etcd.json crio.json kubelet.json",
           description: 'JSON config files of what data to output into a Google Sheet'
         )
         string(
-          name: "TOLERANCY_RULES",
-          defaultValue: "pod-latency-tolerancy-rules.yaml",
+          name: "TOLERANCY_RULES_PARAM",
+          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy1.yaml kubelet-tolerancy.yaml",
           description: 'JSON config files of what data to output into a Google Sheet'
         )
+        booleanParam(
+            name: 'GEN_CSV',
+            defaultValue: true,
+            description: 'Boolean to create a google sheet with comparison data'
+        )
+        string(
+          name: 'EMAIL_ID_OVERRIDE',
+          defaultValue: '',
+          description: '''
+            Email to share Google Sheet results with<br/>
+            By default shares with email of person who ran the job
+          '''
+      )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -45,10 +85,36 @@ pipeline {
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
         )
-        string(name: 'E2E_BENCHMARKING_REPO', defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', description:'You can change this to point to your fork if needed.')
-        string(name: 'E2E_BENCHMARKING_REPO_BRANCH', defaultValue:'master', description:'You can change this to point to a branch on your fork if needed.')
-        string(name: "CI_PROFILES_URL",defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'")
-        string(name: "CI_PROFILES_REPO_BRANCH", defaultValue: "master", description: "Branch of ci-profiles repo to checkout" )
+        string(
+          name: 'E2E_BENCHMARKING_REPO', 
+          defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', 
+          description:'You can change this to point to your fork if needed.'
+        )
+        string(
+          name: 'E2E_BENCHMARKING_REPO_BRANCH', 
+          defaultValue:'master', 
+          description:'You can change this to point to a branch on your fork if needed.'
+        )
+        string(
+          name: 'BENCHMARKING_COMPARISON_REPO', 
+          defaultValue:'https://github.com/paigerube14/benchmark-comparison.git', 
+          description:'You can change this to point to your fork if needed.'
+        )
+        string(
+          name: 'BENCHMARKING_COMPARISON_REPO_BRANCH', 
+          defaultValue:'master', 
+          description:'You can change this to point to a branch on your fork if needed.'
+        )
+        string(
+          name: "CI_PROFILES_URL",
+          defaultValue: "https://gitlab.cee.redhat.com/aosqe/ci-profiles.git/",
+          description:"Owner of ci-profiles repo to checkout, will look at folder 'scale-ci/\${major_v}.\${minor_v}'"
+        )
+        string(
+          name: "CI_PROFILES_REPO_BRANCH", 
+          defaultValue: "master", 
+          description: "Branch of ci-profiles repo to checkout"
+        )
     }
 
   stages {
@@ -79,6 +145,19 @@ pipeline {
                 [$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmark']
             ],
             userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
+        ])
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: params.BENCHMARKING_COMPARISON_REPO_BRANCH ]],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [
+                [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                [$class: 'PruneStaleBranch'],
+                [$class: 'CleanCheckout'],
+                [$class: 'IgnoreNotifyCommit'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'comparison']
+            ],
+            userRemoteConfigs: [[url: params.BENCHMARKING_COMPARISON_REPO ]]
         ])
         // checkout CI profile repo from GitLab
         checkout changelog: false,
@@ -116,6 +195,12 @@ pipeline {
         }
 
         script{
+            if (params.EMAIL_ID_OVERRIDE != '') {
+                  env.EMAIL_ID_FOR_RESULTS_SHEET = params.EMAIL_ID_OVERRIDE
+              }
+              else {
+                  env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+              }
             withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
                     file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                 
@@ -143,38 +228,24 @@ pipeline {
                     source venv3/bin/activate
                     python --version
                     pip install -r requirements.txt
+                    pip install -qq git+https://github.com/cloud-bulldozer/benchmark-comparison.git
 
-                    if [[ $WORKLOAD == "network-perf" ]]; then 
-                      export TOLERANCY_RULES=$WORKSPACE/e2e-benchmark/workloads/network-perf/$TOLERANCY_RULES
-                      echo "not set up for this type of comparison"
-                      exit 1 
-                    elif [[ $WORKLOAD == "router-perf" ]]; then 
-                      export TOLERANCY_RULES=$WORKSPACE/e2e-benchmark/workloads/router-perf-v2/$TOLERANCY_RULES
-                    elif [[ $WORKLOAD == "etcd-perf" ]]; then 
-                      export TOLERANCY_RULES=$WORKSPACE/e2e-benchmark/workloads/etcd-perf/$TOLERANCY_RULES
-                      echo "not set up for this type of comparison"
-                      exit 1
-                    else
-                      export TOLERANCY_RULES=$WORKSPACE/e2e-benchmark/workloads/kube-burner/$TOLERANCY_RULES
+                    if [[ -z "$BASELINE_UUID" ]]; then
+                      export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
 
-                    export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
-
-                    if [[ -n $BASELINE_UUID ]]; then 
-                      cd e2e-benchmark/utils
-
-                      source compare.sh
-                      run_benchmark_comparison
-                    else
-                      echo "UUID was not found for $WORKLOAD with cluster set up type $VARIABLES_LOCATION with the same worker count"
-                      exit 1
-                    fi
+                    ./loop_rules.sh
 
                 ''')
 
                 if (RETURNSTATUS.toInteger() != 0) {
                     currentBuild.result = "FAILURE"
                 }
+                archiveArtifacts(
+                    artifacts: 'e2e-benchmark/utils/*',
+                    allowEmptyArchive: true,
+                    fingerprint: true
+                )
           }
         }
       }

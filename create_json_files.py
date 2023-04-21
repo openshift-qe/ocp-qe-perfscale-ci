@@ -35,8 +35,7 @@ def find_uuids(cloud_type):
 def find_print_all_es_uuids():
     for cloud in clouds: 
         hits = find_uuids(cloud)
-        
-        print('total lenght ' + str(len(hits)))
+
         for hit in hits: 
             source_hit = hit['_source']
             workload = source_hit['workload']
@@ -67,5 +66,3 @@ def find_print_all_es_uuids():
             if len(read_json[sub_ocp_version].keys()) == 0: 
                 read_json.pop(sub_ocp_version)
             help_write.write_new_json(workload+ "/"+cloud + ".json", read_json)
-            
-find_print_all_es_uuids()

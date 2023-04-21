@@ -52,15 +52,25 @@ def get_worker_num():
     worker_count = worker_count.strip()
     return worker_count
 
+def find_launcher_vars_for_profile(profile,version):
+    var_loc = ""
+   
+    split_version = version.split(".")
+    sub_version = split_version[0] + "." + split_version[1]
+    if profile is not None and not profile.endswith(".install.yaml"): 
+        profile = profile + ".install.yaml"
+    profile_str = run(f"cat ci-profiles/scale-ci/{sub_version}/{profile}")[1]
+    profile_json = yaml.load(profile_str, Loader=SafeLoader)
+    var_loc = profile_json['install']['flexy']['VARIABLES_LOCATION']
+    return var_loc
+
 
 def find_cloud_name(launcher_vars):
     
     inds = [i for i,c in enumerate(launcher_vars) if c=='/']
-    print('inds ' + str(inds))
+
     sub_profile = launcher_vars[inds[-2]+1:inds[-1]]
-    print('sub profile ' + str(sub_profile))
     final_sub = sub_profile.split('-')[-1]
-    print('fin sub profile ' + str(final_sub))
     return final_sub
 
 def find_uuid(read_json, ocp_version, cluster_worker_count, network_type_string, cluster_arch_type):
@@ -88,17 +98,16 @@ def get_scale_profile_name(version, cloud, arch, net_type, worker_count, launche
     else: 
         grep_string += " | grep -iv ovn"
     grep_string += " | grep -iv R0 | grep -iv SNO-"
-    print('cloud ' + str(cloud))
-    print("launcher vars " + str(launcher_vars))
+
 
     if launcher_vars != "": 
         cloud = find_cloud_name(launcher_vars)
     if cloud == "alicloud": 
         cloud = "alibaba"
-    print('grep string ' + str(grep_string))
+    #print('grep string ' + str(grep_string))
     profiles = run(f"cd ci-profiles/scale-ci/{sub_version}; ls | grep -i {cloud} {grep_string}; cd ../../..")[1]
     profiles_list = profiles.split()
-    print('profile list ' + str(profiles_list))
+    #print('profile list ' + str(profiles_list))
     worker_size = ""
     master_size = ""
     if len(profiles_list) <= 0: 
@@ -118,7 +127,7 @@ def get_scale_profile_name(version, cloud, arch, net_type, worker_count, launche
                     
                     worker_size, master_size = get_node_sizing(scale_data)
 
-            print("var_loc_split" + str(var_loc))
+            #print("var_loc_split" + str(var_loc))
             if launcher_vars != "" and var_loc == launcher_vars:
                 return p.replace('.install.yaml', ""), worker_size, master_size, launcher_vars
     return profiles_list[-1].replace('.install.yaml', ""), worker_size, master_size, var_loc
@@ -127,7 +136,7 @@ def get_node_sizing(scale_data):
     worker_size = ""
     master_size = ""
     if "EXTRA_LAUNCHER_VARS" in scale_data.keys(): 
-        print('type '+ str(type(scale_data['EXTRA_LAUNCHER_VARS'])))
+        #print('type '+ str(type(scale_data['EXTRA_LAUNCHER_VARS'])))
         EXTRA_LAUNCHER_VARS = yaml.load(scale_data['EXTRA_LAUNCHER_VARS'], Loader=SafeLoader)
         if "vm_type_workers" in EXTRA_LAUNCHER_VARS.keys():
             worker_size = EXTRA_LAUNCHER_VARS['vm_type_workers']
