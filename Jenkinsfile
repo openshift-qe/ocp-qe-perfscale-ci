@@ -257,10 +257,10 @@ pipeline {
                             """)
                         }
                         // fail pipeline if NOPE run failed, continue otherwise
-                        if (result_returnCode.toInteger() == 2) {
+                        if (result_returnCode.toInteger() == 2 || baseline_returnCode.toInteger() == 2) {
                             unstable('ES post tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
                         }
-                        else if ( result_returnCode.toInteger() != 0) {
+                        else if ( result_returnCode.toInteger() != 0 || baseline_returnCode.toInteger() != 0) {
                             error('Post to ES tool failed :(')
                         }
                         else {
