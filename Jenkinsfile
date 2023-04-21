@@ -1,12 +1,28 @@
 @Library('flexy') _
 
 // rename build
-def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
-if (userId) {
-  currentBuild.displayName = userId
-}
+def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
+def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
 
-def RETURNSTATUS = "default"
+userId = "ocp-perfscale-qe"
+if (userCause) {
+    userId = userCause.getUserId()
+}
+else if (upstreamCause) {
+    def upstreamJob = Jenkins.getInstance().getItemByFullName(upstreamCause.getUpstreamProject(), hudson.model.Job.class)
+    if (upstreamJob) {
+        def upstreamBuild = upstreamJob.getBuildByNumber(upstreamCause.getUpstreamBuild())
+        if (upstreamBuild) {
+            def realUpstreamCause = upstreamBuild.getCause(Cause.UserIdCause)
+            if (realUpstreamCause) {
+                userId = realUpstreamCause.getUserId()
+            }
+        }
+    }
+}
+if (userId) {
+    currentBuild.displayName = userId
+}
 
 pipeline {
   agent none
@@ -18,7 +34,7 @@ pipeline {
           description: 'Build number of job that has installed the cluster.'
         )
         choice(
-          choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf"],
+          choices: ["cluster-density-v2","cluster-density","cluster-density-ms","node-density","node-density-heavy","node-density-cni","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf"],
           name: 'WORKLOAD', 
           description: '''Type of kube-burner job to run'''
         )
@@ -142,7 +158,7 @@ pipeline {
                 [$class: 'PruneStaleBranch'],
                 [$class: 'CleanCheckout'],
                 [$class: 'IgnoreNotifyCommit'],
-                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmark']
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']
             ],
             userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
         ])
@@ -215,12 +231,10 @@ pipeline {
 
                     export ES_SERVER="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
 
-                    export ES_SERVER_BASELINE="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-  
                     mkdir -p ~/.kube
                     cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
 
-
+                    ls 
                     python3.9 --version
                     python3.9 -m pip install virtualenv
                     python3.9 -m virtualenv venv3
@@ -228,9 +242,8 @@ pipeline {
                     source venv3/bin/activate
                     python --version
                     pip install -r requirements.txt
-                    pip install -qq git+https://github.com/cloud-bulldozer/benchmark-comparison.git
 
-                    if [[ -z "$BASELINE_UUID" ]]; then
+                    if [[ ( -z "$BASELINE_UUID" ) && ( -n $TOLERANCY_RULES_PARAM ) ]]; then
                       export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
                     
@@ -246,9 +259,21 @@ pipeline {
                           export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kubelet-tolerancy.yaml/})
                           export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/crio-tolerancy.yaml/})
                           export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kube-burner-cp-tolerancy.yaml/})
+
+                    elif [[ $WORKLOAD == "cluster-density-v2" ]]; then 
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/nodeWorkers/nodeAggWorkers})
+                          ## kubelet and crio metrics aren't in aggregated metrics files
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/kubelet-ocp.json/})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/crio-ocp.json/})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/containerMetrics.json/})
+
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/worker-tolerancy/worker-agg-tolerancy})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kubelet-tolerancy-ocp.yaml/})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/crio-tolerancy-ocp.yaml/})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kube-burner-cp-tolerancy.yaml/})
                           
-                      fi
-                    ./loop_rules.sh
+                    fi
+                    ./loop_rules2.sh
 
                 ''')
 
@@ -256,7 +281,7 @@ pipeline {
                     currentBuild.result = "FAILURE"
                 }
                 archiveArtifacts(
-                    artifacts: 'e2e-benchmark/utils/results/*',
+                    artifacts: 'e2e-benchmarking/utils/results/*',
                     allowEmptyArchive: true,
                     fingerprint: true
                 )
