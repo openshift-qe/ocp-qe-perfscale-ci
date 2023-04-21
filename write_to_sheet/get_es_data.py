@@ -69,12 +69,14 @@ def get_pod_latency_data(uuid, creation_time="",es_username="", es_password=""):
     file_name = "get_es_data.json"
     get_es_url(es_username, es_password)
     if es_url != "":
+        print('es not blank')
         rewrite_data(creation_time, uuid, file_name)
         json_response = execute_command(es_url, file_name)
         data_info = []
         if "hits" in json_response.keys() and "hits" in json_response['hits'].keys():
             for hits in json_response['hits']['hits']:
                 data_info.append(get_data_from_json(hits['_source']))
+        print('data info ' + str(len(data_info)))
         if len(data_info) > 0:
             data_info = sorted(data_info, key=lambda kv:(kv[0], kv[1], kv[2]), reverse=True)
     return data_info

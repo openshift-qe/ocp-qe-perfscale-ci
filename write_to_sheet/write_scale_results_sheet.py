@@ -9,66 +9,27 @@ from pytz import timezone
 import get_es_data
 import write_helper
 import get_scale_output
-import re
+import os
 
 creation_time = ""
 data_source = "QE%20kube-burner"
 uuid = ""
-
-def get_benchmark_uuid():
-    return_code, namespace = write_helper.run("oc get ns -l kube-burner-uuid -o name --sort-by='.metadata.creationTimestamp' --no-headers | head -1")
-    print('namespace ' + str(namespace))
-    return_code, namespace_str = write_helper.run("oc get " + namespace.strip() + " -o json")
-    print("namespace_str " + str(namespace_str))
-    if return_code == 0 and namespace != "":
-        namespace_json = json.loads(namespace_str.strip())
-        if "kube-burner-uuid" in namespace_json['metadata']['labels']:
-            global uuid
-            uuid = namespace_json['metadata']['labels']['kube-burner-uuid']
-            #if multiple not sure what to do
-            global creation_time
-            creation_time = namespace_json['metadata']['creationTimestamp']
-            # "2021-08-10T13:53:20Z"
-            d = datetime.strptime(creation_time[:-1], "%Y-%m-%dT%H:%M:%S")
-            from_time = calendar.timegm(d.timetuple()) * 1000
-
-            n_time = datetime.utcnow()
-            to_time = calendar.timegm(n_time.timetuple()) * 1000
-
-            return get_grafana_url(uuid, from_time, to_time)
-    return ""
-
+    
 def get_grafana_url(uuid, start_time, end_time):
-
+    start_time = start_time + "000"
+    end_time = end_time + "000"
     grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/FwPsenw7z/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=OpenShiftSDN&var-job=All&var-uuid={}&var-namespace=All".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
-def get_metadata_uuid(job_type, job_output):
-    if creation_time == "":
-        creation_time = parse_output_for_starttime(job_output)
-        d = datetime.strptime(creation_time, "%Y-%m-%dT%H:%M:%S")
-        start_time = calendar.timegm(d.timetuple()) * 1000
-    else: 
-        start_time = creation_time
-    n_time = datetime.utcnow()
-    to_time = calendar.timegm(n_time.timetuple()) * 1000
+def get_metadata_uuid():
+    start_time = parse_output_for_starttime()
+    to_time = os.getenv("ENDTIME_TIMESTAMP")
 
-    with open(job_output, encoding='utf-8', mode="r") as f:
-        job_output_string = f.read()
-    metadata = job_output_string.split("Run Metadata:")[-1].split("}")[0]
     global uuid
-    uuid = get_uuid_from_json(metadata)
-    if uuid == "":
-        uuid = job_output_string.split('"Finished execution with UUID: ')[-1].split('"')[0]
-        if uuid == "" or len(uuid) > 40:
-            if job_type == "pod-density":
-                job_type = "node-density"
-            split_with_job = job_output_string.split("kube-burner-" + str(job_type) + "-")[-1].split(",")[0]
-            uuid = split_with_job
-            if uuid == "" or len(uuid) > 40:
-                return ""
+    uuid = get_uuid()
+    print ("uuid " +str(uuid))
     return get_grafana_url(uuid, start_time, to_time)
 
 def find_uperf_uuid_url(cluster_name, start_time, es_username, es_password):
@@ -78,19 +39,10 @@ def find_uperf_uuid_url(cluster_name, start_time, es_username, es_password):
         return uuid
     return ""
 
-def parse_output_for_starttime(job_output):
-
-    with open(job_output, encoding='utf8', mode="r") as f:
-        job_output_string = f.read()
-
-    split_output = job_output_string.split('Starting kube-burner')
-
-    time_sub = split_output[0].split("\n")[-1]
-    time_sub = re.sub("[ ]+", " ", time_sub)
-    time_sub = time_sub.split('time=')[-1].split(' level')[0].strip(" ")
-    d = datetime.strptime(time_sub, "%Y-%m-%d %H:%M:%S")
-    date_string = d.strftime("%Y-%m-%dT%H:%M:%S%Z")
-    return date_string
+def parse_output_for_starttime():
+    global creation_time
+    creation_time = os.getenv("STARTTIME_TIMESTAMP")
+    return creation_time
 
 def get_workload_params(job_type):
     workload_args = get_scale_output.get_output(job_type)
@@ -118,7 +70,16 @@ def get_url_out(url_sub_string):
 
 def parse_output_for_sheet(job_output):
 
-    with open(job_output, encoding='utf8', mode="r") as f:
+    start_split = job_output.split('*')
+    first_index = job_output.index('*')
+
+    directory = write_helper.run("ls " + job_output[:first_index])[1].strip()
+    job_output = job_output[:first_index]+ directory
+    print('job outptu with dire' + str(job_output))
+    file_title = write_helper.run("ls " + job_output)[1].strip()
+    file_output_string = job_output[:first_index]+ directory + "/" + file_title
+    print('final output string ' + str(file_output_string))
+    with open(file_output_string, "r") as f:
         job_output_string = f.read()
 
     split_output = job_output_string.split('Google Spreadsheet link')
@@ -130,28 +91,12 @@ def parse_output_for_sheet(job_output):
     else:
         return get_url_out(split_output[-1])
 
-def get_uuid_from_json(metadata):
-    md_json = {}
-    for md in metadata.split("\n"):
-        md2 = md.replace('"', '').replace(',', '')
-        md_split = md2.split(':')
-        if len(md_split) >= 2:
-            md_json[md_split[0].strip(" ")] = md_split[1].strip(' ')
-
-    if "uuid" in md_json:
-        return md_json['uuid']
-    elif "UUID" in md_json:
-        return md_json['UUID']
-    else:
-        return ""
-
-def get_router_perf_uuid(job_output):
-    with open(job_output, encoding='utf-8', mode="r") as f:
-        job_output_string = f.read()
-    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
-    find_uuid_md = metadata[0]
+def get_uuid():
     
-    return get_uuid_from_json(find_uuid_md), metadata[0].replace('\n',"")
+    return os.getenv("UUID")
+
+def get_router_perf_uuid():
+    return get_uuid()
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
     scopes = [
@@ -172,7 +117,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     if job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
-        start_time = parse_output_for_starttime(job_output)
+        start_time = parse_output_for_starttime()
         if return_code == 0:
             grafana_cell = find_uperf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
         else:
@@ -185,9 +130,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         else:
             grafana_cell = ""
     else:
-        grafana_cell = get_benchmark_uuid()
-        if not grafana_cell:
-            grafana_cell = get_metadata_uuid(job_type, job_output)
+        print('call metadata')
+        grafana_cell = get_metadata_uuid()
 
     ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
@@ -212,10 +156,11 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
                 row.append(param)
 
     if job_type not in ["etcd-perf", "network-perf", "router-perf"]:
-        start_time = parse_output_for_starttime(job_output)
+        creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
         row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
 
     if job_output:
+
         google_sheet_url = parse_output_for_sheet(job_output)
         row.append(google_sheet_url)
 
