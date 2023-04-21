@@ -1,8 +1,8 @@
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 import pandas as pd
-import uuid_helper
-import json 
+import json
+import helper_uuid
 import os 
 
 router_perf = {
@@ -142,20 +142,16 @@ def get_workload_router_yaml(platforms, base_dataframe, workload):
                 workload_yaml[version][str(node_count)] = {}
       
                 node_count_df = dataframe_version.loc[dataframe_version["Worker Count"] == node_count]
-                print('worker count ' + str(node_count_df.shape[0]))
                 for network_type in network_types:
-                    workload_yaml[version][str(node_count)][network_type] = {}
                     network_df = node_count_df.query("`Network Type` == @network_type")
-                    print('net count ' + str(network_df.shape[0]))
                     for arch_type in arch_types:
-                        workload_yaml[version][str(node_count)][network_type][arch_type] = {}
+                        profile, worker_size, master_size, var_loc = helper_uuid.get_scale_profile_name(version, platform, arch_type, network_type, node_count, "")
                         arch_df = network_df.query("`Arch Type` == @arch_type")
                         if not arch_df.empty:
                             grafana_url = arch_df.iloc[0]['UUID']
-                            print('grafana url ' + str(grafana_url))
-                            workload_yaml[version][str(node_count)][network_type][arch_type] = grafana_url
+                            workload_yaml[version][str(node_count)][profile] = grafana_url
                         else: 
-                            workload_yaml[version][str(node_count)][network_type][arch_type] = ""
+                            workload_yaml[version][str(node_count)][profile] = ""
    
         with open(workload + "/" + platform + ".json", "w") as f:
             f.write(json.dumps(workload_yaml))
@@ -163,7 +159,6 @@ def get_workload_router_yaml(platforms, base_dataframe, workload):
 def get_workload_yaml(platforms, base_dataframe, workload, parameter, no_scale):
     for platform, node_counts in platforms.items(): 
         dataframe = base_dataframe.copy(deep=True)
-        print("data frame " + str(len(dataframe)))
         platform_dataframe = dataframe.loc[dataframe['Cloud'] == platform,:]
 
         print("data frame " + str(len(platform_dataframe)))
@@ -176,24 +171,24 @@ def get_workload_yaml(platforms, base_dataframe, workload, parameter, no_scale):
                 workload_yaml[version][str(node_count)] = {}
       
                 node_count_df = dataframe_version.loc[dataframe_version["Worker Count"] == node_count]
-                print("data frame node count" + str(node_count) + str(len(node_count_df)))
                 if no_scale: 
                     nodes_info_df = node_count_df.loc[node_count_df["PODS_PER_NODE"] >= node_count_df["Worker Count"],:]
                 else: 
                     nodes_info_df = node_count_df.loc[node_count_df["Params"] >= parameter * node_count_df["Worker Count"],:]
 
+                
                 for network_type in network_types:
-                    workload_yaml[version][str(node_count)][network_type] = {}
                     network_df = nodes_info_df.query("`Network Type` == @network_type")
-                    print("data frame net" + str(len(network_df)))
                     for arch_type in arch_types:
-                        workload_yaml[version][str(node_count)][network_type][arch_type] = {}
-                        arch_df = network_df.query("`Arch Type` == @arch_type")
-                        if not arch_df.empty:
-                            grafana_url = arch_df.iloc[0]['Grafana URL']
-                            workload_yaml[version][str(node_count)][network_type][arch_type] = grafana_url
-                        else: 
-                            workload_yaml[version][str(node_count)][network_type][arch_type] = ""
+                        profile, worker_size, master_size, var_loc = helper_uuid.get_scale_profile_name(version, platform, arch_type, network_type, node_count, "")
+                        if profile != "": 
+                            workload_yaml[version][str(node_count)][profile] = {}
+                            arch_df = network_df.query("`Arch Type` == @arch_type")
+                            if not arch_df.empty:
+                                grafana_url = arch_df.iloc[0]['Grafana URL']
+                                workload_yaml[version][str(node_count)][profile] = grafana_url
+                            else: 
+                                workload_yaml[version][str(node_count)][profile] = ""
    
         with open(workload + "/" + platform + ".json", "w") as f:
             f.write(json.dumps(workload_yaml))
@@ -202,24 +197,24 @@ def get_workload_yaml(platforms, base_dataframe, workload, parameter, no_scale):
 # for workload, param_dict in kb_workload_types.items():
 #     isExist = os.path.exists(workload)
 #     if not isExist:
-#         uuid_helper.run('mkdir ' + str(workload))
+#         helper_uuid.run('mkdir ' + str(workload))
 #     get_kube_burner_data_from_sheet(platforms, workload, param_dict['parameter'], param_dict['no_scale'])
 
-workload = "node-density-heavy"
-isExist = os.path.exists(workload)
-if not isExist:
-    uuid_helper.run('mkdir ' + str(workload))
-get_kube_burner_data_from_sheet(node_density_heavy, workload, 245, True)
-
-
-# workload = "router-perf"
+# workload = "node-density-heavy"
 # isExist = os.path.exists(workload)
 # if not isExist:
-#     uuid_helper.run('mkdir ' + str(workload))
-# get_kube_burner_data_from_sheet(router_perf,workload)
+#     helper_uuid.run('mkdir ' + str(workload))
+# get_kube_burner_data_from_sheet(node_density_heavy, workload, 245, True)
+
+
+workload = "router-perf"
+isExist = os.path.exists(workload)
+if not isExist:
+    helper_uuid.run('mkdir ' + str(workload))
+get_kube_burner_data_from_sheet(router_perf,workload)
 
 # workload = "network-perf"
 # isExist = os.path.exists(workload)
 # if not isExist:
-#     uuid_helper.run('mkdir ' + str(workload))
+#     helper_uuid.run('mkdir ' + str(workload))
 # get_kube_burner_data_from_sheet(workload)

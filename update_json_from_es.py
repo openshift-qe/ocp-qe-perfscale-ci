@@ -1,6 +1,5 @@
 import json
 import helper_uuid
-import help_write 
 
 from utils import *
 from optparse import OptionParser
@@ -28,8 +27,10 @@ def update_with_current_uuid(uuid, workload, flexy_template ):
     
     platform = split_temp[1]
     # use helper functions from write to get data of interst
-    
-    read_json = help_write.read_json(workload, platform)
+    with open(workload + "/" + platform + ".json", "r") as fr:
+        read_str =fr.read()
+        read_json = json.loads(read_str)
+
     ocp_version = split_temp[0]
     cluster_worker_count = helper_uuid.get_worker_num() 
     cluster_arch_type = helper_uuid.get_arch_type()
@@ -40,7 +41,8 @@ def update_with_current_uuid(uuid, workload, flexy_template ):
         network_type = network_type[-3:].upper()
         read_json[ocp_version][cluster_worker_count][network_type][cluster_arch_type] = uuid
     
-    help_write.write_new_json(workload, platform, read_json)
+    with open(workload + "/" + platform + ".json", "w") as f:
+        f.write(json.dumps(read_json))
 
     with open(workload + "/update.json", "w") as f:
         f.write(json.dumps(read_json))

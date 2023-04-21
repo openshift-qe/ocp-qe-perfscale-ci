@@ -1,162 +1,63 @@
 {
     "4.9": {
-        "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        },
-        "40": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
-        }
+        "3": {},
+        "20": {},
+        "40": {}
     },
     "4.10": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "40": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         }
     },
     "4.11": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "40": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         }
     },
     "4.12": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "40": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         }
     },
     "4.13": {
         "3": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "20": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         },
         "40": {
-            "OVN": {
-                "amd64": "",
-                "arm64": ""
-            },
-            "SDN": {
-                "amd64": "",
-                "arm64": ""
-            }
+            "IPI_on_IBMCloudOVN.install.yaml": "",
+            "IPI_on_IBMCloud.install.yaml": ""
         }
     }
 }
