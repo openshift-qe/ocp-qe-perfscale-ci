@@ -30,7 +30,7 @@ def output = ""
 def cerberus_job = ""
 def status = "FAIL"
 
-def JENKINS_JOB_NUMBER = currentBuild.number
+def JENKINS_JOB_NUMBER = currentBuild.number.toString()
 println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
 pipeline {
   agent none
