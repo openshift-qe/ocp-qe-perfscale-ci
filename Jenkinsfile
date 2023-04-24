@@ -738,6 +738,7 @@ pipeline{
                         string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),booleanParam(name: 'SCALE', value: SCALE),
                         string(name: 'LOADED_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "loaded-upgrade"), 
                         string(name: 'PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SIZE', value: PROFILE_SCALE_SIZE),
+                        string(name: "JENKINS_JOB_NUMBER", value: BUILD_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                     ], propagate: false
 
                 }
