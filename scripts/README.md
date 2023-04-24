@@ -29,7 +29,7 @@ It is recommended to use Loki Operator to create a LokiStack for Network Observa
 
 To create LokiStack manually, the following steps can be performed:
 1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
-2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki-ocpqe-perf` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
@@ -54,8 +54,6 @@ Continuous internal bundles are created via the CPaaS system and hosted internal
 
 #### OperatorHub
 The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
-
-To install from OperatorHub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
 
 #### Source
 GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
