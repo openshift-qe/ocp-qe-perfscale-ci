@@ -6,7 +6,7 @@ metadata:
   labels:
     operators.coreos.com/netobserv-operator.openshift-netobserv-operator: ""
 spec:
-  channel: v1.0.x
+  channel: latest
   name: netobserv-operator
   source: netobserv-main-testing
   sourceNamespace: openshift-marketplace 

@@ -476,7 +476,7 @@ pipeline {
                 }
             }
         }
-        stage('Configure NOO, flowcollector, and Kafka') {
+        stage('Configure NetObserv, flowcollector, and Kafka') {
             steps {
                 script {
                     // capture NetObserv release and add it to build description
@@ -486,8 +486,8 @@ pipeline {
                         currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
                     }
 
-                    // attempt updating common parameters of NOO and flowcollector where specified
-                    println 'Updating common parameters of NOO and flowcollector where specified...'
+                    // attempt updating common parameters of NetObserv and flowcollector where specified
+                    println 'Updating common parameters of NetObserv and flowcollector where specified...'
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
                         returnCode = sh(returnStatus: true, script: """
                             oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
@@ -529,7 +529,7 @@ pipeline {
                             error('Updating FLP memory limit failed :(')
                         }
                     }
-                    println 'Successfully updated common parameters of NOO and flowcollector :)'
+                    println 'Successfully updated common parameters of NetObserv and flowcollector :)'
 
                     // attempt to enable or update Kafka if applicable
                     println "Checking if Kafka needs to be enabled or updated..."
@@ -754,7 +754,7 @@ pipeline {
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
-                        // set env variables needed for touchstone (note UUID is needed but already set above)
+                        // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
                         //env.TOLERANCY_RULES = ''
