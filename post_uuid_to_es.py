@@ -135,7 +135,7 @@ def get_scale_ci_data():
                 info['parameters'] = int(param.get('value'))
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
-    info["uuid"] =  UUID
+    info["uuid"] =  os.getenv('UUID')
     return info
 
 def get_nightly_reg_data(): 
@@ -293,7 +293,8 @@ if __name__ == '__main__':
         # if data already exists, don't post 
         METRIC_NAME = "base_line_uuids"
         base_line_uuid = helper_uuid.find_uuid(workload, METRIC_NAME)
-        if base_line_uuid != "":
+        print('baseline ' + str(base_line_uuid))
+        if base_line_uuid is not False:
             logging.info("Baseline UUID for this configuration is already set")
             sys.exit(0)
     else: 
@@ -350,7 +351,7 @@ if __name__ == '__main__':
         for k,v in jenkins_info.items(): 
             info[k] = v
     RESULTS['data'].append(info)
-    logging.info(f"UUID: {os.getenv('UUID')}")
+    
 
     if (ES_USERNAME is None) or (ES_PASSWORD is None):
         logging.error("Credentials need to be set to upload data to Elasticsearch")

@@ -50,6 +50,11 @@ pipeline {
                 font-family: 'Orienta', sans-serif;
             '''
         )
+        booleanParam(
+            name: 'UPLOAD_BASELINE',
+            defaultValue: false,
+            description: 'Upload baseline data if one is not found'
+        )
         choice(
           choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf","nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"], 
           name: 'WORKLOAD', 
@@ -243,16 +248,19 @@ pipeline {
                             python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline false
                         """)
 
-                        // post a new baseline uuid if one doesn't exist
-                        // baseline_returnCode = sh(returnStatus: true, script: """
-                        //     python --version
-                        //     python post_uuid_to_es.py --jenkins-job $JENKINS_JOB_PATH --jenkins-build $JENKINS_JOB_NUMBER --uuid $env.UUID --user $GLOBAL_USER_ID --baseline true
-                        // """)
+                        if ( params.UPLOAD_BASELINE == true ) {
+                          // post a new baseline uuid if one doesn't exist
+                            baseline_returnCode = sh(returnStatus: true, script: """
+                                source venv3/bin/activate
+                                python --version
+                                python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline true
+                            """)
+                        }
                         // fail pipeline if NOPE run failed, continue otherwise
-                        if (result_returnCode.toInteger() == 2) {
+                        if (result_returnCode.toInteger() == 2 || baseline_returnCode.toInteger() == 2) {
                             unstable('ES post tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
                         }
-                        else if ( result_returnCode.toInteger() != 0) {
+                        else if ( result_returnCode.toInteger() != 0 || baseline_returnCode.toInteger() != 0) {
                             error('Post to ES tool failed :(')
                         }
                         else {

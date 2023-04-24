@@ -64,18 +64,6 @@ def find_cloud_name(launcher_vars):
     print('fin sub profile ' + str(final_sub))
     return final_sub
 
-def find_uuid(read_json, ocp_version, cluster_worker_count, network_type_string, cluster_arch_type):
-
-    for json_versions, sub_vers_json in read_json.items(): 
-        if str(json_versions) == str(ocp_version):
-            for worker_count, sub_worker_json in sub_vers_json.items():
-                if str(cluster_worker_count) == str(worker_count):
-                    if "ovn" in network_type_string.lower():
-                        network_type = "OVN"
-                    else:
-                        network_type = "SDN"
-                    return sub_worker_json[network_type][cluster_arch_type]
-
 def get_scale_profile_name(version, arch, net_type, worker_count):
     sub_version_split = version.split('.')
     sub_version = sub_version_split[0] + "." + sub_version_split[1]
@@ -146,9 +134,10 @@ def find_uuid(workload, metric_name):
     if len(hits) == 0: 
         search_params["LAUNCHER_VARS"] = var_loc.replace("-ci","")
         hits = update_es_uuid.es_search(search_params)
+
         if len(hits) == 0: 
-            print("")
+            return False
         else: 
-            print(hits[0]['_source']['uuid'])
+            return hits[0]['_source']['uuid']
     else: 
-        print(hits[0]['_source']['uuid'])
+        return hits[0]['_source']['uuid']
