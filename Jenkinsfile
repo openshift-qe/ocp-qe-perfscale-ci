@@ -22,6 +22,9 @@ if (userId) {
   currentBuild.displayName = "${userId}-${currentBuild.displayName}"
 }
 
+def JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
+
 pipeline{
     agent any
 
@@ -734,11 +737,12 @@ pipeline{
                     }
                     build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', parameters: [
                         string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "BUILD_NUMBER", value: build_string),
-                        string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),text(name: "ENV_VARS", value: ENV_VARS),
-                        string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),booleanParam(name: 'SCALE', value: SCALE),
+                        string(name: 'CI_STATUS', value: "${status}"), string(name: 'UPGRADE_JOB_URL', value: upgrade_url),
+                        text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: 'SCALE', value: SCALE),
+                        string(name: 'CI_JOB_URL', value: loaded_url), booleanParam(name: 'ENABLE_FORCE', value: ENABLE_FORCE),
                         string(name: 'LOADED_JOB_URL', value: BUILD_URL), string(name: 'JOB', value: "loaded-upgrade"), 
                         string(name: 'PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SIZE', value: PROFILE_SCALE_SIZE),
-                        string(name: "JENKINS_JOB_NUMBER", value: BUILD_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
+                        string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                     ], propagate: false
 
                 }
