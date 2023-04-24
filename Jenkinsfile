@@ -316,11 +316,11 @@ pipeline {
                         def parameter_to_pass = ""
                         build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results', 
                             parameters: [
-                                string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                                string(name: 'BUILD_NUMBER', value: params.BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                                 string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), 
                                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), 
                                 string(name: "JOB", value: "router-perf"), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ), 
-                                text(name: "JOB_OUTPUT", value: "${output}")
+                                string(name: "JENKINS_JOB_NUMBER", value: BUILD_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                             ],
                             propagate: false
                     }
