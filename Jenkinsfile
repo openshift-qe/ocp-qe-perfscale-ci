@@ -24,6 +24,8 @@ if (userId) {
     currentBuild.displayName = userId
 }
 
+def baseline_returnCode = null
+
 pipeline {
     agent { label params.JENKINS_AGENT_LABEL }
 
@@ -257,8 +259,10 @@ pipeline {
                             """)
                         }
                         // fail pipeline if NOPE run failed, continue otherwise
-                        if (result_returnCode.toInteger() == 2 || baseline_returnCode.toInteger() == 2) {
-                            unstable('ES post tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
+                        if ( baseline_returnCode != null ) {
+                          if (result_returnCode.toInteger() == 2 || baseline_returnCode.toInteger() == 2) {
+                              unstable('ES post tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
+                          }
                         }
                         else if ( result_returnCode.toInteger() != 0 || baseline_returnCode.toInteger() != 0) {
                             error('Post to ES tool failed :(')
