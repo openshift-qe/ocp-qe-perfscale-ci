@@ -68,8 +68,7 @@ def get_url_out(url_sub_string):
     url = url.rstrip(" *")
     return url
 
-def parse_output_for_sheet(job_output):
-
+def parse_output_file_name(job_output): 
     start_split = job_output.split('*')
     first_index = job_output.index('*')
 
@@ -81,6 +80,11 @@ def parse_output_for_sheet(job_output):
     print('final output string ' + str(file_output_string))
     with open(file_output_string, "r") as f:
         job_output_string = f.read()
+    return job_output_string
+
+def parse_output_for_sheet(job_output):
+
+    job_output_string = parse_output_file_name(job_output)
 
     split_output = job_output_string.split('Google Spreadsheet link')
 
@@ -95,8 +99,13 @@ def get_uuid():
     
     return os.getenv("UUID")
 
-def get_router_perf_uuid():
-    return get_uuid()
+def get_router_perf_uuid(job_output):
+    
+    job_output_string = parse_output_file_name(job_output)
+    
+    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
+
+    return get_uuid(), metadata
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
     scopes = [
