@@ -95,8 +95,14 @@ def get_uuid():
     
     return os.getenv("UUID")
 
-def get_router_perf_uuid():
-    return get_uuid()
+def get_router_perf_uuid(job_output):
+    job_output_string = ""
+    with open(job_output, encoding='utf-8', mode="r") as f:
+        job_output_string = f.read()
+    
+    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
+
+    return get_uuid(), metadata
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
     scopes = [
@@ -123,9 +129,12 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         else:
             grafana_cell = ""
     elif job_type == "router-perf":
-        global uuid
-        uuid, metadata = get_router_perf_uuid()
-        grafana_cell = uuid
+        if job_output:
+            global uuid
+            uuid, metadata = get_router_perf_uuid(job_output)
+            grafana_cell = uuid
+        else:
+            grafana_cell = ""
     else:
         print('call metadata')
         grafana_cell = get_metadata_uuid()
