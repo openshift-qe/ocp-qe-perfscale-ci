@@ -72,6 +72,7 @@ pipeline {
         }
         agent { label params['JENKINS_AGENT_LABEL'] }
         steps {
+            deleteDir()
             checkout([
                 $class: 'GitSCM',
                 branches: [[name: 'netobserv-perf-tests' ]],
