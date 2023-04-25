@@ -29,6 +29,9 @@ def RETURNSTATUS = "default"
 def output = ""
 def cerberus_job = ""
 def status = "FAIL"
+
+def JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
 pipeline {
   agent none
   parameters {
@@ -393,10 +396,20 @@ pipeline {
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/write-scale-ci-results',
                   parameters: [
                       string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
-                      string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
+                      string(name: 'CI_JOB_URL', value: BUILD_URL),
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
                       string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
-                      text(name: "JOB_OUTPUT", value: "${output}")
+                      string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), 
+                      string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
+                  ],
+                  propagate: false
+
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-results-to-es',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                      string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
+                      string(name: "WORKLOAD", value: WORKLOAD)
                   ],
                   propagate: false
             }
