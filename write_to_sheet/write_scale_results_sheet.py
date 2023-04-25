@@ -123,12 +123,9 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         else:
             grafana_cell = ""
     elif job_type == "router-perf":
-        if job_output:
-            global uuid
-            uuid, metadata = get_router_perf_uuid(job_output)
-            grafana_cell = uuid
-        else:
-            grafana_cell = ""
+        global uuid
+        uuid, metadata = get_router_perf_uuid()
+        grafana_cell = uuid
     else:
         print('call metadata')
         grafana_cell = get_metadata_uuid()
