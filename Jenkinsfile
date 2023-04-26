@@ -27,6 +27,10 @@ println "user id $userId"
 def RETURNSTATUS = "default"
 def output = ""
 def status = ""
+
+def JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
+
 pipeline {
     agent { label params['JENKINS_AGENT_LABEL'] }
     parameters {
@@ -272,6 +276,11 @@ pipeline {
                             ./ingress-performance.sh |& tee "ingress_router.out"
                             '''
                         )
+                        archiveArtifacts(
+                            artifacts: 'workloads/router-perf-v2/ingress_router.out',
+                            allowEmptyArchive: true,
+                            fingerprint: true
+                        )
                         if (RETURNSTATUS.toInteger() == 0) {
                             status = "PASS"
                         }
@@ -279,7 +288,6 @@ pipeline {
                             currentBuild.result = "FAILURE"
                             status = "Router perf FAIL"
                         }
-                        output = sh(returnStdout: true, script: 'cat workloads/router-perf-v2/ingress_router.out')
                     }
                 }
                 script{
@@ -320,7 +328,7 @@ pipeline {
                                 string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), 
                                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), 
                                 string(name: "JOB", value: "router-perf"), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ), 
-                                text(name: "JOB_OUTPUT", value: "${output}")
+                                string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                             ],
                             propagate: false
                     }
@@ -342,11 +350,7 @@ pipeline {
         always {
           
             println 'Post Section - Always'
-            archiveArtifacts(
-                artifacts: 'workloads/router-perf-v2/ingress_router.out',
-                allowEmptyArchive: true,
-                fingerprint: true
-            )
+            
             script {
                 if (params.SEND_SLACK == true ) {
                     build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
