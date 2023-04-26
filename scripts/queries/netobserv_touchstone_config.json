@@ -56,7 +56,47 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "nFlowsErroredPerMinuteTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "nFlowsProcessedPerMinute"
+                },
+                "buckets": [
+                    "metadata.pod.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "nFlowsErroredPerMinute"
                 },
                 "buckets": [
                     "metadata.pod.keyword"

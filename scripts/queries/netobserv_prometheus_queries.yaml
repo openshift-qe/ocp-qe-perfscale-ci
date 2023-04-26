@@ -6,9 +6,17 @@
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60)
   metricName: nFlowsProcessedPerMinuteTotals
 
+# Total flows errored per minute
+- query: sum(rate(netobserv_ingest_errors[1m])*60)
+  metricName: nFlowsErroredPerMinuteTotals
+
 # Flows processed by ingester per minute aggregated by FLP pods
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
+
+# Flows errored by ingester per minute aggregated by FLP pods
+- query: sum(rate(netobserv_ingest_errors[1m])*60) by (pod)
+  metricName: nFlowsErroredPerMinute
 
 #####################
 # NetObserv metrics #
