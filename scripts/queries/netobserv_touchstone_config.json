@@ -209,19 +209,6 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "cpuUsageLoki"
-                },
-                "buckets": [
-                    "metadata.pod.keyword"
-                ],
-                "aggregations": {
-                    "value": [
-                        "avg"
-                    ]
-                }
-            },
-            {
-                "filter": {
                     "metric_name.keyword": "memoryUsageRSS"
                 },
                 "buckets": [
@@ -322,19 +309,6 @@
                                 ]
                             }
                         },
-                        "avg"
-                    ]
-                }
-            },
-            {
-                "filter": {
-                    "metric_name.keyword": "memoryUsageLoki"
-                },
-                "buckets": [
-                    "metadata.pod.keyword"
-                ],
-                "aggregations": {
-                    "value": [
                         "avg"
                     ]
                 }
