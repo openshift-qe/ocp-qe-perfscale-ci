@@ -258,7 +258,7 @@ pipeline {
                                 python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline true
                             """)
                         }
-                        // fail pipeline if NOPE run failed, continue otherwise
+                        // fail pipeline if upload to ES run failed, continue otherwise
                         if (result_returnCode.toInteger() == 2 || (baseline_returnCode != null && baseline_returnCode.toInteger() == 2))  {
                               unstable('ES post tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
                           }
