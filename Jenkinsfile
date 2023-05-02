@@ -68,7 +68,7 @@ pipeline {
   stages {
     stage('Run Workload and Mr. Sandman') {
         when {
-            expression { (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) }
+            expression { (!["nightly-scale","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) }
         }
         agent { label params['JENKINS_AGENT_LABEL'] }
         steps {
@@ -142,7 +142,7 @@ pipeline {
         )
         script {
 
-          if (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) {
+          if (!["nightly-scale","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) {
             copyArtifacts(
                     fingerprintArtifacts: true, 
                     projectName: JENKINS_JOB_PATH,
