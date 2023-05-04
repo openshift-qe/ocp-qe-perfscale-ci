@@ -726,7 +726,7 @@
         "y": 35
       },
       "hiddenSeries": false,
-      "id": 65,
+      "id": 34,
       "legend": {
         "alignAsTable": true,
         "avg": true,
@@ -762,7 +762,7 @@
             "uid": "PF55DCC5EC58ABF5A"
           },
           "editorMode": "code",
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"kafka.*\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "range": true,
@@ -771,7 +771,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Kafka CPU Usage",
+      "title": "Loki CPU Usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -819,7 +819,7 @@
         "y": 35
       },
       "hiddenSeries": false,
-      "id": 34,
+      "id": 65,
       "legend": {
         "alignAsTable": true,
         "avg": true,
@@ -855,7 +855,7 @@
             "uid": "PF55DCC5EC58ABF5A"
           },
           "editorMode": "code",
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"}",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"kafka.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
           "range": true,
@@ -864,7 +864,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Loki CPU Usage",
+      "title": "Kafka CPU Usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1262,7 +1262,7 @@
         "y": 60
       },
       "hiddenSeries": false,
-      "id": 30,
+      "id": 66,
       "legend": {
         "alignAsTable": true,
         "avg": true,
@@ -1297,17 +1297,15 @@
             "type": "prometheus",
             "uid": "PF55DCC5EC58ABF5A"
           },
-          "editorMode": "code",
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
-          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Kafka Memory Usage (RSS)",
+      "title": "Loki Memory Usage (RSS)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1355,7 +1353,7 @@
         "y": 60
       },
       "hiddenSeries": false,
-      "id": 66,
+      "id": 30,
       "legend": {
         "alignAsTable": true,
         "avg": true,
@@ -1390,15 +1388,17 @@
             "type": "prometheus",
             "uid": "PF55DCC5EC58ABF5A"
           },
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "editorMode": "code",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Loki Memory Usage (RSS)",
+      "title": "Kafka Memory Usage (RSS)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1811,6 +1811,6 @@
   "timezone": "",
   "title": "NetObserv Downstream Metrics",
   "uid": "hmI9De_nz",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
