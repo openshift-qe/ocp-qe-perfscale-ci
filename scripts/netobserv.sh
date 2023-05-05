@@ -59,7 +59,7 @@ deploy_netobserv() {
     sleep 1
   done
   sleep 60
-  oc wait --timeout=600s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
+  oc wait --timeout=1200s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
 }
 
 deploy_lokistack() {
