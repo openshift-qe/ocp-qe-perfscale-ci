@@ -6,6 +6,8 @@ pipeline {
   agent { label params['JENKINS_AGENT_LABEL'] }
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
+        string(name: 'IMAGE_STREAM', defaultValue: 'openshift/must-gather', description: 'Base image stream of data to gather for the must-gather.')
+        string(name: 'IMAGE', defaultValue: '', description: 'Optional image to help get must-gather information on non default areas. See <a href="https://docs.openshift.com/container-platform/4.12/support/gathering-cluster-data.html">docs</a> for more information and options.')
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable
@@ -89,7 +91,13 @@ pipeline {
                 echo "Skipping must-gather as there are no schedulable masters...\n"
                 exit 120 # upgrade itself succ and post-check fail
             else
-              oc adm must-gather
+              image_param=""
+              if [[ -n "$IMAGE" ]]; then
+                echo "set image"
+                image_param=" --image=$IMAGE"
+              fi
+              echo "image param $image_param"
+              oc adm must-gather --image-stream=$IMAGE_STREAM $image_param
               ls must-gather.local*
               if [ $? -eq 0 ]; then
                 filename=`ls |grep must-gather.local*`
