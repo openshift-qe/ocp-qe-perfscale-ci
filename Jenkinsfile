@@ -170,10 +170,15 @@ pipeline{
           NOTE: this only applies to kube-burner workloads'''
       )
       choice(
-        choices: ["","cluster-density", "cluster-density-ms","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","etcd-perf","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
+        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","etcd-perf","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
+      )
+      booleanParam(
+        name: "KUBE_BURNER_OCP",
+        defaultValue: false,
+        description: "If enabled, the kube-burner-ocp versions of the selected CI_TYPE will be run"
       )
       string(
         name: 'VARIABLE', 
@@ -649,7 +654,22 @@ pipeline{
                             <b>Scale-Ci: </b> regression-test <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                         """
-                    } else if (params.CI_TYPE == "") {
+                    } else if (params.KUBE_BURNER_OCP == true || params.CI_TYPE == "cluster-density-v2") {
+                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),
+                            text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
+                            string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            booleanParam(name: "CHURN", value: CHURN)
+                        ]
+                        currentBuild.description += """
+                            <b>Scale-Ci: Kube-burner-ocp </b> ${CI_TYPE}- ${VARIABLE} <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                        """
+                    } 
+                    else if (params.CI_TYPE == "") {
                         println "No Scale-ci Job"
                         currentBuild.description += """
                             <b>No Scale-Ci Run</b><br/>
