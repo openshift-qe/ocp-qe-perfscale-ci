@@ -53,6 +53,16 @@ pipeline {
             description: 'This variable will set cerberus to inspect failing components'
         )
         string(
+          name: 'IMAGE_STREAM', 
+          defaultValue: 'openshift/must-gather', 
+          description: 'Base image stream of data to gather for the must-gather.'
+        )
+        string(
+          name: 'IMAGE', 
+          defaultValue: '', 
+          description: 'Optional image to help get must-gather information on non defualt areas. See <a href="https://docs.openshift.com/container-platform/4.12/support/gathering-cluster-data.html">docs</a> for more information and options.'
+        )
+        string(
             name: 'JENKINS_AGENT_LABEL',
             defaultValue: 'oc411',
             description:
@@ -219,7 +229,8 @@ pipeline {
                 build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather',
                 parameters: [
                     string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                    text(name: "ENV_VARS", value: ENV_VARS)
+                    text(name: "ENV_VARS", value: ENV_VARS), string(name: 'IMAGE', value: IMAGE),
+                    string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                 ], propagate: false
               }
             }
