@@ -18,7 +18,8 @@ def main():
     # read workload out file
     with open(WORKLOAD_OUT_FILE, 'r') as out_file:
         workload_logs = out_file.read()
-
+    
+    uuid_exists = True
     # initialize regexs
     if "kube-burner" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
@@ -30,13 +31,17 @@ def main():
         starttime_regex = base_regex + 'Testing'
         endtime_regex = base_regex + 'Enabling'
         strptime_filter = '%b %d %H:%M:%S %Z %Y'
-    uuid_regex = 'UUID: (.*)"'
-
+    
+    elif "network-perf-v2" in WORKLOAD_OUT_FILE:
+        base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
+        starttime_regex = base_regex + ' Reading'
+        endtime_regex = base_regex + 'Rendering'
+        strptime_filter = '%Y-%m-%d %H:%M:%S'
+        uuid_exists = False
+    
     # capture and log strings representations of start and end times
     starttime_string = re.findall(starttime_regex, workload_logs)[0]
     endtime_string = re.findall(endtime_regex, workload_logs)[0]
-    uuid = re.findall(uuid_regex, workload_logs)[0]
-    print(f"uuid: {uuid}")
     print(f"starttime_string: {starttime_string}")
     print(f"endtime_string: {endtime_string}")
 
@@ -48,12 +53,17 @@ def main():
 
     # construct JSON of workload data
     workload_data = {
-        "uuid": str(uuid),
         "starttime_string": str(starttime_string),
         "endtime_string": str(endtime_string),
         "starttime_timestamp": str(starttime_timestamp),
         "endtime_timestamp": str(endtime_timestamp)
     }
+
+    if uuid_exists:
+        uuid_regex = 'UUID: (.*)"'
+        uuid = re.findall(uuid_regex, workload_logs)[0]
+        print(f"uuid: {uuid}")
+        workload_data['uuid'] = str(uuid)
 
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
