@@ -55,6 +55,16 @@ pipeline {
             description: 'This variable will run must-gather if any cerberus components fail'
         )
         string(
+          name: 'IMAGE_STREAM', 
+          defaultValue: 'openshift/must-gather', 
+          description: 'Base image stream of data to gather for the must-gather.'
+        )
+        string(
+          name: 'IMAGE', 
+          defaultValue: '', 
+          description: 'Optional image to help get must-gather information on non default areas. See <a href="https://docs.openshift.com/container-platform/4.12/support/gathering-cluster-data.html">docs</a> for more information and options.'
+        )
+        string(
             name: 'JENKINS_AGENT_LABEL',
             defaultValue: 'oc412',
             description: '''
@@ -298,7 +308,8 @@ pipeline {
                                 string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
                                 string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true),
-                                booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
+                                booleanParam(name: "MUST_GATHER", value: MUST_GATHER),string(name: 'IMAGE', value: IMAGE),
+                                string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                             ],
                             propagate: false
                         def result = cerberus_job.result.toString()
