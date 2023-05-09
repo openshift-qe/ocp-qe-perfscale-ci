@@ -1,5 +1,8 @@
 @Library('flexy') _
 
+// global variables for pipeline
+NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
+
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
@@ -632,7 +635,7 @@ pipeline {
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
                             booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: 'quay.io/netobserv/must-gather'),
+                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
@@ -647,7 +650,7 @@ pipeline {
                             booleanParam(name: 'CLEANUP', value: true),
                             booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
                             booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: 'quay.io/netobserv/must-gather'),
+                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
                             booleanParam(name: 'GEN_CSV', value: false),
