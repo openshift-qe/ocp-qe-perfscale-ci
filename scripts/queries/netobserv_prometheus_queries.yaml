@@ -6,9 +6,17 @@
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60)
   metricName: nFlowsProcessedPerMinuteTotals
 
+# Total flows errored per minute
+- query: sum(rate(netobserv_ingest_errors[1m])*60)
+  metricName: nFlowsErroredPerMinuteTotals
+
 # Flows processed by ingester per minute aggregated by FLP pods
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
+
+# Flows errored by ingester per minute aggregated by FLP pods
+- query: sum(rate(netobserv_ingest_errors[1m])*60) by (pod)
+  metricName: nFlowsErroredPerMinute
 
 #####################
 # NetObserv metrics #
@@ -81,14 +89,6 @@
 # total working set memory by all loki pods
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", pod=~"loki.*", container=""})
   metricName: workingsetLokiTotals
-
-# lokistack CPU usage
-- query: pod:container_cpu_usage:sum{namespace="netobserv", pod=~"loki.*"}
-  metricName: cpuUsageLoki
-
-# lokistack memory usage (RSS)
-- query: sum(container_memory_rss{namespace="netobserv", pod=~"loki.*", container=""}) by (container, pod, namespace, node)
-  metricName: memoryUsageLoki 
 
 # lokistack PVC usage averaging over 5 mins period
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*loki.*"}[5m]))

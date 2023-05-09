@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1680543931651,
+  "iteration": 1683220206925,
   "links": [],
   "panels": [
     {
@@ -38,6 +38,127 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "Thanos",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 44,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(netobserv_ingest_flows_processed[1m]))",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Flows processed/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(netobserv_loki_sent_entries_total[1m]))",
+          "interval": "",
+          "legendFormat": "Flows written/s",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m]))",
+          "interval": "",
+          "legendFormat": "Flows dropped/s",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(netobserv_ingest_errors[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Flows errored/s",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Flows processed/written/dropped/errored per second",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:64",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:65",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "$Datasource",
       "fieldConfig": {
         "defaults": {
@@ -51,7 +172,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 2,
@@ -146,7 +267,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Thanos",
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -159,120 +280,6 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 1
-      },
-      "hiddenSeries": false,
-      "id": 44,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(netobserv_ingest_flows_processed[1m]))",
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Flows processed/s",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(netobserv_loki_sent_entries_total[1m]))",
-          "interval": "",
-          "legendFormat": "Flows written/s",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m]))",
-          "interval": "",
-          "legendFormat": "Flows dropped/s",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Flows processed/written/dropped per second",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:64",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:65",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
         "y": 9
       },
       "hiddenSeries": false,
@@ -357,114 +364,13 @@
       }
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Thanos",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 46,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(netobserv_workload_ingress_bytes_total[1m]))",
-          "interval": "",
-          "legendFormat": "Bytes/s",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Ingress Bytes processed per second",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:348",
-          "format": "binBps",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:349",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 40,
       "panels": [],
@@ -489,7 +395,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 56,
@@ -620,7 +526,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 22,
@@ -722,7 +628,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 6,
@@ -823,7 +729,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 34,
@@ -924,7 +830,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 65,
@@ -1014,7 +920,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 43
       },
       "id": 38,
       "panels": [],
@@ -1039,7 +945,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 58,
@@ -1170,7 +1076,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 26,
@@ -1271,7 +1177,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 28,
@@ -1373,7 +1279,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 59
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 30,
@@ -1474,7 +1380,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 59
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 66,
@@ -1564,7 +1470,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 68
       },
       "id": 48,
       "panels": [],
@@ -1589,7 +1495,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 69
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1690,7 +1596,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 76
+        "y": 77
       },
       "hiddenSeries": false,
       "id": 10,
@@ -1791,7 +1697,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 76
+        "y": 77
       },
       "hiddenSeries": false,
       "id": 64,
