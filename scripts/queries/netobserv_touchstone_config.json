@@ -4,6 +4,7 @@
             "prod-netobserv-operator-metadata": {
                 "fields": [
                     "agent",
+                    "arch",
                     "aws_s3_bucket_name",
                     "aws_s3_bucket_objects",
                     "aws_s3_bucket_size",
