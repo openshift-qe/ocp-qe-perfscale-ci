@@ -170,7 +170,7 @@ pipeline{
           NOTE: this only applies to kube-burner workloads'''
       )
       choice(
-        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","etcd-perf","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
+        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
@@ -347,6 +347,16 @@ pipeline{
         name: 'MUST_GATHER', 
         defaultValue: true, 
         description: 'This variable will run must-gather if any cerberus components fail'
+      )
+      string(
+        name: 'IMAGE_STREAM', 
+        defaultValue: 'openshift/must-gather', 
+        description: 'Base image stream of data to gather for the must-gather.'
+      )
+      string(
+        name: 'IMAGE', 
+        defaultValue: '', 
+        description: 'Optional image to help get must-gather information on non default areas. See <a href="https://docs.openshift.com/container-platform/4.12/support/gathering-cluster-data.html">docs</a> for more information and options.'
       )
       booleanParam(
         name: 'DESTROY_WHEN_DONE', 
@@ -604,23 +614,12 @@ pipeline{
             }
             steps{
                 script {
-                  if (params.CI_TYPE == "etcd-perf") {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/etcd-perf", propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE)
-                       ]
-                       currentBuild.description += """
-                            <b>Scale-Ci: </b> etcd-perf <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                        """
-                   } else if (params.CI_TYPE == "router-perf") {
+                    if (params.CI_TYPE == "router-perf") {
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
                             booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
                        ]
@@ -635,7 +634,8 @@ pipeline{
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                          ]
                        currentBuild.description += """
                             <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
@@ -648,7 +648,8 @@ pipeline{
                             string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
                             string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE),
                             booleanParam(name: "CLEANUP", value: CLEANUP),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
+                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                        ]
                         currentBuild.description += """
                             <b>Scale-Ci: </b> regression-test <br/>
@@ -662,7 +663,8 @@ pipeline{
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
                             string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            booleanParam(name: "CHURN", value: CHURN)
+                            booleanParam(name: "CHURN", value: CHURN),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                         ]
                         currentBuild.description += """
                             <b>Scale-Ci: Kube-burner-ocp </b> ${CI_TYPE}- ${VARIABLE} <br/>
@@ -683,7 +685,8 @@ pipeline{
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
                             string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            booleanParam(name: "CHURN", value: CHURN)
+                            booleanParam(name: "CHURN", value: CHURN),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM) 
                         ]
                         currentBuild.description += """
                             <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
