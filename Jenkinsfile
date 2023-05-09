@@ -24,6 +24,10 @@ if (userId) {
     currentBuild.displayName = userId
 }
 
+
+def JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
+
 println "user id $userId"
 def RETURNSTATUS = "default"
 def output = ""
@@ -57,6 +61,21 @@ pipeline {
           defaultValue: false,
           description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
       )
+      booleanParam(
+            name: 'MUST_GATHER', 
+            defaultValue: true, 
+            description: 'This variable will run must-gather if any cerberus components fail'
+        )
+      string(
+          name: 'IMAGE_STREAM', 
+          defaultValue: 'openshift/must-gather', 
+          description: 'Base image stream of data to gather for the must-gather.'
+        )
+        string(
+          name: 'IMAGE', 
+          defaultValue: '', 
+          description: 'Optional image to help get must-gather information on non default areas. See <a href="https://docs.openshift.com/container-platform/4.12/support/gathering-cluster-data.html">docs</a> for more information and options.'
+        )
       booleanParam(
           name: 'CHURN',
           defaultValue: false,
@@ -271,7 +290,8 @@ pipeline {
                         string(name: "CERBERUS_ITERATIONS", value: "1"), string(name: "CERBERUS_WATCH_NAMESPACES", value: "[^.*\$]"),
                         string(name: 'CERBERUS_IGNORE_PODS', value: "[^installer*, ^kube-burner*, ^redhat-operators*, ^certified-operators*]"),
                         string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "INSPECT_COMPONENTS", value: true),
-                        string(name: "WORKLOAD", value: WORKLOAD)
+                        string(name: "WORKLOAD", value: WORKLOAD),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                        string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
                     ],
                     propagate: false
                 if (status == "PASS") {
@@ -312,7 +332,7 @@ pipeline {
                       string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL),
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
                       string(name: "JOB", value: WORKLOAD), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ),
-                      text(name: "JOB_OUTPUT", value: "${output}")
+                      string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                   ],
                   propagate: false
             }
