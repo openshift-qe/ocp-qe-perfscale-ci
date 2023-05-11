@@ -34,6 +34,7 @@ YAML_FILE = ''
 QUERIES = {}
 RESULTS = {"data": []}
 DEBUG = False
+JIRA = None
 
 # prometheus query constants
 START_TIME = None
@@ -169,6 +170,7 @@ def get_netobserv_env_info():
     iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
     info = {
         "uuid": UUID,
+        "jira": JIRA,
         "metric_name": "netobservEnv",
         "data_type": "metadata",
         "iso_timestamp": iso_timestamp,
@@ -368,6 +370,7 @@ if __name__ == '__main__':
     standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
     standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
+    standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
 
     # set upload mode flags
     upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
@@ -440,11 +443,16 @@ if __name__ == '__main__':
             logging.error("Error connecting to Jenkins server: ", e)
             sys.exit(1)
 
-    # determine UUID
+    # determine UUID and Jira if applicable
     UUID = args.uuid
     if UUID is None:
         UUID = str(uuid.uuid4())
     logging.info(f"UUID: {UUID}")
+    JIRA = args.jira
+    if JIRA is None:
+        JIRA = "N/A"
+    else:
+        logging.info(f"Associating run with Jira ticket job {JIRA}")
 
     # get YAML file with queries and set queries constant with data from YAML file
     YAML_FILE = args.yaml_file

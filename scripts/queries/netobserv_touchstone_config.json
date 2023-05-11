@@ -12,6 +12,7 @@
                     "cache_max_flows",
                     "deploymentModel",
                     "flp_kind",
+                    "jira",
                     "kafka_brokers",
                     "kafka_replicas",
                     "loki",
