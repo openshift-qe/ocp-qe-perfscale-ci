@@ -107,7 +107,7 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 
 Queries are sourced from the `netobserv_prometheus_queries.yaml` file within the `scripts/queries/` directory by default - check out that file to see what data the NOPE tool is collecting. Note this can be overriden with the `--yaml-file` flag to run other queries from within other files.
 
-Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
+Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information. You can also tie a run to a Jira ticket if applicable using the `--jira` flag. 
 
 If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
 

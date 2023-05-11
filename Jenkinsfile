@@ -282,6 +282,14 @@ pipeline {
             defaultValue: false,
             description: 'Check this box to run the NOPE tool in debug mode for additional logging'
         )
+        string(
+            name: 'NOPE_JIRA',
+            defaultValue: '',
+            description: '''
+                Adds a Jira ticket to be tied to the NOPE run<br/>
+                Format should in the form of <b>NETOBSERV-123</b>
+            '''
+        )
         separator(
             name: 'CLEANUP_OPTIONS',
             sectionHeader: 'Cleanup Options',
@@ -324,6 +332,9 @@ pipeline {
                     }
                     if (params.NOPE == false && params.NOPE_DEBUG == true) {
                         error 'NOPE must be run to enable debug mode'
+                    }
+                    if (params.NOPE == false && params.NOPE_JIRA != '') {
+                        error 'NOPE must be run to tie in a Jira'
                     }
                     if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
                         error 'Spreadsheet cannot be generated if data is not uploaded to Elasticsearch'
@@ -723,6 +734,9 @@ pipeline {
                         }
                         if (params.NOPE_DEBUG == true) {
                             NOPE_ARGS += " --debug"
+                        }
+                        if (params.NOPE_JIRA != '') {
+                            NOPE_ARGS += " --jira ${params.NOPE_JIRA}"
                         }
                         returnCode = sh(returnStatus: true, script: """
                             python3.9 --version
