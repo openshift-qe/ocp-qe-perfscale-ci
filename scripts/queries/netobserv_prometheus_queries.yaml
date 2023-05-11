@@ -23,7 +23,7 @@
 #####################
 
 # netobserv pods CPU usage
-- query: pod:container_cpu_usage:sum{namespace=~"netobserv|openshift-netobserv-operator"}
+- query: pod:container_cpu_usage:sum{namespace=~"netobserv|netobserv-privileged|openshift-netobserv-operator"}
   metricName: cpuUsage
 
 # netobserv pods memory usage (RSS)
