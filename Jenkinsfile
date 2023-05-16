@@ -6,6 +6,9 @@ if (userId) {
   currentBuild.displayName = userId
 }
 
+def CUR_JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $CUR_JENKINS_JOB_NUMBER"
+
 pipeline {
   agent none
 
@@ -75,9 +78,9 @@ pipeline {
             deleteDir()
             checkout([
                 $class: 'GitSCM',
-                branches: [[name: 'netobserv-perf-tests' ]],
+                branches: [[name: 'main' ]],
                 userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci-netobs']]
+                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'help_scripts']]
             ])
             copyArtifacts(
                 fingerprintArtifacts: true, 
@@ -93,8 +96,8 @@ pipeline {
                     python3.9 -m virtualenv venv3
                     source venv3/bin/activate
                     python --version
-                    python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci-netobs/scripts/requirements.txt
-                    python $WORKSPACE/ocp-qe-perfscale-ci-netobs/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
+                    python -m pip install -r $WORKSPACE/help_scripts/scripts/requirements.txt
+                    python $WORKSPACE/help_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                 """)
                 // fail pipeline if Mr. Sandman run failed, continue otherwise
                 if (returnCode.toInteger() != 0) {
@@ -105,20 +108,26 @@ pipeline {
                 }
                 // update build description fields
                 // UUID
-                currentBuild.description = "Write to sheet sandman info: "
-                env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
-                currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
+                buildInfo = readJSON file: 'help_scripts/data/workload.json'
+                println "build info $buildInfo"
+                buildInfo.each { env.setProperty(it.key, it.value) }
+                currentBuild.description = "Write to sheet sandman info: <br/>"
+                archiveArtifacts(
+                    artifacts: 'help_scripts/data/*',
+                    allowEmptyArchive: true,
+                    fingerprint: true
+                )
+
+                currentBuild.description += "<b>UUID:</b> ${env.uuid}<br/>"
                 // STARTTIME_STRING is string rep of start time
-                env.STARTTIME_STRING = sh(returnStdout: true, script: "jq -r '.starttime_string' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
+                currentBuild.description += "<b>workload_type:</b> ${env.workload_type}<br/>"
+                // STARTTIME_STRING is string rep of start time
                 currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
                 // ENDTIME_STRING is string rep of end time
-                env.ENDTIME_STRING = sh(returnStdout: true, script: "jq -r '.endtime_string' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
                 currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
                 // STARTTIME_TIMESTAMP is unix timestamp of start time
-                env.STARTTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.starttime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
                 currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
                 // ENDTIME_TIMESTAMP is unix timestamp of end time
-                env.ENDTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.endtime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
                 currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
             }
         }
@@ -144,11 +153,21 @@ pipeline {
 
           if (!["nightly-scale","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.JOB)) {
             copyArtifacts(
-                    fingerprintArtifacts: true, 
-                    projectName: JENKINS_JOB_PATH,
-                    selector: specific(JENKINS_JOB_NUMBER),
-                    target: 'workload-artifacts'
-                )
+                fingerprintArtifacts: true, 
+                projectName: JENKINS_JOB_PATH,
+                selector: specific(JENKINS_JOB_NUMBER),
+                target: 'workload-artifacts'
+            )
+            copyArtifacts(
+                fingerprintArtifacts: true, 
+                projectName: JOB_NAME,
+                selector: specific(CUR_JENKINS_JOB_NUMBER),
+                target: 'current-artifacts'
+            )
+
+            buildInfo = readJSON file: 'current-artifacts/help_scripts/data/workload.json'
+            println "build info $buildInfo"
+            buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
           }
         }
         script {
@@ -157,6 +176,7 @@ pipeline {
           currentBuild.description += "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
+
         script {
           withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
             file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
@@ -169,7 +189,7 @@ pipeline {
                 set -a && source .env_override && set +a
                 mkdir -p ~/.kube
                 cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                ls
+                env
                 cd write_to_sheet
                 python3 --version
                 python3 -m venv venv3
@@ -178,7 +198,7 @@ pipeline {
                 pip install --upgrade pip
                 pip install -U gspread oauth2client datetime pytz pyyaml
                 printf "${params.ENV_VARS}"  >> env_vars.out
-              
+
                 export PYTHONIOENCODING=utf8
                 if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
                     python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"

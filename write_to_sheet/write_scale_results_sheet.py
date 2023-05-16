@@ -99,12 +99,14 @@ def get_uuid():
     
     return os.getenv("UUID")
 
-def get_router_perf_uuid(job_output):
+def get_router_perf_uuid(job_output=""):
     
-    job_output_string = parse_output_file_name(job_output)
-    
-    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
-
+    if job_output != "":
+        job_output_string = parse_output_file_name(job_output)
+        
+        metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
+    else: 
+        metadata = ""
     return get_uuid(), metadata
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
@@ -177,3 +179,82 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     row.append(str(write_helper.get_env_vars_from_file(env_vars_file)))
     row.append(user)
     ws.insert_row(row, index, "USER_ENTERED")
+
+def write_prow_results_to_sheet():
+    scopes = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+    ]
+    google_sheet_account = os.getenv("GSHEET_KEY_LOCATION")
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(google_sheet_account, scopes) #access the json key you downloaded earlier
+    file = gspread.authorize(credentials) # authenticate the JSON key with gspread
+    sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1cciTazgmvoD0YBdMuIQBRxyJnblVuczgbBL5xC8uGuI/edit?usp=sharing")
+    #open sheet
+    print('hello from prow write to sheet')
+    index = 2
+    ws = sheet.worksheet("test")
+    ws.insert_row(["hello"], index, "USER_ENTERED")
+    job_parameters = os.getenv("JOB_ITERATIONS")
+    job_type = os.getenv("WORKLOAD")
+    es_username = os.getenv("ES_USERNAME")
+    es_password = os.getenv("ES_PASSWORD")
+
+    if job_type == "network-perf":
+        return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
+        start_time = parse_output_for_starttime()
+        if return_code == 0:
+            grafana_cell = find_uperf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
+        else:
+            grafana_cell = ""
+    elif job_type == "router-perf":
+            global uuid
+            uuid, metadata = get_router_perf_uuid()
+            grafana_cell = uuid
+    else:
+        print('call metadata')
+        grafana_cell = get_metadata_uuid()
+
+    net_status, network_type_string = write_helper.run("oc get network cluster -o jsonpath='{.status.networkType}'")
+    node_status, node_name=write_helper.run("oc get node --no-headers | grep master| head -1| awk '{print $1}'")
+    node_name = node_name.strip()
+    arch_type_status, architecture_type = write_helper.run("oc get node " + str(node_name) + " --no-headers -ojsonpath='{.status.nodeInfo.architecture}'")
+    cloud_type = "aws"
+    architecture_type = architecture_type.strip()
+    if "ovn" in network_type_string.lower():
+        network_type = "OVN"
+    else:
+        network_type = "SDN"
+
+    version = write_helper.get_oc_version()
+    tz = timezone('EST')
+
+    worker_count = write_helper.get_worker_num()
+    row = [version, grafana_cell, cloud_type, architecture_type, network_type, worker_count]
+
+    if job_type not in ["network-perf", "router-perf"]:
+        workload_args = get_workload_params(job_type)
+        print('work')
+        if workload_args != 0:
+            row.append(workload_args)
+    elif job_type == "router-perf":
+        row.append(str(metadata))
+
+    if job_parameters:
+        parameter_list = job_parameters.split(',')
+        for param in parameter_list:
+            if param:
+                row.append(param)
+
+    if job_type not in [ "network-perf", "network-perf","router-perf"]:
+        creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
+        print('get latency params ' + str(uuid) )
+        print('get latency params ' + str(creation_time) )
+        print('get latency params ' + str(es_username) )
+        print('get latency params ' + str(es_password) )
+        row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
+
+    row.append(str(datetime.now(tz)))
+    ws = sheet.worksheet(job_type)
+    ws.insert_row(row, index, "USER_ENTERED")
+
+

@@ -60,7 +60,6 @@ def get_pod_latencies(uuid="",creation_time="",es_username="", es_password=""):
         if len(pod_latencies_list) != 0:
             avg_list = []
             p99_list = []
-
             for pod_info in pod_latencies_list:
                 if len(pod_info) > 0:
                     avg_list.append(pod_info[1])
