@@ -54,7 +54,7 @@ pipeline {
       if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
     )
     choice(
-      choices: ['smoke.yaml', 'full.yaml'], 
+      choices: ['smoke.yaml', 'full-run.yaml'], 
       name: 'WORKLOAD_TYPE', 
       description: 'Workload type'
     )
