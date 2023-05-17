@@ -273,7 +273,7 @@ pipeline{
           font-family: 'Orienta', sans-serif;"""
       )
       choice(
-        choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc','full'],
+        choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc','full-run'],
         name: 'WORKLOAD_TYPE',
         description: 'Workload type'
       )
