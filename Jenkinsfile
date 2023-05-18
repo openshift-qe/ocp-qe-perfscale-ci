@@ -170,7 +170,7 @@ pipeline{
           NOTE: this only applies to kube-burner workloads'''
       )
       choice(
-        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","regression-test"], 
+        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-v2","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
@@ -199,6 +199,7 @@ pipeline{
         - <b>networkpolicy-case1</b>: This will export JOB_ITERATIONS env variable; set to 5 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
         - <b>networkpolicy-case2</b>: This will export JOB_ITERATIONS env variable; set to 1 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
         - <b>networkpolicy-case3</b>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br> 
+        - <b>network-perf-v2</b>: Set the WORKLOAD_TYPE to run a smoke or full run <br>
         - <b>regression-test</b>: This will pass this value to PARAMETERS; Parameter or an array of parameters to pass to the TEST_CASE script <br>
         Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
         '''
@@ -273,7 +274,7 @@ pipeline{
           font-family: 'Orienta', sans-serif;"""
       )
       choice(
-        choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc'],
+        choices: ['smoke', 'pod2pod', 'hostnet', 'pod2svc','full-run'],
         name: 'WORKLOAD_TYPE',
         description: 'Workload type'
       )
@@ -635,6 +636,20 @@ pipeline{
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
+                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+                         ]
+                       currentBuild.description += """
+                            <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                       """
+                    } else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf-v2", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml'),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
