@@ -199,6 +199,7 @@ pipeline{
         - <b>networkpolicy-case1</b>: This will export JOB_ITERATIONS env variable; set to 5 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
         - <b>networkpolicy-case2</b>: This will export JOB_ITERATIONS env variable; set to 1 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br>
         - <b>networkpolicy-case3</b>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration)<br> 
+        - <b>network-perf-v2</b>: Set the WORKLOAD_TYPE to run a smoke or full run
         - <b>regression-test</b>: This will pass this value to PARAMETERS; Parameter or an array of parameters to pass to the TEST_CASE script <br>
         Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
         '''
