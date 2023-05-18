@@ -645,7 +645,7 @@ pipeline{
                             <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                        """
-                    else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
+                    } else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf-v2", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml')
