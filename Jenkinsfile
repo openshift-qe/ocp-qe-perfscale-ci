@@ -149,9 +149,14 @@ pipeline {
           '''
       )
       string(
-          name: 'KUBE_BURNER_BINARY',
-          defaultValue: 'https://github.com/cloud-bulldozer/kube-burner/releases/download/v1.4.2/kube-burner-1.4.2-Linux-x86_64.tar.gz',
-          description: 'You can change this to point to your own kube burner binary file if needed.'
+          name: 'E2E_BENCHMARKING_REPO',
+          defaultValue: 'https://github.com/cloud-bulldozer/e2e-benchmarking',
+          description: 'You can change this to point to your fork if needed.'
+      )
+      string(
+          name: 'E2E_BENCHMARKING_REPO_BRANCH',
+          defaultValue: 'master',
+          description: 'You can change this to point to a branch on your fork if needed.'
       )
   }
   stages {  
@@ -209,6 +214,12 @@ pipeline {
                 selector: specific(params.BUILD_NUMBER),
                 target: 'flexy-artifacts'
             )
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
+                doGenerateSubmoduleConfigurations: false,
+                userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
+            ])
             script {
                 buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
                 currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}-${params.WORKLOAD}"
@@ -247,18 +258,13 @@ pipeline {
                         python --version
                         
                         set -o pipefail
-                        pwd
-                        echo "workspace $WORKSPACE"
-                        KUBE_DIR=$(mktemp -d)
  
-                        curl -sS -L ${KUBE_BURNER_BINARY} | tar -xzC ${KUBE_DIR}/ kube-burner
-
+                        cd workloads/kube-burner-ocp-wrapper
                         if [[ $CHURN == true ]]; then
                             echo "churn true"
-                            churn_val="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
+                            EXTRA_FLAGS="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
                         fi
-                        pwd
-                        ${KUBE_DIR}/kube-burner ocp $WORKLOAD --iterations=$VARIABLE --timeout=6h --es-server=$ES_SERVER --es-index=ripsaw-kube-burner $churn_val |& tee "kube-burner.out"
+                        ./run.sh $churn_val |& tee "kube-burner.out"
 
                     ''')
                     output = sh(returnStdout: true, script: 'cat kube-burner.out')
