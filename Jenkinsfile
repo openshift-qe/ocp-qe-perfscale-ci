@@ -648,7 +648,7 @@ pipeline{
                     } else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf-v2", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml')
+                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml'),
                             booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
                             string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
