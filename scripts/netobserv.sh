@@ -39,8 +39,8 @@ deploy_netobserv() {
   echo "====> Adding RBACs for authToken FORWARD"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
 
-  echo "====> Creating openshift-netobserv-operator namespace, RoleBindings, and OperatorGroup"
-  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  echo "====> Creating openshift-netobserv-operator namespace and OperatorGroup"
+  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   echo "====> Creating NetObserv subscription"
   oc apply -f $SCRIPTS_DIR/netobserv/$NOO_SUBSCRIPTION
   sleep 60
@@ -278,7 +278,7 @@ delete_netobserv() {
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
   oc delete crd/flowcollectors.flows.netobserv.io
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace

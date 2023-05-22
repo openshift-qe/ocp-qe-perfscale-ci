@@ -56,7 +56,7 @@ pipeline {
         )
         booleanParam(
             name: 'INSTALL_DITTYBOPPER',
-            defaultValue: true,
+            defaultValue: false,
             description: 'Value to install dittybopper dashboards to cluster'
         )
         string(
@@ -80,7 +80,7 @@ pipeline {
         )
         choice(
             name: 'LOKI_OPERATOR',
-            choices: ['Released', 'Unreleased', 'None'],
+            choices: ['None', 'Released', 'Unreleased'],
             description: '''
                 You can use either the latest released or unreleased version of Loki Operator:<br/>
                 <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
@@ -109,7 +109,7 @@ pipeline {
         )
         choice(
             name: 'INSTALLATION_SOURCE',
-            choices: ['Official', 'Internal', 'OperatorHub', 'Source', 'None'],
+            choices: ['None', 'Official', 'Internal', 'OperatorHub', 'Source'],
             description: '''
                 Network Observability can be installed from the following sources:<br/>
                 <b>Official</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
@@ -144,12 +144,12 @@ pipeline {
         )
         string(
             name: 'EBPF_SAMPLING_RATE',
-            defaultValue: '1',
+            defaultValue: '',
             description: 'Rate at which to sample flows'
         )
         string(
             name: 'EBPF_MEMORY_LIMIT',
-            defaultValue: '800Mi',
+            defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         string(
@@ -159,7 +159,7 @@ pipeline {
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '800Mi',
+            defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         booleanParam(
@@ -241,7 +241,7 @@ pipeline {
         )
         booleanParam(
             name: 'CERBERUS_CHECK',
-            defaultValue: true,
+            defaultValue: false,
             description: 'Check cluster health status after workload runs'
         )
         separator(
@@ -255,7 +255,7 @@ pipeline {
         )
         booleanParam(
             name: 'NOPE',
-            defaultValue: true,
+            defaultValue: false,
             description: '''
                 Check this box to run the NOPE tool after the workload completes<br/>
                 If the tool successfully uploads results to Elasticsearch, Touchstone will be run afterword
@@ -263,7 +263,7 @@ pipeline {
         )
         booleanParam(
             name: 'GEN_CSV',
-            defaultValue: true,
+            defaultValue: false,
             description: '''
                 Boolean to create a Google Sheet with comparison data<br/>
                 Note this will only run if the NOPE tool successfully uploads to Elasticsearch
