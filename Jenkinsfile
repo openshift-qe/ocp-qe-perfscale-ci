@@ -31,7 +31,7 @@ pipeline{
 				font-family: 'Orienta', sans-serif;
 			  """)
         string(name: 'CI_PROFILE', defaultValue: '', description: 'Name of ci profile to build for the cluster you want to build')
-        choice(choices: ['extra-small','small','medium'], name: 'PROFILE_SCALE_SIZE', description: 'Size of cluster to scale to; will be ignored if SCALE_UP is set')
+        choice(choices: ['extra-small','small','medium','large'], name: 'PROFILE_SCALE_SIZE', description: 'Size of cluster to scale to; will be ignored if SCALE_UP is set')
         separator(name: "BUILD_FLEXY", sectionHeader: "Build Flexy Parameters", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
