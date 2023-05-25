@@ -89,7 +89,7 @@ pipeline {
             """
         )
         choice(
-            choices: ['extra-small','small','medium',''], 
+            choices: ['extra-small','small','medium','large',''], 
             name: 'PROFILE_SCALE_SIZE', 
             description: """Set scale size to set number of workers to add and define size of masters and workers. <br>
             For information about size definitions see <a href="https://gitlab.cee.redhat.com/aosqe/ci-profiles/-/blob/master/scale-ci/4.11/02_IPI-on-AWS.install.yaml#L10"> here </a> (will need ot look at your specific profile) <br>
