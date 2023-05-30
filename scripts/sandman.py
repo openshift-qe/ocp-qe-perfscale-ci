@@ -33,7 +33,7 @@ def main():
         workload_end_regex = ':'
         # capture and log strings representations of workload name
         workload_first_str = workload_logs.split(workload_regex)[1]
-        workload_second_str = workload_first_str.split(workload_end_regex)[0]
+        workload_type = workload_first_str.split(workload_end_regex)[0]
         uuid_regex = 'UUID (.*)"'
 
         iterations_start = " --iterations="
@@ -48,7 +48,7 @@ def main():
         workload_regex = 'Workload: '
         workload_end_regex = '\n'
         # capture and log strings representations of workload name
-        workload_first_str = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
+        workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
         uuid_regex = 'UUID: (.*)"'
 
         #find iterations 
@@ -63,6 +63,7 @@ def main():
         strptime_filter = '%b %d %H:%M:%S %Z %Y'
         uuid_regex = 'UUID: (.*)"'
         iterations_exists = False
+        workload_type = "router-perf"
 
     elif "network-perf-v2" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
@@ -71,6 +72,7 @@ def main():
         strptime_filter = '%Y-%m-%d %H:%M:%S'
         uuid_exists = False
         iterations_exists = False
+        workload_type = "network-perf-v2"
     
     # capture and log strings representations of start and end times
     starttime_string = re.findall(starttime_regex, workload_logs)[0]
@@ -86,6 +88,7 @@ def main():
 
     # construct JSON of workload data
     workload_data = {
+        "workload_type": str(workload_type),
         "starttime_string": str(starttime_string),
         "endtime_string": str(endtime_string),
         "starttime_timestamp": str(starttime_timestamp),
@@ -110,6 +113,7 @@ def main():
     # write timestamp data to data directory
     with open(DATA_DIR + f'/workload.json', 'w') as data_file:
         json.dump(workload_data, data_file)
+        
 
     # exit if no issues
     sys.exit(0)
