@@ -207,6 +207,12 @@ pipeline {
         }
         steps {
             deleteDir()
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
+                doGenerateSubmoduleConfigurations: false,
+                userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
+            ])
             copyArtifacts(
                 filter: '',
                 fingerprintArtifacts: true,
@@ -214,12 +220,6 @@ pipeline {
                 selector: specific(params.BUILD_NUMBER),
                 target: 'flexy-artifacts'
             )
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
-                doGenerateSubmoduleConfigurations: false,
-                userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
-            ])
             script {
                 buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
                 currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}-${params.WORKLOAD}"
@@ -245,8 +245,8 @@ pipeline {
                         export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
                         export ES_SERVER="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         mkdir -p ~/.kube
+
                         cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                        ls -ls ~/.kube/
                         
                         export CHURN_DURATION=${CHURN_DURATION:-10m}
                         export CHURN_DELAY=${CHURN_DELAY:-60s}
@@ -262,14 +262,18 @@ pipeline {
                         cd workloads/kube-burner-ocp-wrapper
                         if [[ $CHURN == true ]]; then
                             echo "churn true"
-                            EXTRA_FLAGS="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
+                            export EXTRA_FLAGS="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
+                        fi
+                        if [[ $WORKLOAD == *"cluster-density"* ]]; then
+                            export ITERATIONS=$VARIABLE
+                        elif [[ $WORKLOAD == *"node-density"* ]]; then
+                            export EXTRA_FLAGS="$EXTRA_FLAGS --pods-per-node=$VARIABLE"
                         fi
                         ./run.sh |& tee "kube-burner-ocp.out"
 
                     ''')
-                    output = sh(returnStdout: true, script: 'cat kube-burner-ocp.out')
                     archiveArtifacts(
-                        artifacts: 'kube-burner-ocp.out',
+                        artifacts: 'workloads/kube-burner-ocp-wrapper/kube-burner-ocp.out',
                         allowEmptyArchive: true,
                         fingerprint: true
                     )
