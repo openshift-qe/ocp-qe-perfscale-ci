@@ -264,12 +264,12 @@ pipeline {
                             echo "churn true"
                             EXTRA_FLAGS="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
                         fi
-                        ./run.sh |& tee "kube-burner.out"
+                        ./run.sh |& tee "kube-burner-ocp.out"
 
                     ''')
-                    output = sh(returnStdout: true, script: 'cat kube-burner.out')
+                    output = sh(returnStdout: true, script: 'cat kube-burner-ocp.out')
                     archiveArtifacts(
-                        artifacts: 'kube-burner.out',
+                        artifacts: 'kube-burner-ocp.out',
                         allowEmptyArchive: true,
                         fingerprint: true
                     )
