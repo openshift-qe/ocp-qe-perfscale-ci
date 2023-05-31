@@ -51,6 +51,11 @@ pipeline {
           description: 'Value to write to google sheet (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results>write-scale-ci-results</a>)'
       )
       booleanParam(
+          name: 'WRITE_TO_ES',
+          defaultValue: false,
+          description: 'Value to write to elastic seach under metricName: jenkinsEnv'
+      )
+      booleanParam(
           name: 'CLEANUP',
           defaultValue: false,
           description: 'Cleanup namespaces (and all sub-objects) created from workload (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/benchmark-cleaner/>benchmark-cleaner</a>)'
@@ -414,7 +419,16 @@ pipeline {
                       string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                   ],
                   propagate: false
-
+            }
+        }
+    }
+    stage("Write es results") {
+      agent { label params['JENKINS_AGENT_LABEL'] }
+      when {
+          expression { params.WRITE_TO_ES == true }
+      }
+        steps {
+          script {
                 build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-results-to-es',
                   parameters: [
                       string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
