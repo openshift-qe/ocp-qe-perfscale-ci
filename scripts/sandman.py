@@ -104,7 +104,6 @@ def main():
     # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
     # Specific regex configurations set based on file type above 
     if uuid_exists:
-        # rework to use an end
         uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
         print(f"uuid: {uuid}")
         workload_data['uuid'] = str(uuid)
@@ -124,7 +123,6 @@ def main():
     with open(DATA_DIR + f'/workload.json', 'w') as data_file:
         json.dump(workload_data, data_file)
         
-
     # exit if no issues
     sys.exit(0)
 
