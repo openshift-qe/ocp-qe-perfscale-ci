@@ -35,9 +35,12 @@ def main():
         workload_first_str = workload_logs.split(workload_regex)[1]
         workload_type = workload_first_str.split(workload_end_regex)[0]
         uuid_regex = 'UUID (.*)"'
-
-        iterations_start = " --iterations="
-        iterations_end = " "
+        if "node-density" in workload_type:
+            iterations_start = " --pods-per-node="
+            iterations_end = " "
+        else: 
+            iterations_start = " --iterations="
+            iterations_end = " "
 
     elif "kube-burner" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
@@ -52,8 +55,12 @@ def main():
         uuid_regex = 'UUID: (.*)"'
 
         #find iterations 
-        iterations_start = "Job iterations: "
-        iterations_end = "\n"
+        if "node-density" in workload_type:
+            iterations_start = "Pods per node: "
+            iterations_end = "\n"
+        else: 
+            iterations_start = "Job iterations: "
+            iterations_end = "\n"
 
         
     elif "ingress_router" in WORKLOAD_OUT_FILE:
