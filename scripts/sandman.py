@@ -47,9 +47,9 @@ def main():
         starttime_regex = base_regex + 'Starting'
         endtime_regex = base_regex + 'Exiting'
         strptime_filter = '%Y-%m-%d %H:%M:%S'
-        
         workload_regex = 'Workload: '
         workload_end_regex = '\n'
+
         # capture and log strings representations of workload name
         workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
         uuid_regex = 'UUID: (.*)"'
