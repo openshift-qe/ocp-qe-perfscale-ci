@@ -28,9 +28,9 @@ def main():
         starttime_regex = base_regex + 'Starting'
         endtime_regex = base_regex + 'Exiting'
         strptime_filter = '%Y-%m-%d %H:%M:%S'
-        
         workload_regex = 'Job '
         workload_end_regex = ':'
+
         # capture and log strings representations of workload name
         workload_first_str = workload_logs.split(workload_regex)[1]
         workload_type = workload_first_str.split(workload_end_regex)[0]
