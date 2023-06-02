@@ -21,8 +21,8 @@ def main():
     
     uuid_exists = True
     iterations_exists = True
-    # initialize regexs
-    
+
+    # initialize regexs based on file type
     if "kube-burner-ocp" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
         starttime_regex = base_regex + 'Starting'
@@ -61,7 +61,6 @@ def main():
         else: 
             iterations_start = "Job iterations: "
             iterations_end = "\n"
-
         
     elif "ingress_router" in WORKLOAD_OUT_FILE:
         base_regex = '([a-zA-z]{3}\s+\d+ \d+:\d+:\d+ [a-zA-z]{3} \d+).*'
@@ -102,12 +101,16 @@ def main():
         "endtime_timestamp": str(endtime_timestamp)
     }
 
+    # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
+    # Specific regex configurations set based on file type above 
     if uuid_exists:
         # rework to use an end
         uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
         print(f"uuid: {uuid}")
         workload_data['uuid'] = str(uuid)
 
+    # Depending on the workload, we want to find the number of iterations 
+    # Specific regex configurations set based on file type above 
     if iterations_exists:
         # rework to use an end
         iterations = workload_logs.split(iterations_start)[1].split(iterations_end)[0]
