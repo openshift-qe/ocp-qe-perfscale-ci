@@ -54,7 +54,7 @@ def main():
         workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
         uuid_regex = 'UUID: (.*)"'
 
-        #find iterations 
+        # find iterations 
         if "node-density" in workload_type:
             iterations_start = "Pods per node: "
             iterations_end = "\n"
