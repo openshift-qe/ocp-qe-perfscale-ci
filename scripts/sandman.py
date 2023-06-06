@@ -20,24 +20,65 @@ def main():
         workload_logs = out_file.read()
     
     uuid_exists = True
-    # initialize regexs
-    if "kube-burner" in WORKLOAD_OUT_FILE:
+    iterations_exists = True
+
+    # initialize regexs based on file type
+    if "kube-burner-ocp" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
         starttime_regex = base_regex + 'Starting'
         endtime_regex = base_regex + 'Exiting'
         strptime_filter = '%Y-%m-%d %H:%M:%S'
+        workload_regex = 'Job '
+        workload_end_regex = ':'
+
+        # capture and log strings representations of workload name
+        workload_first_str = workload_logs.split(workload_regex)[1]
+        workload_type = workload_first_str.split(workload_end_regex)[0]
+        uuid_regex = 'UUID (.*)"'
+        if "node-density" in workload_type:
+            iterations_start = " --pods-per-node="
+            iterations_end = " "
+        else: 
+            iterations_start = " --iterations="
+            iterations_end = " "
+
+    elif "kube-burner" in WORKLOAD_OUT_FILE:
+        base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
+        starttime_regex = base_regex + 'Starting'
+        endtime_regex = base_regex + 'Exiting'
+        strptime_filter = '%Y-%m-%d %H:%M:%S'
+        workload_regex = 'Workload: '
+        workload_end_regex = '\n'
+
+        # capture and log strings representations of workload name
+        workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
+        uuid_regex = 'UUID: (.*)"'
+
+        # find iterations 
+        if "node-density" in workload_type:
+            iterations_start = "Pods per node: "
+            iterations_end = "\n"
+        else: 
+            iterations_start = "Job iterations: "
+            iterations_end = "\n"
+        
     elif "ingress_router" in WORKLOAD_OUT_FILE:
         base_regex = '([a-zA-z]{3}\s+\d+ \d+:\d+:\d+ [a-zA-z]{3} \d+).*'
         starttime_regex = base_regex + 'Testing'
         endtime_regex = base_regex + 'Enabling'
         strptime_filter = '%b %d %H:%M:%S %Z %Y'
-    
+        uuid_regex = 'UUID: (.*)"'
+        iterations_exists = False
+        workload_type = "router-perf"
+
     elif "network-perf-v2" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
         starttime_regex = base_regex + ' Reading'
         endtime_regex = base_regex + 'Rendering'
         strptime_filter = '%Y-%m-%d %H:%M:%S'
         uuid_exists = False
+        iterations_exists = False
+        workload_type = "network-perf-v2"
     
     # capture and log strings representations of start and end times
     starttime_string = re.findall(starttime_regex, workload_logs)[0]
@@ -53,17 +94,27 @@ def main():
 
     # construct JSON of workload data
     workload_data = {
+        "workload_type": str(workload_type),
         "starttime_string": str(starttime_string),
         "endtime_string": str(endtime_string),
         "starttime_timestamp": str(starttime_timestamp),
         "endtime_timestamp": str(endtime_timestamp)
     }
 
+    # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
+    # Specific regex configurations set based on file type above 
     if uuid_exists:
-        uuid_regex = 'UUID: (.*)"'
-        uuid = re.findall(uuid_regex, workload_logs)[0]
+        uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
         print(f"uuid: {uuid}")
         workload_data['uuid'] = str(uuid)
+
+    # Depending on the workload, we want to find the number of iterations 
+    # Specific regex configurations set based on file type above 
+    if iterations_exists:
+        # rework to use an end
+        iterations = workload_logs.split(iterations_start)[1].split(iterations_end)[0]
+        print(f"iterations: {iterations}")
+        workload_data['iteratons'] = str(iterations)
 
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
