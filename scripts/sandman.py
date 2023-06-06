@@ -122,7 +122,7 @@ def main():
     # write timestamp data to data directory
     with open(DATA_DIR + f'/workload.json', 'w') as data_file:
         json.dump(workload_data, data_file)
-        
+
     # exit if no issues
     sys.exit(0)
 
