@@ -16,6 +16,7 @@
                     "kafka_brokers",
                     "kafka_replicas",
                     "loki",
+                    "ocp",
                     "release",
                     "sampling"
                 ],
