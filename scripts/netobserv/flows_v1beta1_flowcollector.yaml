@@ -20,9 +20,6 @@ spec:
           cpu: 100m
           memory: 50Mi
       sampling: 1
-      debug:
-        env:
-          PORT_PROFILE: "6060"
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
@@ -139,7 +136,6 @@ spec:
         tls:
           type: DISABLED
     port: 2055
-    profilePort: 6060
     resources:
       limits:
         memory: 800Mi
