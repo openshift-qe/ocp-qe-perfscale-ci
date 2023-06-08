@@ -54,7 +54,7 @@ pipeline {
         )
         booleanParam(
             name: 'UPLOAD_BASELINE',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Upload baseline data if one is not found'
         )
         choice(
@@ -250,7 +250,7 @@ pipeline {
                             python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline false
                         """)
 
-                        if ( params.UPLOAD_BASELINE == true ) {
+                        if ( params.UPLOAD_BASELINE == true && (params.CI_STATUS == "PASS" || params.CI_STATUS == "SUCCESS" )) {
                           // post a new baseline uuid if one doesn't exist
                             baseline_returnCode = sh(returnStatus: true, script: """
                                 source venv3/bin/activate
