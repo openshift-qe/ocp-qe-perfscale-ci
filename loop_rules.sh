@@ -6,6 +6,8 @@ cd e2e-benchmark/utils
 source compare.sh
 for i in "${!TOLERANCY_RULES_LIST[@]}"; do
     export COMPARISON_OUTPUT=${PWD}/${WORKLOAD}-${COMPARISON_CONFIG_LIST[i]}.csv
+    ls $WORKSPACE/comparison/
+    ls $WORKSPACE/comparison/config/
     export COMPARISON_CONFIG=$WORKSPACE/comparison/config/${COMPARISON_CONFIG_LIST[i]}
     export TOLERANCY_RULES=$WORKSPACE/comparison/tolerancy-configs/${TOLERANCY_RULES_LIST[i]}
     env | grep TOLERANCY_RULES
