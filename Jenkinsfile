@@ -242,7 +242,7 @@ pipeline {
                     currentBuild.result = "FAILURE"
                 }
                 archiveArtifacts(
-                    artifacts: 'e2e-benchmark/utils/*',
+                    artifacts: 'e2e-benchmark/utils/results/*',
                     allowEmptyArchive: true,
                     fingerprint: true
                 )

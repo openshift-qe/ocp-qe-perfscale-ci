@@ -4,6 +4,8 @@ COMPARISON_CONFIG_LIST=($COMPARISON_CONFIG_PARAM)
 cd e2e-benchmark/utils
 
 source compare.sh
+mkdir results
+cd results
 for i in "${!TOLERANCY_RULES_LIST[@]}"; do
     export COMPARISON_OUTPUT=${PWD}/${WORKLOAD}-${COMPARISON_CONFIG_LIST[i]}.csv
     export COMPARISON_CONFIG=$WORKSPACE/comparison/config/${COMPARISON_CONFIG_LIST[i]}
@@ -20,4 +22,6 @@ for i in "${!TOLERANCY_RULES_LIST[@]}"; do
     exit 1
     fi
 done
-cd ../..
+
+cat *.csv
+cd ../../..
