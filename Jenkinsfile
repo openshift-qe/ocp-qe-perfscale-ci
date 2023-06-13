@@ -243,7 +243,7 @@ pipeline {
             name: 'CERBERUS_CHECK',
             defaultValue: false,
             description: 'Check cluster health status after workload runs'
-        )    
+        )
         separator(
             name: 'NOPE_TOUCHSTONE_CONFIG_OPTIONS',
             sectionHeader: 'NOPE and Touchstone Configuration Options',
@@ -783,14 +783,11 @@ pipeline {
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
+                        println 'Running Touchstone to get statistics for workload run...'
                         // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
-                        env.BASELINE_UUID = params.BASELINE_UUID
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
-                        env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_rules.yaml"
-                        // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                        env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
@@ -807,10 +804,33 @@ pipeline {
                         """)
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
                         if (returnCode.toInteger() != 0) {
-                            unstable('Touchstone tool failed - run locally with the given UUID to get run statistics :(')
+                            unstable('Touchstone tool failed - run locally with the given UUID to get workload run statistics :(')
                         }
                         else {
                             println 'Successfully ran Touchstone tool :)'
+                            // do tolerancy rules check if a baseline UUID is provided
+                            if (params.BASELINE_UUID != '') {
+                                println "Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${params.BASELINE_UUID}..."
+                                // set additional vars for tolerancy rules check
+                                // note ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
+                                //      GEN_CSV is automatically set to false here as well
+                                env.BASELINE_UUID = params.BASELINE_UUID
+                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                                env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_rules.yaml"
+                                env.GEN_CSV = false
+                                returnCode = sh(returnStatus: true, script: """
+                                    cd $WORKSPACE/e2e-benchmarking/utils
+                                    source compare.sh
+                                    run_benchmark_comparison
+                                """)
+                                // mark pipeline as unstable if Touchstone failed, continue otherwise
+                                if (returnCode.toInteger() != 0) {
+                                    unstable('Touchstone tool failed - see console log for additional details :(')
+                                }
+                                else {
+                                    println 'New statistics were within tolerable range of baseline statistics :)'
+                                }                            
+                            }
                         }
                     }
                 }
