@@ -137,7 +137,7 @@ NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` to
 touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config netobserv_touchstone_config.json --tolerancy-rules netobserv_touchstone_rules.yaml 2> /dev/null | egrep -iB 3 -A 1 "Pass|fail"
 ```
 
-To capture comparison output in JSON file, it can be run as:
+To capture the comparison output in JSON file, you can run something like:
 ```
 touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config ~/touchstone_configs/netobserv_touchstone_config.json --tolerancy-rules ~/touchstone_configs/netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
 ```
