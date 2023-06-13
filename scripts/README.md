@@ -132,15 +132,15 @@ Sometimes, the only way to get data such as UUID and workload timestamp informat
 NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_config.json` file in the `queries/` directory under `scripts/`
 
 ### Baseline comparison with touchstone
-`touchstone_compare` can be used to compare metrics between multiple runs via UUID using the `netobserv_touchstone_config.json` and  `netobserv_touchstone_rules.yaml` files in the `queries/` directory under `scripts/`. For example, to compare between 1.2 and 1.3 node-density-heavy benchmark metrics, you can run the below command:
+`touchstone_compare` can be used to compare metrics between multiple runs via UUID using the `netobserv_touchstone_config.json` and  `netobserv_touchstone_rules.yaml` files in the `queries/` directory under `scripts/`. For example, to compare between 1.2 and 1.3 node-density-heavy benchmark metrics, you can run something like:
 ```
-touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config netobserv_touchstone_config.json --tolerancy-rules netobserv_touchstone_rules.yaml 2> /dev/null | egrep -iB 3 -A 1 "Pass|fail"
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config netobserv_touchstone_config.json --tolerancy-rules netobserv_touchstone_rules.yaml 2> /dev/null | egrep -iB 3 -A 1 "Pass|fail"
 ```
 
 To capture the comparison output in JSON file, you can run something like:
 ```
-touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config ~/touchstone_configs/netobserv_touchstone_config.json --tolerancy-rules ~/touchstone_configs/netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config netobserv_touchstone_config.json --tolerancy-rules netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
 ```
 where workloads UUIDs are:
-- `d9be1710-abdb-420d-86da-883da583aa03` for 1.2 node-density-heavy  
-- `363eb0de-9213-4d9c-a347-849007003742` for 1.3 node-density-heavy  
+- `d9be1710-abdb-420d-86da-883da583aa03` for 1.2 node-density-heavy
+- `363eb0de-9213-4d9c-a347-849007003742` for 1.3 node-density-heavy

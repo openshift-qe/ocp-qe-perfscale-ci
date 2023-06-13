@@ -243,19 +243,10 @@ pipeline {
             name: 'CERBERUS_CHECK',
             defaultValue: false,
             description: 'Check cluster health status after workload runs'
-        )
-        string(
-            name: 'BASELINE_UUID',
-            defaultValue: '',
-            description: '''
-                Baseline UUID to compare this run to<br/>
-                If the workload completes successfully and is uploaded to Elasticsearch, adding a UUID here will configure Touchstone to run a comparsion between the job run and the given baseline UUID<br/>
-                If no UUID is specified, no comparsion will be made
-            '''
-        )        
+        )    
         separator(
-            name: 'NOPE_CONFIG_OPTIONS',
-            sectionHeader: 'NOPE Configuration Options',
+            name: 'NOPE_TOUCHSTONE_CONFIG_OPTIONS',
+            sectionHeader: 'NOPE and Touchstone Configuration Options',
             sectionHeaderStyle: '''
                 font-size: 14px;
                 font-weight: bold;
@@ -297,6 +288,15 @@ pipeline {
             description: '''
                 Adds a Jira ticket to be tied to the NOPE run<br/>
                 Format should in the form of <b>NETOBSERV-123</b>
+            '''
+        )
+        string(
+            name: 'BASELINE_UUID',
+            defaultValue: '',
+            description: '''
+                Baseline UUID to compare this run to<br/>
+                If the workload completes successfully and is uploaded to Elasticsearch, adding a UUID here will configure Touchstone to run a comparison between the job run and the given baseline UUID<br/>
+                If no UUID is specified, no comparison will be made
             '''
         )
         separator(
@@ -787,7 +787,7 @@ pipeline {
                         env.BASELINE_UUID = params.BASELINE_UUID
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
-                        env.TOLERANCY_RULES = 'netobserv_touchstone_rules.yaml'
+                        env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_rules.yaml"
                         // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
