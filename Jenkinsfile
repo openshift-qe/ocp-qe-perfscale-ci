@@ -777,7 +777,7 @@ pipeline {
                         // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
-                        //env.TOLERANCY_RULES = ''
+                        env.TOLERANCY_RULES = 'netobserv_touchstone_rules.yaml'
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                         env.GEN_CSV = params.GEN_CSV

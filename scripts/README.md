@@ -139,7 +139,7 @@ touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de
 
 To capture the comparison output in JSON file, you can run something like:
 ```
-touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config ~/touchstone_configs/netobserv_touchstone_config.json --tolerancy-rules ~/touchstone_configs/netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config ~/touchstone_configs/netobserv_touchstone_config.json --tolerancy-rules ~/touchstone_configs/netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
 ```
 where workloads UUIDs are:
 - `d9be1710-abdb-420d-86da-883da583aa03` for 1.2 node-density-heavy  
