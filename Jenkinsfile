@@ -244,6 +244,15 @@ pipeline {
             defaultValue: false,
             description: 'Check cluster health status after workload runs'
         )
+        string(
+            name: 'BASELINE_UUID',
+            defaultValue: '',
+            description: '''
+                Baseline UUID to compare this run to<br/>
+                If the workload completes successfully and is uploaded to Elasticsearch, adding a UUID here will configure Touchstone to run a comparsion between the job run and the given baseline UUID<br/>
+                If no UUID is specified, no comparsion will be made
+            '''
+        )        
         separator(
             name: 'NOPE_CONFIG_OPTIONS',
             sectionHeader: 'NOPE Configuration Options',
@@ -775,10 +784,13 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
                         // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
+                        env.BASELINE_UUID = params.BASELINE_UUID
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_config.json'
                         env.TOLERANCY_RULES = 'netobserv_touchstone_rules.yaml'
+                        // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                        env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
