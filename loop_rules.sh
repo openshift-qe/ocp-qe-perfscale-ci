@@ -10,8 +10,8 @@ failed_comparison=0
 if [[ -n $BASELINE_UUID ]]; then 
     for i in "${!TOLERANCY_RULES_LIST[@]}"; do
         export COMPARISON_OUTPUT=${PWD}/${WORKLOAD}-${COMPARISON_CONFIG_LIST[i]}.csv
-        export COMPARISON_CONFIG=$WORKSPACE/comparison/config/${COMPARISON_CONFIG_LIST[i]}
-        export TOLERANCY_RULES=$WORKSPACE/comparison/tolerancy-configs/${TOLERANCY_RULES_LIST[i]}
+        export COMPARISON_CONFIG=$WORKSPACE/config/${COMPARISON_CONFIG_LIST[i]}
+        export TOLERANCY_RULES=$WORKSPACE/tolerancy-configs/${TOLERANCY_RULES_LIST[i]}
 
         compare "${ES_SERVER}" "${BASELINE_UUID} ${UUID}" "${COMPARISON_CONFIG}" ${GEN_CSV} -vv
         result=$?
