@@ -130,3 +130,14 @@ Sometimes, the only way to get data such as UUID and workload timestamp informat
 
 ## Fetching metrics using Touchstone 
 NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_config.json` file in the `queries/` directory under `scripts/`
+
+### Baseline comparison with touchstone
+`touchstone_compare` can be used to compare the metrics between multiple runs any given UUID for each run using the `netobserv_touchstone_config.json` and  tolerancy file `netobserv_touchstone_rules.yaml` in the `queries/` directory under `scripts/`. For example to compare between 1.2 and 1.3 node-density-heavy benchmark metrics, below command can be run:
+```
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config netobserv_touchstone_config.json --tolerancy-rules netobserv_touchstone_rules.yaml 2> /dev/null | egrep -iB 3 -A 1 "Pass|fail"
+```
+
+To capture comparison output in JSON file, it can be run as:
+```
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742  --config ~/touchstone_configs/netobserv_touchstone_config.json --tolerancy-rules ~/touchstone_configs/netobserv_touchstone_rules.yaml -o json --output-file /tmp/tcompare.json
+```
