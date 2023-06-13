@@ -233,7 +233,16 @@ pipeline {
                     if [[ -z "$BASELINE_UUID" ]]; then
                       export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
+                    
 
+                    if [[ $WORKLOAD == "max-services" ]] || [[ $WORKLOAD == "max-namespaces" ]] || [[ $WORKLOAD == "cluster-density" ]] || [[ $WORKLOAD == "concurrent-builds" ]]; then 
+                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/nodeWorkers/nodeAggWorkers})
+                          ## kubelet and crio metrics aren't in aggregated metrics files
+                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/kubelet.json/})
+                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/crio.json/})
+                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/containerMetrics.json/})
+                          
+                      fi
                     ./loop_rules.sh
 
                 ''')
