@@ -788,7 +788,7 @@ pipeline {
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_statistics_config.json'
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                        env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+                        env.EMAIL_ID_FOR_RESULTS_SHEET = "openshift-netobserv-team@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
                         env.WORKLOAD = params.WORKLOAD
