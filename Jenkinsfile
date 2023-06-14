@@ -820,7 +820,7 @@ pipeline {
                                 env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_tolerancy_rules.yaml"
                                 returnCode = sh(returnStatus: true, script: """
                                     cd $WORKSPACE/e2e-benchmarking/utils
-                                    rm -rf tmp/**/*.csv
+                                    rm -rf /tmp/**/*.csv
                                     rm -rf *.csv
                                     source compare.sh
                                     run_benchmark_comparison
