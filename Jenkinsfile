@@ -265,7 +265,7 @@ pipeline {
             name: 'GEN_CSV',
             defaultValue: false,
             description: '''
-                Boolean to create a Google Sheet with comparison data<br/>
+                Boolean to create Google Sheets with statistical and comparison data where applicable<br/>
                 Note this will only run if the NOPE tool successfully uploads to Elasticsearch
             '''
         )
@@ -814,12 +814,10 @@ pipeline {
                                 // set additional vars for tolerancy rules check
                                 // note COMPARISON_CONFIG is changed here to only focus on specific statistics
                                 //      ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
-                                //      GEN_CSV is automatically set to false here as well
                                 env.BASELINE_UUID = params.BASELINE_UUID
                                 env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
                                 env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                                 env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_tolerancy_rules.yaml"
-                                env.GEN_CSV = false
                                 returnCode = sh(returnStatus: true, script: """
                                     cd $WORKSPACE/e2e-benchmarking/utils
                                     source compare.sh
@@ -827,7 +825,7 @@ pipeline {
                                 """)
                                 // mark pipeline as unstable if Touchstone failed, continue otherwise
                                 if (returnCode.toInteger() != 0) {
-                                    unstable('Touchstone tool failed - see console log for additional details :(')
+                                    unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
                                 }
                                 else {
                                     println 'New statistics were within tolerable range of baseline statistics :)'
