@@ -29,7 +29,7 @@ It is recommended to use Loki Operator to create a LokiStack for Network Observa
 
 To create LokiStack manually, the following steps can be performed:
 1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
-2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki` S3 bucket.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki-ocpqe-perf` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
@@ -55,8 +55,6 @@ Continuous internal bundles are created via the CPaaS system and hosted internal
 #### OperatorHub
 The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
 
-To install from OperatorHub, navigate to the `scripts/` directory and run `$ INSTALLATION_SOURCE=OperatorHub; source netobserv.sh ; deploy_netobserv`
-
 #### Source
 GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
 
@@ -67,7 +65,8 @@ Navigate to the `scripts/` directory of this repository and run `$ populate_neto
 
 ### Updating common parameters of flowcollector
 You can update common parameters of flowcollector with the following commands:
-- **Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
 - **FLP Memory limit:**: `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/memory", "value": "<value>Mi"}]"`
@@ -108,7 +107,7 @@ The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Pytho
 
 Queries are sourced from the `netobserv_prometheus_queries.yaml` file within the `scripts/queries/` directory by default - check out that file to see what data the NOPE tool is collecting. Note this can be overriden with the `--yaml-file` flag to run other queries from within other files.
 
-Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information.
+Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information. You can also tie a run to a Jira ticket if applicable using the `--jira` flag. 
 
 If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
 
@@ -130,4 +129,18 @@ Note that if you are running the NOPE tool in Upload mode by passing the `--uplo
 Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
 ## Fetching metrics using Touchstone 
-NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_config.json` file in the `queries/` directory under `scripts/`
+NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_statistics_config.json` file in the `queries/` directory under `scripts/`
+
+### Baseline comparison with touchstone
+`touchstone_compare` can be used to compare metrics between multiple runs via UUID using the `netobserv_touchstone_tolerancy_config.json` and  `netobserv_touchstone_tolerancy_rules.yaml` files in the `queries/` directory under `scripts/`. For example, to compare between 1.2 and 1.3 node-density-heavy benchmark metrics, you can run something like:
+```bash
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config netobserv_touchstone_tolerancy_config.json --tolerancy-rules netobserv_touchstone_tolerancy_rules.yaml 2> /dev/null | egrep -iB 3 -A 1 "Pass|fail"
+```
+
+To capture the comparison output in JSON file, you can run something like:
+```bash
+touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de-9213-4d9c-a347-849007003742 --config netobserv_touchstone_tolerancy_config.json --tolerancy-rules netobserv_touchstone_tolerancy_rules.yaml -o json --output-file /tmp/tcompare.json
+```
+where workloads UUIDs are:
+- `d9be1710-abdb-420d-86da-883da583aa03` for 1.2 node-density-heavy
+- `363eb0de-9213-4d9c-a347-849007003742` for 1.3 node-density-heavy

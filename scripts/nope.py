@@ -34,6 +34,7 @@ YAML_FILE = ''
 QUERIES = {}
 RESULTS = {"data": []}
 DEBUG = False
+JIRA = None
 
 # prometheus query constants
 START_TIME = None
@@ -169,12 +170,15 @@ def get_netobserv_env_info():
     iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
     info = {
         "uuid": UUID,
+        "jira": JIRA,
         "metric_name": "netobservEnv",
         "data_type": "metadata",
         "iso_timestamp": iso_timestamp,
     }
     base_commands = {
+        "ocp": 'oc get co/authentication -o=jsonpath="{.status.versions[0].version}"',
         "release": 'oc get pods -l app=netobserv-operator -o jsonpath="{.items[*].spec.containers[1].env[0].value}" -A',
+        "arch": 'oc get node -o jsonpath="{.items[0].status.nodeInfo.architecture}"',
         "loki": 'oc get sub -n openshift-operators-redhat loki-operator -o jsonpath="{.status.currentCSV}"',
         "deploymentModel": 'oc get flowcollector -o jsonpath="{.items[*].spec.deploymentModel}" -n netobserv',
         "agent": 'oc get flowcollector -o jsonpath="{.items[*].spec.agent.type}"',
@@ -367,6 +371,7 @@ if __name__ == '__main__':
     standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
     standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
+    standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
 
     # set upload mode flags
     upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
@@ -439,11 +444,16 @@ if __name__ == '__main__':
             logging.error("Error connecting to Jenkins server: ", e)
             sys.exit(1)
 
-    # determine UUID
+    # determine UUID and Jira if applicable
     UUID = args.uuid
     if UUID is None:
         UUID = str(uuid.uuid4())
     logging.info(f"UUID: {UUID}")
+    JIRA = args.jira
+    if JIRA is None:
+        JIRA = "N/A"
+    else:
+        logging.info(f"Associating run with Jira ticket job {JIRA}")
 
     # get YAML file with queries and set queries constant with data from YAML file
     YAML_FILE = args.yaml_file
@@ -464,8 +474,14 @@ if __name__ == '__main__':
     IS_DOWNSTREAM = subprocess.run(['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[0].env[-2].value}"', '-A'], capture_output=True, text=True).stdout
     if IS_DOWNSTREAM == '"true"':
         TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
+        # try deprecated method in case first attempt fails
+        if TOKEN == '':
+            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
     else:
         TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
+        # try deprecated method in case first attempt fails
+        if TOKEN == '':
+            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
 
     # log token or exit if no token could be found
     if TOKEN == '':

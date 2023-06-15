@@ -127,7 +127,7 @@ spec:
     kafkaConsumerBatchSize: 10485760
     kafkaConsumerQueueCapacity: 1000
     kafkaConsumerReplicas: 3
-    logLevel: debug
+    logLevel: info
     metrics:
       ignoreTags:
       - egress
@@ -136,7 +136,6 @@ spec:
         tls:
           type: DISABLED
     port: 2055
-    profilePort: 6060
     resources:
       limits:
         memory: 800Mi

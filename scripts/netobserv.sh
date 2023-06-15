@@ -34,13 +34,13 @@ deploy_netobserv() {
   oc new-project netobserv || true
 
   echo "====> Checking if LokiStack prerequisite has been satisfied"
-  oc wait --timeout=60s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+  oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
   echo "====> Adding RBACs for authToken FORWARD"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
 
-  echo "====> Creating openshift-netobserv-operator namespace, RoleBindings, and OperatorGroup"
-  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  echo "====> Creating openshift-netobserv-operator namespace and OperatorGroup"
+  oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   echo "====> Creating NetObserv subscription"
   oc apply -f $SCRIPTS_DIR/netobserv/$NOO_SUBSCRIPTION
   sleep 60
@@ -59,7 +59,7 @@ deploy_netobserv() {
     sleep 1
   done
   sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
+  oc wait --timeout=1200s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
 }
 
 deploy_lokistack() {
@@ -235,13 +235,15 @@ setup_dittybopper_template() {
 }
 
 delete_s3() {
-  echo "====> Deleting AWS S3 Bucket"
   echo "====> Getting S3 Bucket Name"
   S3_BUCKET_NAME=$(/bin/bash -c 'oc extract cm/lokistack-config -n netobserv --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n')
   echo "====> Got $S3_BUCKET_NAME"
-  aws s3 rm s3://$S3_BUCKET_NAME --recursive
-  sleep 30
-  aws s3 rb s3://$S3_BUCKET_NAME --force
+  echo "====> Deleting AWS S3 Bucket"
+  while :; do
+    aws s3 rb s3://$S3_BUCKET_NAME --force && break
+    sleep 1
+  done
+  echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
 }
 
 delete_lokistack() {
@@ -276,7 +278,7 @@ delete_netobserv() {
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
   oc delete crd/flowcollectors.flows.netobserv.io
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_rb_og.yaml
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
