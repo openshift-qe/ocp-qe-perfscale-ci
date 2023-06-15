@@ -20,7 +20,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue:'oc413',
+            defaultValue: 'oc413',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -331,22 +331,22 @@ pipeline {
             steps {
                 script {
                     if (params.FLEXY_BUILD_NUMBER == '') {
-                        error 'A Flexy build number must be specified'
+                        error('A Flexy build number must be specified')
                     }
                     if (params.WORKLOAD == 'None' && params.NOPE == true) {
-                        error 'NOPE tool cannot be run if a workload is not run first'
+                        error('NOPE tool cannot be run if a workload is not run first')
                     }
                     if (params.NOPE == false && params.NOPE_DUMP == true) {
-                        error 'NOPE must be run to dump data to a file'
+                        error('NOPE must be run to dump data to a file')
                     }
                     if (params.NOPE == false && params.NOPE_DEBUG == true) {
-                        error 'NOPE must be run to enable debug mode'
+                        error('NOPE must be run to enable debug mode')
                     }
                     if (params.NOPE == false && params.NOPE_JIRA != '') {
-                        error 'NOPE must be run to tie in a Jira'
+                        error('NOPE must be run to tie in a Jira')
                     }
                     if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
-                        error 'Spreadsheet cannot be generated if data is not uploaded to Elasticsearch'
+                        error('Spreadsheet cannot be generated if data is not uploaded to Elasticsearch')
                     }
                     println('Job params are valid - continuing execution...')
                 }
@@ -368,13 +368,14 @@ pipeline {
                 ])
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
-                        buildinfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
-                        buildinfo.params.each { env.setProperty(it.key, it.value) }
-                        currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
-                        currentBuild.description = "Flexy-install Job: <a href=\"${buildinfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a><br/>"
+                        buildInfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
+                        buildInfo.params.each { env.setProperty(it.key, it.value) }
                         installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
+                        OCP_BUILD = installData.INSTALLER.VERSION
                         env.MAJOR_VERSION = installData.INSTALLER.VER_X
                         env.MINOR_VERSION = installData.INSTALLER.VER_Y
+                        currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
+                        currentBuild.description = "Flexy-install Job: <a href=\"${buildInfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a> using OCP build <b>${OCP_BUILD}</b><br/>"
                         returnCode = sh(returnStatus: true, script: """
                             mkdir -p ~/.kube
                             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
@@ -389,7 +390,7 @@ pipeline {
                             error("Failed to setup testing environment :(")
                         }
                         else {
-                            println "Successfully setup testing environment :)"
+                            println("Successfully setup testing environment :)")
                         }
                     }
                 }
@@ -397,7 +398,7 @@ pipeline {
         }
         stage('Scale workers and install infra nodes') {
             when {
-                expression { params.WORKER_COUNT != '0' }
+                expression { params.WORKER_COUNT != '0' && params.WORKER_COUNT != '' }
             }
             steps {
                 script {
@@ -410,12 +411,12 @@ pipeline {
                     ]
                     currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
                     if (scaleJob.result != 'SUCCESS') {
-                        error 'Scale job failed :('
+                        error('Scale job failed :(')
                     }
                     else {
-                        println "Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)"
+                        println("Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)")
                         if (params.INFRA_WORKLOAD_INSTALL) {
-                            println 'Successfully installed infrastructure and workload nodes :)'
+                            println('Successfully installed infrastructure and workload nodes :)')
                         }
                         sh(returnStatus: true, script: '''
                             oc get nodes
@@ -435,7 +436,7 @@ pipeline {
                 script {
                     // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
                     if (params.LOKI_OPERATOR == 'Unreleased') {
-                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
                     }
                     // set USER variable to be included in AWS bucket name
                     if (userId) {
@@ -455,7 +456,7 @@ pipeline {
                         error("${params.LOKI_OPERATOR} version of Loki Operator installation failed :(")
                     }
                     else {
-                        println "Successfully installed ${LOKI_OPERATOR} version of Loki Operator :)"
+                        println("Successfully installed ${params.LOKI_OPERATOR} version of Loki Operator :)")
                         sh(returnStatus: true, script: '''
                             oc get pods -n openshift-operators-redhat
                             oc get pods -n netobserv
@@ -475,10 +476,10 @@ pipeline {
                         env.IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
                     }
                     else {
-                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${MAJOR_VERSION}.${MINOR_VERSION}"
+                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
                     }
                     // attempt installation of Network Observability from selected source
-                    println "Installing Network Observability from ${params.INSTALLATION_SOURCE}..."
+                    println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
@@ -488,7 +489,7 @@ pipeline {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
                     }
                     else {
-                        println "Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)"
+                        println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
                         sh(returnStatus: true, script: '''
                             oc get pods -n openshift-netobserv-operator
                             oc get pods -n openshift-operators-redhat
@@ -510,7 +511,7 @@ pipeline {
                     }
 
                     // attempt updating common parameters of NetObserv and flowcollector where specified
-                    println 'Updating common parameters of NetObserv and flowcollector where specified...'
+                    println('Updating common parameters of NetObserv and flowcollector where specified...')
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
                         returnCode = sh(returnStatus: true, script: """
                             oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
@@ -552,12 +553,12 @@ pipeline {
                             error('Updating FLP memory limit failed :(')
                         }
                     }
-                    println 'Successfully updated common parameters of NetObserv and flowcollector :)'
+                    println('Successfully updated common parameters of NetObserv and flowcollector :)')
 
                     // attempt to enable or update Kafka if applicable
-                    println "Checking if Kafka needs to be enabled or updated..."
+                    println("Checking if Kafka needs to be enabled or updated...")
                     if (params.ENABLE_KAFKA == true) {
-                        println "Configuring Kafka in flowcollector..."
+                        println("Configuring Kafka in flowcollector...")
                         returnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
@@ -566,7 +567,7 @@ pipeline {
                             error('Failed to enable Kafka in flowcollector :(')
                         }
                         else {
-                            println 'Successfully enabled Kafka with flowcollector :)'
+                            println('Successfully enabled Kafka with flowcollector :)')
                             sh(returnStatus: true, script: '''
                                 oc get pods -n openshift-netobserv-operator
                                 oc get pods -n openshift-operators-redhat
@@ -577,7 +578,7 @@ pipeline {
                         }
                     }
                     else {
-                        println "Skipping Kafka configuration..."
+                        println("Skipping Kafka configuration...")
                     }
                 }
             }
@@ -589,7 +590,7 @@ pipeline {
             steps {
                 script {
                     // attempt setup of FLP service and creation of service-monitor
-                    println 'Setting up FLP service and creating service-monitor...'
+                    println('Setting up FLP service and creating service-monitor...')
                     returnCode = sh(returnStatus: true, script:  """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         populate_netobserv_metrics
@@ -599,7 +600,7 @@ pipeline {
                         error('Setting up FLP service and creating service-monitor failed :(')
                     }
                     else {
-                        println 'Successfully set up FLP service and created service-monitor :)'
+                        println('Successfully set up FLP service and created service-monitor :)')
                     }
                 }
             }
@@ -634,7 +635,7 @@ pipeline {
                         error('Installation of Dittybopper failed :(')
                     }
                     else {
-                        println 'Successfully installed Dittybopper :)'
+                        println('Successfully installed Dittybopper :)')
                     }
                 }
             }
@@ -678,10 +679,10 @@ pipeline {
                         ]
                     }
                     if (workloadJob.result != 'SUCCESS') {
-                        error 'Workload job failed :('
+                        error('Workload job failed :(')
                     }
                     else {
-                        println "Successfully ran workload job :)"
+                        println("Successfully ran workload job :)")
                         // update build description with workload job link
                         env.JENKINS_BUILD = "${workloadJob.getNumber()}"
                         currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
@@ -709,7 +710,7 @@ pipeline {
                         error('Mr. Sandman tool failed :(')
                     }
                     else {
-                        println 'Successfully ran Mr. Sandman tool :)'
+                        println('Successfully ran Mr. Sandman tool :)')
                     }
                     // update build description fields
                     // UUID
@@ -764,7 +765,7 @@ pipeline {
                             error('NOPE tool failed :(')
                         }
                         else {
-                            println 'Successfully ran NOPE tool :)'
+                            println('Successfully ran NOPE tool :)')
                         }
                     }
                 }
@@ -783,7 +784,7 @@ pipeline {
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
-                        println 'Running Touchstone to get statistics for workload run...'
+                        println('Running Touchstone to get statistics for workload run...')
                         // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_statistics_config.json'
@@ -807,17 +808,17 @@ pipeline {
                             unstable('Touchstone tool failed - run locally with the given UUID to get workload run statistics :(')
                         }
                         else {
-                            println 'Successfully ran Touchstone tool :)'
+                            println('Successfully ran Touchstone tool :)')
                             // do tolerancy rules check if a baseline UUID is provided
                             if (params.BASELINE_UUID != '') {
-                                println "Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${params.BASELINE_UUID}..."
+                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${params.BASELINE_UUID}...")
                                 // set additional vars for tolerancy rules check
-                                // note COMPARISON_CONFIG is changed here to only focus on specific statistics
-                                //      ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                                 env.BASELINE_UUID = params.BASELINE_UUID
-                                env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
-                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                                 env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_tolerancy_rules.yaml"
+                                // COMPARISON_CONFIG is changed here to only focus on specific statistics
+                                env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
+                                // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
+                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                                 returnCode = sh(returnStatus: true, script: """
                                     cd $WORKSPACE/e2e-benchmarking/utils
                                     rm -rf /tmp/**/*.csv
@@ -830,7 +831,7 @@ pipeline {
                                     unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
                                 }
                                 else {
-                                    println 'New statistics were within tolerable range of baseline statistics :)'
+                                    println('New statistics were within tolerable range of baseline statistics :)')
                                 }                            
                             }
                         }
@@ -842,7 +843,7 @@ pipeline {
 
     post {
         always {
-            println 'Post Section - Always'
+            println('Post Section - Always')
             archiveArtifacts(
                 artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml',
                 allowEmptyArchive: true,
@@ -850,13 +851,13 @@ pipeline {
             )
         }
         failure {
-            println 'Post Section - Failure'
+            println('Post Section - Failure')
         }
         cleanup {
             script {
                 // uninstall NetObserv operator and related resources if desired
                 if (params.NUKEOBSERV == true) {
-                    println "Deleting Network Observability operator..."
+                    println("Deleting Network Observability operator...")
                     returnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         nukeobserv
@@ -865,11 +866,11 @@ pipeline {
                         error('Operator deletion unsuccessful - please delete manually :(')
                     }
                     else {
-                        println 'Operator deleted successfully :)'
+                        println('Operator deleted successfully :)')
                     }
                 }
-                if (params.DESTROY_CLUSTER ==  true) {
-                    println "Destroying Flexy cluster..."
+                if (params.DESTROY_CLUSTER == true) {
+                    println("Destroying Flexy cluster...")
                     build job: 'ocp-common/Flexy-destroy', parameters: [
                         string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER)
                     ]
