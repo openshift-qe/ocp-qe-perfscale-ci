@@ -64,6 +64,11 @@ pipeline {
       description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)'
     )
     booleanParam(
+        name: 'WRITE_TO_ES',
+        defaultValue: false,
+        description: 'Value to write to elastic seach under metricName: jenkinsEnv'
+    )
+    booleanParam(
       name: 'CERBERUS_CHECK', 
       defaultValue: false, 
       description: 'Check cluster health status pass (will run <a href=https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/cerberus/>cerberus</a>)'
@@ -241,6 +246,16 @@ pipeline {
                 ],
                 propagate: false
            }
+            if(params.WRITE_TO_ES == true) {
+                build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-results-to-es',
+                  parameters: [
+                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                      string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME),
+                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
+                      string(name: "WORKLOAD", value: "network-perf-v2")
+                  ],
+                  propagate: false
+           }
         }
         script{
           // if the build fails, scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
@@ -252,6 +267,7 @@ pipeline {
       }
     }
   }
+  
   post {
       always {
           script {
