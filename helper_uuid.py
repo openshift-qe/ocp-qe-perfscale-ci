@@ -21,6 +21,27 @@ def get_node_type(node_type):
     else:
         return 0
 
+def get_fips():
+
+    return_code, fips_enabled = run("oc get cm cluster-config-v1 -n kube-system -o json | jq -r '.data' | grep 'fips'")
+    if return_code == 0: 
+        if fips_enabled != "":
+            return True
+        else:
+            return False
+
+
+def get_multi_az(node_type):
+
+    return_code, node_name = run("oc get node -l " + str(node_type) +" -o name | awk 'NR==1{print $1}'")
+    node_instance = '.metadata.labels."node.kubernetes.io/instance-type"'
+    return_code, node_type = run(f"oc get {node_name} -o json | jq '{node_instance}'")
+    if return_code == 0:
+        return True
+    else:
+        return False
+
+
 def get_node_count(label):
     return_code, node_count = run(f"oc get node -l {label} -o name | wc -l")
     if return_code == 0:
