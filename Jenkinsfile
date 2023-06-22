@@ -59,7 +59,7 @@ pipeline {
         )
         choice(
           choices: ["cluster-density","node-density","node-density-heavy","pod-density","pod-density-heavy","max-namespaces","max-services",
-            "node-density-cni","cluster-density-ms","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3"
+            "node-density-cni","cluster-density-ms","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3",
             "concurrent-builds","network-perf","network-perf-v2","router-perf","etcd-perf","nightly-regression","loaded-upgrade","upgrade",
             "nightly-regression-longrun"], 
           name: 'WORKLOAD', 
