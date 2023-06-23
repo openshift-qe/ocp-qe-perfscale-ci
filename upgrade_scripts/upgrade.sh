@@ -202,6 +202,40 @@ function check_upgrade_version() {
 
 }
 
+function capture_failed_pods_before_upgrade(){
+  #Save the failed job before upgrade and make sure new failed job caused by upgrade
+  echo "Capture failed pods before upgrade OCP"
+  echo "####################################################################################"
+  oc get pods -A| grep -v -E 'Running|Completed'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
+}
+
+function capture_failed_pods_after_upgrade(){
+  #Save the failed job before upgrade and make sure new failed job caused by upgrade
+  echo "Capture failed pods after upgrade OCP, No messages means no errors"
+  echo "####################################################################################"
+  oc get pods -A| grep -v -E 'Running|Completed'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+  cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
+  if [ -s /tmp/new-failed-pods.txt ];then
+          echo "There are some failed job after upgrade, please check"
+          echo "####################################################################################"
+          cat /tmp/new-failed-pods.txt
+          echo "####################################################################################"
+          cat /tmp/new-failed-pods.txt | awk '{print $1"\t"$2}' >/tmp/pods.lst
+          total_lines=$(cat /tmp/pods.lst|wc -l)
+          init_line=1
+          while [ $init_line -le $total_lines ]
+          do
+                  namespace=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $1}')
+                  podname=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $2}')
+                  echo "The detailed failed pods $podname information in $namespace:"
+                  echo "------------------------------------------------------------------------------------" 
+                  oc describe pod $podname -n $namespace
+                  init_line=$(( $init_line + 1 ))
+          done
+          exit 1
+  fi
+}
+capture_failed_pods_before_upgrade
 python3 -c "import check_upgrade; check_upgrade.set_max_unavailable($maxUnavail)"
 echo ARCH_TYPE is $ARCH_TYPE
 if [[ $ARCH_TYPE == multi* ]];then
@@ -322,5 +356,5 @@ if [ "X$scale" == "Xtrue" ]; then
   oc scale --replicas=$machine_replicas -n openshift-machine-api $machine_name
   python3 -c "import check_upgrade; check_upgrade.wait_for_replicas('$machine_replicas','$machine_name')"
 fi
-
+capture_failed_pods_after_upgrade
 exit 0 #upgrade succ and post-check succ
