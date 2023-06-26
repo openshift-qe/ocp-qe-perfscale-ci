@@ -44,12 +44,12 @@ pipeline {
         )
         string(
           name: "COMPARISON_CONFIG_PARAM",
-          defaultValue: "podLatency.json nodeMasters-max.json nodeWorkers.json etcd.json crio.json kubelet.json",
+          defaultValue: "podLatency.json nodeMasters.json nodeWorkers.json etcd.json crio.json kubelet.json",
           description: 'JSON config files of what data to output into a Google Sheet'
         )
         string(
           name: "TOLERANCY_RULES_PARAM",
-          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy1.yaml kubelet-tolerancy.yaml",
+          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy.yaml kubelet-tolerancy.yaml",
           description: 'JSON config files of what data to output into a Google Sheet'
         )
         booleanParam(
@@ -236,11 +236,16 @@ pipeline {
                     
 
                     if [[ $WORKLOAD == "max-services" ]] || [[ $WORKLOAD == "max-namespaces" ]] || [[ $WORKLOAD == "cluster-density" ]] || [[ $WORKLOAD == "concurrent-builds" ]]; then 
-                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/nodeWorkers/nodeAggWorkers})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/nodeWorkers/nodeAggWorkers})
                           ## kubelet and crio metrics aren't in aggregated metrics files
-                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/kubelet.json/})
-                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/crio.json/})
-                          export COMPARISON_CONFIG=$(echo ${COMPARISON_CONFIG/containerMetrics.json/})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/kubelet.json/})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/crio.json/})
+                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/containerMetrics.json/})
+
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/worker-tolerancy/worker-agg-tolerancy})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kubelet-tolerancy.yaml/})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/crio-tolerancy.yaml/})
+                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kube-burner-cp-tolerancy.yaml/})
                           
                       fi
                     ./loop_rules.sh
