@@ -17,7 +17,8 @@ if [[ -n $BASELINE_UUID ]]; then
 
         compare "${ES_SERVER}" "${BASELINE_UUID} ${UUID}" "${COMPARISON_CONFIG}" ${GEN_CSV} -vv
         result=$?
-        COMPARISON_OUTPUT_LIST+= " $COMPARISON_OUTPUT"
+        COMPARISON_OUTPUT_LIST+=" $COMPARISON_OUTPUT"
+        echo "COMPARISON_OUTPUT_LIST $COMPARISON_OUTPUT_LIST"
         cat $COMPARISON_OUTPUT 
         if  [[ $result -ne 0 ]]; then
             failed_comparison=$((failed_comparison + 1))
