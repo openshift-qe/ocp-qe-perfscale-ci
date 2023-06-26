@@ -7,6 +7,8 @@ source compare.sh
 mkdir results
 cd results
 failed_comparison=0
+
+COMPARISON_OUTPUT_LIST=""
 if [[ -n $BASELINE_UUID ]]; then 
     for i in "${!TOLERANCY_RULES_LIST[@]}"; do
         export COMPARISON_OUTPUT=${PWD}/${WORKLOAD}-${COMPARISON_CONFIG_LIST[i]}.csv
@@ -15,14 +17,16 @@ if [[ -n $BASELINE_UUID ]]; then
 
         compare "${ES_SERVER}" "${BASELINE_UUID} ${UUID}" "${COMPARISON_CONFIG}" ${GEN_CSV} -vv
         result=$?
-        cat $COMPARISON_OUTPUT
+        COMPARISON_OUTPUT_LIST+= " $COMPARISON_OUTPUT"
+        cat $COMPARISON_OUTPUT 
         if  [[ $result -ne 0 ]]; then
             failed_comparison=$((failed_comparison + 1))
         fi
     done
 fi
+cd ..
 
-python $(dirname $(realpath ${BASH_SOURCE[0]}))/csv_modifier.py -c ${COMPARISON_OUTPUT} -o ${final_csv}
+python csv_modifier.py -c ${COMPARISON_OUTPUT_LIST} -o results/final_output.csv
 
 
 cd ../../..
