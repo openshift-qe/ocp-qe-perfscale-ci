@@ -53,12 +53,12 @@ def update_data_to_elasticsearch(id, data_to_update):
 
     index = 'perfscale-jenkins-metadata'
     doc = es.get(index=index, doc_type='_doc', id=id)
-    print('doc '+ str(doc))
+    #print('doc '+ str(doc))
     for k,v in data_to_update.items(): 
         doc['_source'][k] = v
     response = es.update(index=index, doc_type='_doc', id=id, body={"doc": doc['_source']
     })
-    print(f"Response back was {response}")
+    #print(f"Response back was {response}")
     end = time.time()
     elapsed_time = end - start
 

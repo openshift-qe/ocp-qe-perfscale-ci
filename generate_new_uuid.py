@@ -46,17 +46,6 @@ def find_if_uuid_exists(workload, worker_count, var_loc):
         return False
     return hits[0]['_source']['uuid']
 
-def find_launcher_vars_for_profile(profile,version):
-    var_loc = ""
-   
-    split_version = version.split(".")
-    sub_version = split_version[0] + "." + split_version[1]
-    if not profile.endswith(".install.yaml"): 
-        profile = profile + ".install.yaml"
-    profile_str = helper_uuid.run(f"cat ci-profiles/scale-ci/{sub_version}/{profile}")[1]
-    profile_json = yaml.load(profile_str, Loader=SafeLoader)
-    var_loc = profile_json['install']['flexy']['VARIABLES_LOCATION']
-    return var_loc
 
 def parse_json_file(cloud, workload, read_json): 
 
@@ -64,7 +53,7 @@ def parse_json_file(cloud, workload, read_json):
         for worker_count, worker_json in version_json.items(): 
             for profile, job_info_json in worker_json.items():
                 print('profile  ' + str(profile) + version + workload)
-                var_loc = find_launcher_vars_for_profile(profile,version)
+                var_loc = helper_uuid.find_launcher_vars_for_profile(profile,version)
                 uuid = find_if_uuid_exists(workload, worker_count, var_loc)
                 print('uuid ' + str(uuid))
                 if uuid is False: 
@@ -100,7 +89,7 @@ def update_entries_with_var_loc():
                 profile = source_hit['profile']
                 version = source_hit['ocp_version']
 
-                var_loc = find_launcher_vars_for_profile(profile,version)
+                var_loc = helper_uuid.find_launcher_vars_for_profile(profile,version)
                 data_to_update = {"LAUNCHER_VARS": var_loc}
                 print('data ' + str(data_to_update))
                 update_es_uuid.update_data_to_elasticsearch(id, data_to_update)
