@@ -791,6 +791,7 @@ pipeline {
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                         env.EMAIL_ID_FOR_RESULTS_SHEET = "openshift-netobserv-team@redhat.com"
                         env.GEN_CSV = params.GEN_CSV
+                        env.GEN_JSON = false
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
                         env.WORKLOAD = params.WORKLOAD
                         returnCode = sh(returnStatus: true, script: """
@@ -829,6 +830,15 @@ pipeline {
                                 // mark pipeline as unstable if Touchstone failed, continue otherwise
                                 if (returnCode.toInteger() != 0) {
                                     unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
+                                    // rerun Touchstone to generate a JSON for debugging
+                                    env.GEN_JSON = true
+                                    env.GEN_CSV = false
+                                    returnCode = sh(returnStatus: true, script: """
+                                        cd $WORKSPACE/e2e-benchmarking/utils
+                                        source compare.sh
+                                        run_benchmark_comparison
+                                    """)
+                                    println('Generated debug JSON for tolerancy analysis :)')
                                 }
                                 else {
                                     println('New statistics were within tolerable range of baseline statistics :)')
@@ -845,7 +855,7 @@ pipeline {
         always {
             println('Post Section - Always')
             archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml',
+                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml, e2e-benchmarking/utils/*.json',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
