@@ -32,11 +32,14 @@ def get_fips():
 
 
 def get_multi_az(node_type):
-
-    return_code, node_name = run("oc get node -l " + str(node_type) +" -o name | awk 'NR==1{print $1}'")
-    node_instance = '.metadata.labels."node.kubernetes.io/instance-type"'
-    return_code, node_type = run(f"oc get {node_name} -o json | jq '{node_instance}'")
-    if return_code == 0:
+    zone_list = {}
+    return_code, node_names = run("oc get node -l " + str(node_type) +" -o name | awk '{print $1}'")
+    for node in node_names.split('\n'): 
+        node_zone_label = '.metadata.labels."topology.kubernetes.io/zone"'
+        return_code, node_zone = run(f"oc get {node} -o json | jq '{node_zone_label}'")
+        if node_zone not in zone_list.keys():
+            zone_list['node_zone'] = 1
+    if len(zone_list.keys()) == 1:
         return True
     else:
         return False
