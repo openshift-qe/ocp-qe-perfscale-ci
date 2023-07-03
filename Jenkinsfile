@@ -4,7 +4,7 @@
 def userCause = currentBuild.rawBuild.getCause(Cause.UserIdCause)
 def upstreamCause = currentBuild.rawBuild.getCause(Cause.UpstreamCause)
 
-userId = "prubenda"
+userId = "ocp-perfscale-qe"
 if (userCause) {
   userId = userCause.getUserId()
 } else if (upstreamCause) {
