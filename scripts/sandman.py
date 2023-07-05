@@ -82,8 +82,15 @@ def main():
     
     # capture and log strings representations of start and end times
     starttime_string = re.findall(starttime_regex, workload_logs)[0]
-    endtime_string = re.findall(endtime_regex, workload_logs)[0]
+    
     print(f"starttime_string: {starttime_string}")
+
+    try: 
+        endtime_string = re.findall(endtime_regex, workload_logs)[0]
+    except: 
+        # if can't find the end time properly (error during run)
+        # find the last time posted in workload_logs file
+        endtime_string = re.findall(base_regex, workload_logs)[-1]
     print(f"endtime_string: {endtime_string}")
 
     # convert string times to unix timestamps
@@ -123,6 +130,13 @@ def main():
     with open(DATA_DIR + f'/workload.json', 'w') as data_file:
         json.dump(workload_data, data_file)
 
+    workload_env_vars = ""
+    for k,v in workload_data.items():
+        workload_env_vars += "export " + k + "='" + v + "'\n"
+    # write timestamp data to data directory
+    with open(DATA_DIR + f'/workload.sh', 'w') as data_file:
+        data_file.write(workload_env_vars)
+    
     # exit if no issues
     sys.exit(0)
 
