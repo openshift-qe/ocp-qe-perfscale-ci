@@ -35,10 +35,10 @@ To create LokiStack manually, the following steps can be performed:
         - Requirements: Can be run on `t2.micro` machines.
         - Use case: For demos, development and feature testing. Should NOT be used for testing.
     * lokistack-1x-small.yaml - Small t-shirt size LokiStack
-        - Requirements: `m5.4xlarge` machines.
+        - Requirements: `m6i.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
-        - Requirements: `m5.8xlarge` machines.
+        - Requirements: `m6i.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
 4. LokiStack should be created under `netobserv` namespace
