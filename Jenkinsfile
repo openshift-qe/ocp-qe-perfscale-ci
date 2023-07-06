@@ -109,7 +109,7 @@ pipeline {
                 // update build description fields 
                 buildInfo = readJSON file: 'help_scripts/data/workload.json'
 
-                // Add enviornment variables of sandman values
+                // Add environment variables of sandman values
                 buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
 
                 currentBuild.description = "Write to sheet sandman info: <br/>"
