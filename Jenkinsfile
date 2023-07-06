@@ -368,7 +368,7 @@ pipeline {
                 ])
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
-                        buildInfo = readYaml file: 'flexy-artifacts/BUILDINFO.yml'
+                        buildInfo = readYaml(file: 'flexy-artifacts/BUILDINFO.yml')
                         buildInfo.params.each { env.setProperty(it.key, it.value) }
                         installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
                         OCP_BUILD = installData.INSTALLER.VERSION
@@ -713,21 +713,18 @@ pipeline {
                     else {
                         println('Successfully ran Mr. Sandman tool :)')
                     }
-                    // update build description fields
+                    // set new env vars from Mr. Sandman and update build description fields
+                    workloadInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/workload.json")
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
-                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                     // STARTTIME_STRING is string rep of start time
-                    env.STARTTIME_STRING = sh(returnStdout: true, script: "jq -r '.starttime_string' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
                     // ENDTIME_STRING is string rep of end time
-                    env.ENDTIME_STRING = sh(returnStdout: true, script: "jq -r '.endtime_string' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
                     // STARTTIME_TIMESTAMP is unix timestamp of start time
-                    env.STARTTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.starttime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
                     // ENDTIME_TIMESTAMP is unix timestamp of end time
-                    env.ENDTIME_TIMESTAMP = sh(returnStdout: true, script: "jq -r '.endtime_timestamp' $WORKSPACE/ocp-qe-perfscale-ci/data/workload.json").trim()
                     currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
                 }
             }
