@@ -118,7 +118,9 @@ def set_es_obj_info():
             "worker_size": helper_uuid.get_node_type("node-role.kubernetes.io/worker="),
             "infra_node_count": helper_uuid.get_node_count("node-role.kubernetes.io/infra="), 
             "workload_node_count": helper_uuid.get_node_count("node-role.kubernetes.io/workload="),
-            "LAUNCHER_VARS": os.getenv('VARIABLES_LOCATION')
+            "LAUNCHER_VARS": os.getenv('VARIABLES_LOCATION'),
+            "fips_enabled": helper_uuid.get_fips(),
+            "across_az": helper_uuid.get_multi_az("node-role.kubernetes.io/worker=")
         }
         return info
     return None

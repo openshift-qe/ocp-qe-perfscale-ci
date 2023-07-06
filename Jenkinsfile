@@ -154,9 +154,9 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'netobserv-perf-tests' ]],
+                    branches: [[name: 'helpful_scripts' ]],
                     userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci-netobs']]
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'main']]
                 ])
                 copyArtifacts(
                     fingerprintArtifacts: true, 
@@ -172,8 +172,8 @@ pipeline {
                         python3.9 -m virtualenv venv3
                         source venv3/bin/activate
                         python --version
-                        python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci-netobs/scripts/requirements.txt
-                        python $WORKSPACE/ocp-qe-perfscale-ci-netobs/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
+                        python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt
+                        python $WORKSPACE/helpful_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                     """)
                     // fail pipeline if Mr. Sandman run failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
@@ -184,7 +184,7 @@ pipeline {
                     }
                     // update build description fields
                     // UUID
-                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/ocp-qe-perfscale-ci-netobs/data/workload.json").trim()
+                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/helpful_scripts/data/workload.json").trim()
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 }
             }
