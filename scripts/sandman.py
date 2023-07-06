@@ -130,10 +130,10 @@ def main():
     with open(DATA_DIR + f'/workload.json', 'w') as data_file:
         json.dump(workload_data, data_file)
 
+    # Also writing data out to script file to set env variables
     workload_env_vars = ""
     for k,v in workload_data.items():
         workload_env_vars += "export " + k + "='" + v + "'\n"
-    # write timestamp data to data directory
     with open(DATA_DIR + f'/workload.sh', 'w') as data_file:
         data_file.write(workload_env_vars)
     
