@@ -99,12 +99,14 @@ def get_uuid():
     
     return os.getenv("UUID")
 
-def get_router_perf_uuid(job_output):
+def get_router_perf_uuid(job_output=""):
     
-    job_output_string = parse_output_file_name(job_output)
-    
-    metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
-
+    if job_output != "":
+        job_output_string = parse_output_file_name(job_output)
+        
+        metadata = job_output_string.split("Workload finished, results:")[-1].split("}")
+    else: 
+        metadata = ""
     return get_uuid(), metadata
 
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
