@@ -93,9 +93,9 @@ pipeline {
             choices: ['1x.extra-small', '1x.small', '1x.medium'],
             description: '''
                 Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
-                1x.extra-small - Nodes size < m5.4xlarge<br/>
-                1x.small - Nodes size >= m5.4xlarge<br/>
-                1x.medium - Nodes size >= m5.8xlarge<br/>
+                1x.extra-small - Nodes size < m6i.4xlarge<br/>
+                1x.small - Nodes size >= m6i.4xlarge<br/>
+                1x.medium - Nodes size >= m6i.8xlarge<br/>
             '''
         )
         separator(
@@ -702,6 +702,7 @@ pipeline {
                         python3.9 -m virtualenv venv3
                         source venv3/bin/activate
                         python --version
+                        wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
                         python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
                         python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                     """)
