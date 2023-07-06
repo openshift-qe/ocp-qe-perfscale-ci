@@ -176,7 +176,7 @@ pipeline {
                 mkdir -p ~/.kube
                 cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
                 env
-                cd write_to_sheet
+                
                 python3 --version
                 python3 -m venv venv3
                 source venv3/bin/activate
@@ -184,7 +184,7 @@ pipeline {
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 printf "${params.ENV_VARS}"  >> env_vars.out
-
+                cd write_to_sheet
                 export PYTHONIOENCODING=utf8
                 if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
                     python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
