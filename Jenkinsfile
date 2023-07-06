@@ -107,10 +107,10 @@ pipeline {
                     println 'Successfully ran Mr. Sandman tool :)'
                 }
                 // update build description fields 
-                buildInfo = readJSON file: 'help_scripts/data/workload.json'
+                workloadInfo = readJSON file: 'help_scripts/data/workload.json'
 
                 // Add enviornment variables of sandman values
-                buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
 
                 currentBuild.description = "Write to sheet sandman info: <br/>"
                 // UUID of workload that was ran 
