@@ -183,8 +183,11 @@ pipeline {
                         println 'Successfully ran Mr. Sandman tool :)'
                     }
                     // update build description fields
+                    
+                    workloadInfo = readJSON file: 'help_scripts/data/workload.json'
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+
                     // UUID
-                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/helpful_scripts/data/workload.json").trim()
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 }
             }
