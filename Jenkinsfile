@@ -702,6 +702,7 @@ pipeline {
                         python3.9 -m virtualenv venv3
                         source venv3/bin/activate
                         python --version
+                        wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
                         python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
                         python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                     """)
