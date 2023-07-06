@@ -110,7 +110,7 @@ pipeline {
                 // UUID
                 buildInfo = readJSON file: 'help_scripts/data/workload.json'
                 println "build info $buildInfo"
-                buildInfo.each { env.setProperty(it.key, it.value) }
+                buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                 currentBuild.description = "Write to sheet sandman info: <br/>"
                 archiveArtifacts(
                     artifacts: 'help_scripts/data/*',
@@ -167,6 +167,8 @@ pipeline {
 
             buildInfo = readJSON file: 'current-artifacts/help_scripts/data/workload.json'
             println "build info $buildInfo"
+            sh label: '', script: """
+            env"""
             buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
           }
         }
