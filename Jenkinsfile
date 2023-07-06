@@ -184,7 +184,9 @@ pipeline {
                     }
                     // update build description fields
                     // UUID
-                    env.UUID = sh(returnStdout: true, script: "jq -r '.uuid' $WORKSPACE/helpful_scripts/data/workload.json").trim()
+                    buildInfo = readJSON file: 'help_scripts/data/workload.json'
+                    println "build info $buildInfo"
+                    buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 }
             }
