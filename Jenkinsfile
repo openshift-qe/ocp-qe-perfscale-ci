@@ -118,9 +118,9 @@ pipeline {
                     fingerprint: true
                 )
 
-                currentBuild.description += "<b>UUID:</b> ${env.uuid}<br/>"
+                currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 // STARTTIME_STRING is string rep of start time
-                currentBuild.description += "<b>workload_type:</b> ${env.workload_type}<br/>"
+                currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
                 // STARTTIME_STRING is string rep of start time
                 currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
                 // ENDTIME_STRING is string rep of end time
@@ -158,18 +158,6 @@ pipeline {
                 selector: specific(JENKINS_JOB_NUMBER),
                 target: 'workload-artifacts'
             )
-            copyArtifacts(
-                fingerprintArtifacts: true, 
-                projectName: JOB_NAME,
-                selector: specific(CUR_JENKINS_JOB_NUMBER),
-                target: 'current-artifacts'
-            )
-
-            buildInfo = readJSON file: 'current-artifacts/help_scripts/data/workload.json'
-            println "build info $buildInfo"
-            sh label: '', script: """
-            env"""
-            buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
           }
         }
         script {
