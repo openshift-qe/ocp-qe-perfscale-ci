@@ -182,7 +182,7 @@ pipeline {
                 source venv3/bin/activate
                 pip --version
                 pip install --upgrade pip
-                pip install -U gspread oauth2client datetime pytz pyyaml
+                pip install -r requirements.txt
                 printf "${params.ENV_VARS}"  >> env_vars.out
 
                 export PYTHONIOENCODING=utf8
