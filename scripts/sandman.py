@@ -12,6 +12,7 @@ import datetime
 ROOT_DIR = str(pathlib.Path(__file__).parent.parent)
 DATA_DIR = ROOT_DIR + '/data'
 WORKLOAD_OUT_FILE = ''
+SANDMAN_OUT_FILE_TYPE = ''
 
 def main():
 
@@ -126,31 +127,36 @@ def main():
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 
-    # write timestamp data to data directory
-    with open(DATA_DIR + f'/workload.json', 'w') as data_file:
-        json.dump(workload_data, data_file)
+    # write sandman data out to data directory with the specified file type
+    if SANDMAN_OUT_FILE_TYPE == 'json':
+        with open(DATA_DIR + f'/workload.json', 'w') as data_file:
+            json.dump(workload_data, data_file)
+    else:
+        workload_env_vars = ""
+        for k,v in workload_data.items():
+            workload_env_vars += "export " + k + "='" + v + "'\n"
+        with open(DATA_DIR + f'/workload.sh', 'w') as data_file:
+            data_file.write(workload_env_vars)
 
-    # Also writing data out to script file to set env variables
-    workload_env_vars = ""
-    for k,v in workload_data.items():
-        workload_env_vars += "export " + k + "='" + v + "'\n"
-    with open(DATA_DIR + f'/workload.sh', 'w') as data_file:
-        data_file.write(workload_env_vars)
-    
     # exit if no issues
     sys.exit(0)
 
 if __name__ == '__main__':
 
     # initialize argument parser
-    parser = argparse.ArgumentParser(description='Mr. Sandman')
+    parser = argparse.ArgumentParser(description='Mr. Sandman: Master of Time and the Knowledge bound by it')
 
     # set argument flags
-    parser.add_argument("--file", type=str, required=True, help='File to parse')
+    parser.add_argument("--file", type=str, required=True, help='Workload out file to parse')
+    parser.add_argument("--output", type=str, default='json', help="Sandman out file type - options are 'json' (default) and 'sh'")
 
     # parse arguments
     args = parser.parse_args()
     WORKLOAD_OUT_FILE = args.file
+    SANDMAN_OUT_FILE_TYPE = args.output
+    if SANDMAN_OUT_FILE_TYPE not in ['json', 'sh']:
+        print(f"'{SANDMAN_OUT_FILE_TYPE}' is not a valid argument for --output")
+        sys.exit(1)
 
     # begin main program execution
     main()
