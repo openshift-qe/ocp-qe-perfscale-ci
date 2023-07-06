@@ -183,10 +183,11 @@ pipeline {
                         println 'Successfully ran Mr. Sandman tool :)'
                     }
                     // update build description fields
+                    
+                    workloadInfo = readJSON file: 'help_scripts/data/workload.json'
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+
                     // UUID
-                    buildInfo = readJSON file: 'help_scripts/data/workload.json'
-                    println "build info $buildInfo"
-                    buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 }
             }
