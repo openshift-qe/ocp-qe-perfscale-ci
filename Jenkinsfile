@@ -163,7 +163,7 @@ pipeline {
         script {
           buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
-          currentBuild.description += "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
+          currentBuild.description += "Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
 
