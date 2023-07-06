@@ -106,20 +106,16 @@ pipeline {
                 else {
                     println 'Successfully ran Mr. Sandman tool :)'
                 }
-                // update build description fields
-                // UUID
+                // update build description fields 
                 buildInfo = readJSON file: 'help_scripts/data/workload.json'
-                println "build info $buildInfo"
-                buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
-                currentBuild.description = "Write to sheet sandman info: <br/>"
-                archiveArtifacts(
-                    artifacts: 'help_scripts/data/*',
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                )
 
+                // Add enviornment variables of sandman values
+                buildInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+
+                currentBuild.description = "Write to sheet sandman info: <br/>"
+                // UUID of workload that was ran 
                 currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                // STARTTIME_STRING is string rep of start time
+                // WORKLOAD_TYPE is string rep of what job was
                 currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
                 // STARTTIME_STRING is string rep of start time
                 currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
