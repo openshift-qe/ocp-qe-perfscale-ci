@@ -197,10 +197,10 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density', 'node-density', 'node-density-heavy', 'pod-density', 'pod-density-heavy', 'max-namespaces', 'max-services', 'concurrent-builds', 'router-perf'],
+            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                Note that all options excluding "router-perf" and "None" will trigger "kube-burner" job<br/>
+                Note that all options excluding "router-perf" and "None" will trigger "kube-burner-ocp" job<br/>
                 "router-perf" will trigger "router-perf" job and "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
@@ -664,7 +664,7 @@ pipeline {
                         ]
                     }
                     else {
-                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner'
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                             string(name: 'WORKLOAD', value: params.WORKLOAD),
