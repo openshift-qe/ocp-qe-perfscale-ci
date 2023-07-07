@@ -152,7 +152,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     worker_count = write_helper.get_worker_num()
     row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type, worker_count]
 
-    if job_type not in ["network-perf", "router-perf"]:
+    if job_type not in ["network-perf","network-perf-v2", "router-perf"]:
         workload_args = get_workload_params(job_type)
         print('work')
         if workload_args != 0:
@@ -166,7 +166,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             if param:
                 row.append(param)
 
-    if job_type not in ["etcd-perf", "network-perf", "router-perf"]:
+    if job_type not in ["etcd-perf", "network-perf", "network-perf-v2","router-perf"]:
         creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
         row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
 
