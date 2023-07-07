@@ -49,6 +49,8 @@ This is an overview - for additional details about each job, see the respective 
 ### Mr. Sandman
 Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
 
+By default he will output a JSON of data to `./data/workload.json` but you can also output a Shell file for use in BASH environment using the `--output sh` flag
+
 ## Authors
 Kedar Kulkarni <@kedark3 on Github>
 
