@@ -93,12 +93,12 @@ deploy_lokistack() {
   # if cluster is to be preserved, do the same for S3 bucket
   CLUSTER_NAME=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}')
   if [[ $CLUSTER_NAME =~ "preserve" ]]; then
-    S3_BUCKETNAME+="-preserve"
+    S3_BUCKET_NAME+="-preserve"
   fi
-  echo "====> S3_BUCKETNAME is $S3_BUCKETNAME"
+  echo "====> S3_BUCKET_NAME is $S3_BUCKET_NAME"
 
   echo "====> Creating S3 secret for Loki"
-  $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
+  $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKET_NAME
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
