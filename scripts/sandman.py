@@ -148,15 +148,12 @@ if __name__ == '__main__':
 
     # set argument flags
     parser.add_argument("--file", type=str, required=True, help='Workload out file to parse')
-    parser.add_argument("--output", type=str, default='json', help="Sandman out file type - options are 'json' (default) and 'sh'")
+    parser.add_argument("--output", type=str, default='json', choices=['json', 'sh'], help="Sandman out file type to generate - defaults to 'json'")
 
     # parse arguments
     args = parser.parse_args()
     WORKLOAD_OUT_FILE = args.file
     SANDMAN_OUT_FILE_TYPE = args.output
-    if SANDMAN_OUT_FILE_TYPE not in ['json', 'sh']:
-        print(f"'{SANDMAN_OUT_FILE_TYPE}' is not a valid argument for --output")
-        sys.exit(1)
 
     # begin main program execution
     main()
