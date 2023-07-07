@@ -453,7 +453,7 @@ if __name__ == '__main__':
     if JIRA is None:
         JIRA = "N/A"
     else:
-        logging.info(f"Associating run with Jira ticket job {JIRA}")
+        logging.info(f"Associating run with Jira ticket {JIRA}")
 
     # get YAML file with queries and set queries constant with data from YAML file
     YAML_FILE = args.yaml_file
