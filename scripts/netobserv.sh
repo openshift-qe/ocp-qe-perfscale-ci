@@ -202,19 +202,25 @@ deploy_kafka() {
   echo "====> Update ClusterRoleBinding ServiceAccount from flowlogs-pipeline to flowlogs-pipeline-transformer"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD-kafka.yaml
 
+  echo "====> Waiting for Flow Collector to reload with new FLP pods..."
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
 
 populate_netobserv_metrics() {
   echo "====> Creating cluster-monitoring-config ConfigMap"
   oc apply -f $SCRIPTS_DIR/cluster-monitoring-config.yaml
+  echo "====> Getting Deployment Model from Flow Collector"
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
-  if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-    echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
-    oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
+  if [[ -z $DEPLOYMENT_MODEL ]]; then
+    echo "====> Could not get Deployment Model"
   else
-    echo "====> Creating flowlogs-pipeline Service and ServiceMonitor"
-    oc apply -f $SCRIPTS_DIR/service-monitor.yaml
+    if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
+      echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
+      oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
+    else
+      echo "====> Creating flowlogs-pipeline Service and ServiceMonitor"
+      oc apply -f $SCRIPTS_DIR/service-monitor.yaml
+    fi
   fi
 }
 
@@ -237,13 +243,17 @@ setup_dittybopper_template() {
 delete_s3() {
   echo "====> Getting S3 Bucket Name"
   S3_BUCKET_NAME=$(/bin/bash -c 'oc extract cm/lokistack-config -n netobserv --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n')
-  echo "====> Got $S3_BUCKET_NAME"
-  echo "====> Deleting AWS S3 Bucket"
-  while :; do
-    aws s3 rb s3://$S3_BUCKET_NAME --force && break
-    sleep 1
-  done
-  echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
+  if [[ -z $S3_BUCKET_NAME ]]; then
+    echo "====> Could not get S3 Bucket Name"
+  else
+    echo "====> Got $S3_BUCKET_NAME"
+    echo "====> Deleting AWS S3 Bucket"
+    while :; do
+      aws s3 rb s3://$S3_BUCKET_NAME --force && break
+      sleep 1
+    done
+    echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
+  fi
 }
 
 delete_lokistack() {
@@ -253,15 +263,10 @@ delete_lokistack() {
 
 delete_kafka() {
   echo "====> Deleting Kafka (if applicable)"
-  echo "====> Getting Deployment Model"
-  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
-  echo "====> Got $DEPLOYMENT_MODEL"
-  if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-    oc delete kafka/kafka-cluster -n netobserv
-    oc delete kafkaTopic/network-flows -n netobserv
-    oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
-    oc delete csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
-  fi
+  oc delete kafka/kafka-cluster -n netobserv
+  oc delete kafkaTopic/network-flows -n netobserv
+  oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
+  oc delete --ignore-not-found csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
 }
 
 delete_flowcollector() {
@@ -270,7 +275,7 @@ delete_flowcollector() {
   oc delete --ignore-not-found flowcollector/cluster
 }
 
-delete_netobserv() {
+delete_netobserv_operator() {
   echo "====> Deleting all NetObserv resources"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-internal-subscription.yaml
@@ -279,7 +284,6 @@ delete_netobserv() {
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
   oc delete crd/flowcollectors.flows.netobserv.io
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
-  oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
   oc delete --ignore-not-found catalogsource/qe-unreleased-testing -n openshift-marketplace
@@ -289,7 +293,7 @@ delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
-  oc delete csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
+  oc delete --ignore-not-found csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 
 nukeobserv() {
@@ -298,6 +302,8 @@ nukeobserv() {
   delete_lokistack
   delete_kafka
   delete_flowcollector
-  delete_netobserv
+  delete_netobserv_operator
   delete_loki_operator
+  # seperate step as multiple different operators use this namespace
+  oc delete project netobserv
 }
