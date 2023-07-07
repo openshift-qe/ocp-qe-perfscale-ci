@@ -117,6 +117,8 @@ pipeline {
                 currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
                 // WORKLOAD_TYPE is string rep of what job was
                 currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
+
+                currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
                 // STARTTIME_STRING is string rep of start time
                 currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
                 // ENDTIME_STRING is string rep of end time
