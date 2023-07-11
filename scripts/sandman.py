@@ -77,7 +77,7 @@ def main():
         starttime_regex = base_regex + ' Reading'
         endtime_regex = base_regex + 'Rendering'
         strptime_filter = '%Y-%m-%d %H:%M:%S'
-        uuid_exists = False
+        uuid_regex = 'UUID (.*)"'
         iterations_exists = False
         workload_type = "network-perf-v2"
     
@@ -112,9 +112,12 @@ def main():
     # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
     # Specific regex configurations set based on file type above 
     if uuid_exists:
-        uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
-        print(f"uuid: {uuid}")
-        workload_data['uuid'] = str(uuid)
+        try: 
+            uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
+            print(f"uuid: {uuid}")
+            workload_data['uuid'] = str(uuid)
+        except: 
+            print("No uuid found")
 
     # Depending on the workload, we want to find the number of iterations 
     # Specific regex configurations set based on file type above 
