@@ -146,10 +146,9 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     flexy_cell='=HYPERLINK("'+flexy_url+'","'+str(flexy_id)+'")'
 
     if job_type == "network-perf-v2":
-        return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
         start_time = parse_output_for_starttime()
         if return_code == 0:
-            grafana_cell = find_k8s_perf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
+            grafana_cell = find_k8s_perf_uuid_url(start_time,es_username,es_password)
         else:
             grafana_cell = ""
     elif job_type == "network-perf":
