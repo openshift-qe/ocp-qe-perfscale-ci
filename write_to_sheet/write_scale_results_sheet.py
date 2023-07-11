@@ -26,8 +26,8 @@ def get_grafana_url(uuid, start_time, end_time):
 def get_net_perf_grafana_url(uuid, start_time, end_time):
     start_time = start_time + "000"
     end_time = end_time + "000"
-    data_source="QE%20K8s%20netperf"
-    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/FwPsenw7z/k8s-netperf?orgId=1&from={}&to={}&var-Datasource={}&var-uuid={}&var-samples=1&var-hostNetwork=true&var-service=All&var-parallelism=All&var-profile=All&var-messageSize=All&var-driver=netperf".format(str(start_time), str(end_time), data_source, uuid)
+    data_source="QE+K8s+netperf"
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/wINGhybVz/k8s-netperf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-hostNetwork=true&var-service=All&var-parallelism=All&var-profile=All&var-messageSize=All".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
@@ -159,7 +159,6 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             grafana_cell = ""
     elif job_type == "router-perf":
         if job_output:
-            global uuid
             uuid, metadata = get_router_perf_uuid(job_output)
             grafana_cell = uuid
         else:
