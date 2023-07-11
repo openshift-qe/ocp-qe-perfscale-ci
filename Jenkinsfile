@@ -154,9 +154,9 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'helpful_scripts' ]],
+                    branches: [[name: 'main' ]],
                     userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'main']]
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'helpful_scripts']]
                 ])
                 copyArtifacts(
                     fingerprintArtifacts: true, 
@@ -174,6 +174,7 @@ pipeline {
                         python --version
                         python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt
                         python $WORKSPACE/helpful_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
+                        ls $WORKSPACE/helpful_scripts/data
                     """)
                     // fail pipeline if Mr. Sandman run failed, continue otherwise
                     if (returnCode.toInteger() != 0) {
@@ -184,7 +185,7 @@ pipeline {
                     }
                     // update build description fields
                     
-                    workloadInfo = readJSON file: 'help_scripts/data/workload.json'
+                    workloadInfo = readJSON file: "helpful_scripts/data/workload.json"
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
 
                     // UUID
