@@ -102,11 +102,11 @@ def main():
 
     # construct JSON of workload data
     workload_data = {
-        "workload_type": str(workload_type),
-        "starttime_string": str(starttime_string),
-        "endtime_string": str(endtime_string),
-        "starttime_timestamp": str(starttime_timestamp),
-        "endtime_timestamp": str(endtime_timestamp)
+        "WORKLOAD_TYPE": str(workload_type),
+        "STARTTIME_STRING": str(starttime_string),
+        "ENDTIME_STRING": str(endtime_string),
+        "STARTTIME_TIMESTAMP": str(starttime_timestamp),
+        "ENDTIME_TIMESTAMP": str(endtime_timestamp)
     }
 
     # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
@@ -115,7 +115,7 @@ def main():
         try: 
             uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
             print(f"uuid: {uuid}")
-            workload_data['uuid'] = str(uuid)
+            workload_data['UUID'] = str(uuid)
         except: 
             print("No uuid found")
 
@@ -125,7 +125,7 @@ def main():
         # rework to use an end
         iterations = workload_logs.split(iterations_start)[1].split(iterations_end)[0]
         print(f"iterations: {iterations}")
-        workload_data['iteratons'] = str(iterations)
+        workload_data['ITERATIONS'] = str(iterations)
 
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
