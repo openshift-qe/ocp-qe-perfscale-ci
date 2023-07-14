@@ -47,11 +47,12 @@ def get_platform():
 def get_fips():
 
     return_code, fips_enabled = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o json | jq -r '.data' | grep 'fips'")
+    print('return code' + str(return_code))
     if return_code == 0: 
         if fips_enabled != "":
             return str(True)
-        else:
-            return str(False)
+
+    return str(False)
 
 def write_prow_results_to_sheet():
     scopes = [
@@ -115,4 +116,7 @@ def write_prow_results_to_sheet():
     ws = sheet.worksheet(job_type)
     ws.insert_row(row, index, "USER_ENTERED")
 
-write_prow_results_to_sheet()
+#write_prow_results_to_sheet()
+
+fips = get_fips()
+print('fips ' + str(fips))
