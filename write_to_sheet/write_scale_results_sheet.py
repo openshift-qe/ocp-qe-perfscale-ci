@@ -23,6 +23,15 @@ def get_grafana_url(uuid, start_time, end_time):
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
+def get_net_perf_grafana_url(uuid, start_time, end_time):
+    start_time = start_time + "000"
+    end_time = end_time + "000"
+    data_source="QE+K8s+netperf"
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/wINGhybVz/k8s-netperf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-hostNetwork=true&var-service=All&var-parallelism=All&var-profile=All&var-messageSize=All".format(str(start_time), str(end_time), data_source, uuid)
+    print('grafana url ' + str(grafana_url))
+    grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
+    return grafana_cell
+
 def get_metadata_uuid():
     start_time = parse_output_for_starttime()
     to_time = os.getenv("ENDTIME_TIMESTAMP")
@@ -31,6 +40,15 @@ def get_metadata_uuid():
     uuid = get_uuid()
     print ("uuid " +str(uuid))
     return get_grafana_url(uuid, start_time, to_time)
+
+def find_k8s_perf_uuid_url():
+    start_time = parse_output_for_starttime()
+    to_time = os.getenv("ENDTIME_TIMESTAMP")
+
+    uuid = get_uuid()
+    print ("uuid " +str(uuid))
+    return get_net_perf_grafana_url(uuid, start_time, to_time)
+
 
 def find_uperf_uuid_url(cluster_name, start_time, es_username, es_password):
 
@@ -96,8 +114,9 @@ def parse_output_for_sheet(job_output):
         return get_url_out(split_output[-1])
 
 def get_uuid():
-    
-    return os.getenv("UUID")
+    global uuid
+    uuid = os.getenv("UUID")
+    return uuid
 
 def get_router_perf_uuid(job_output=""):
     
@@ -116,26 +135,30 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     ]
     credentials = ServiceAccountCredentials.from_json_keyfile_name(google_sheet_account, scopes) #access the json key you downloaded earlier
     file = gspread.authorize(credentials) # authenticate the JSON key with gspread
-    #sheet = file.open("Test") #.Outputs
-    sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1uiKGYQyZ7jxchZRU77lsINpa23HhrFWjphsqGjTD-u4/edit?usp=sharing")
-    #open sheet
 
+    sheet = file.open_by_url("https://docs.google.com/spreadsheets/d/1uiKGYQyZ7jxchZRU77lsINpa23HhrFWjphsqGjTD-u4/edit?usp=sharing")
+
+    #open sheet
+    print("job type" + str(job_type))
     ws = sheet.worksheet(job_type)
 
     index = 2
     flexy_url = 'https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/ocp-common/job/Flexy-install/' +str(flexy_id)
     flexy_cell='=HYPERLINK("'+flexy_url+'","'+str(flexy_id)+'")'
 
-    if job_type == "network-perf":
+    if job_type == "network-perf-v2":
+        grafana_cell = find_k8s_perf_uuid_url()
+    elif job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
-        start_time = parse_output_for_starttime()
-        if return_code == 0:
-            grafana_cell = find_uperf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
+        if job_output:
+            global uuid
+            start_time = parse_output_for_starttime()
+            uuid, metadata = find_uperf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
+            grafana_cell = uuid
         else:
             grafana_cell = ""
     elif job_type == "router-perf":
         if job_output:
-            global uuid
             uuid, metadata = get_router_perf_uuid(job_output)
             grafana_cell = uuid
         else:
@@ -152,7 +175,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     worker_count = write_helper.get_worker_num()
     row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type, worker_count]
 
-    if job_type not in ["network-perf", "router-perf"]:
+    if job_type not in ["network-perf","network-perf-v2", "router-perf"]:
         workload_args = get_workload_params(job_type)
         print('work')
         if workload_args != 0:
@@ -166,7 +189,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             if param:
                 row.append(param)
 
-    if job_type not in ["etcd-perf", "network-perf", "router-perf"]:
+    if job_type not in ["etcd-perf", "network-perf", "network-perf-v2","router-perf"]:
         creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
         row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
 
