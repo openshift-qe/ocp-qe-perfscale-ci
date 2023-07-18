@@ -141,7 +141,8 @@ pipeline {
               set -x
 
               SECONDS=0
-              ./install_infra_work.sh
+              ./openshift-qe-workers-infra-workload-commands.sh
+              ./openshift-qe-move-pods-infra-commands.sh
               status=$?
               echo "final status $status"
               duration=$SECONDS
