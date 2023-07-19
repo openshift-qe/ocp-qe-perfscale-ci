@@ -39,7 +39,7 @@ def get_platform():
     print('config str' + str(type(cluster_config_str)))
     cluster_config = yaml.load(cluster_config_str, Loader=yaml.SafeLoader)
     print('loads' + str(cluster_config))
-    platform = list(cluster_config['compute'][0]['platform'].keys())[0]
+    platform = list(cluster_config['platform'].keys())[0]
     print('plat' + str(platform))
 
     return platform
