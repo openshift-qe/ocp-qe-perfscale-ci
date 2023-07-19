@@ -34,14 +34,16 @@ def install_type():
 
 
 def get_platform():
-
-    return_code, cluster_config_str = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o jsonpath='{.data.install-config}'")
-    print('config str' + str(type(cluster_config_str)))
-    cluster_config = yaml.load(cluster_config_str, Loader=yaml.SafeLoader)
-    print('loads' + str(cluster_config))
-    platform = list(cluster_config['platform'].keys())[0]
-    print('plat' + str(platform))
-
+    
+    try: 
+        return_code, cluster_config_str = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o jsonpath='{.data.install-config}'")
+        print('config str' + str(type(cluster_config_str)))
+        cluster_config = yaml.load(cluster_config_str, Loader=yaml.SafeLoader)
+        print('loads' + str(cluster_config))
+        platform = list(cluster_config['platform'].keys())[0]
+        print('plat' + str(platform))
+    except: 
+        platform = "unknown"
     return platform
         
 def get_fips():
