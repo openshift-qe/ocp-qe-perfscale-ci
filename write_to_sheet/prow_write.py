@@ -83,7 +83,6 @@ def write_prow_results_to_sheet():
     else:
         print('call metadata')
         grafana_cell = write_scale_results_sheet.get_metadata_uuid()
-    print('here')
     cloud_type, architecture_type, network_type, fips_enabled = install_type()
     
     version = write_helper.get_oc_version()
@@ -94,7 +93,6 @@ def write_prow_results_to_sheet():
 
     if job_type not in ["network-perf-v2", "router-perf"]:
         workload_args = write_scale_results_sheet.get_workload_params(job_type)
-        print('work')
         if workload_args != 0:
             row.append(workload_args)
     elif job_type == "router-perf":
