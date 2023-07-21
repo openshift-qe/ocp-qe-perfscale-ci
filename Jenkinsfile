@@ -109,7 +109,7 @@ pipeline {
             name: 'TOLERANCY',
             defaultValue: '-10',
             description: '''
-                Tolerancy to replace value of tolerancy in <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/mb-tolerancy-rules.yaml">mb-tolerancy-rules.yaml</a>.<br>
+                Tolerancy to replace value of tolerancy in <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf">tolerancy</a>.<br>
                 i.e a 10 would mean any metric 10% higher than the baseline metric will be considered an error<br>
                 , and -10 would mean the opposite, any metric at least 10% below the baseline value will be considered an error.<br>
                 Set to blank will not use TOLERANCY_RULES.
@@ -125,7 +125,7 @@ pipeline {
                 SOMEVAR2='env2-test'<br/>
                 ...<br/>
                 SOMEVARn='envn-test'<br/>
-                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/router-perf-v2">router perf README</a> for more env vars you can set
+                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/ingress-perf">router perf README</a> for more env vars you can set
             '''
         )
         booleanParam(
@@ -217,17 +217,13 @@ pipeline {
                             oc projects
                             ls -ls ~/.kube/
                             env
-                            cd workloads/router-perf-v2
-                            if [[ $BASELINE_UUID != '' ]] && [[ TOLERANCY != '' ]]; then
-                                echo "replace tolerancy to $TOLERANCY in mb-tolerancy-rules.yaml"
-                                sed -i "s/tolerancy:.*/tolerancy: $TOLERANCY/" mb-tolerancy-rules.yaml
-                            fi
-                            ./ingress-performance.sh |& tee "ingress_router.out"
-                            ! grep "Benchmark comparison failed" ingress_router.out
+                            cd workloads/ingress-perf
+                            ./run.sh |& tee "ingress_perf.out"
+                            ! grep "Benchmark comparison failed" ingress_perf.out
                             '''
                         )
                         archiveArtifacts(
-                            artifacts: 'workloads/router-perf-v2/ingress_router.out',
+                            artifacts: 'workloads/ingress-perf/ingress_perf.out',
                             allowEmptyArchive: true,
                             fingerprint: true
                         )
@@ -278,7 +274,7 @@ pipeline {
                                 string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                                 string(name: 'CI_JOB_ID', value: BUILD_ID), string(name: 'CI_JOB_URL', value: BUILD_URL), 
                                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"), 
-                                string(name: "JOB", value: "router-perf"), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ), 
+                                string(name: "JOB", value: "ingress-perf"), string(name: "JOB_PARAMETERS", value: "${parameter_to_pass}" ), 
                                 string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME)
                             ],
                             propagate: false
@@ -291,7 +287,7 @@ pipeline {
                             string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
                             string(name: "JENKINS_JOB_NUMBER", value: JENKINS_JOB_NUMBER), string(name: "JENKINS_JOB_PATH", value: JOB_NAME),
                             string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), string(name: "CI_STATUS", value: "${status}"),
-                            string(name: "WORKLOAD", value: "router-perf")
+                            string(name: "WORKLOAD", value: "ingress-perf")
                         ],
                         propagate: false
                     }
@@ -318,7 +314,7 @@ pipeline {
                 if (params.SEND_SLACK == true ) {
                     build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
                     parameters: [
-                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "router-perf"),
+                        string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "ingress-perf"),
                         text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),string(name: 'RESULT', value:currentBuild.currentResult)
                     ], propagate: false
                 }
