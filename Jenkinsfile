@@ -41,8 +41,8 @@ pipeline {
         )
         string(
             name: "CONFIG",
-            defaultValue: "aws-standard.yml",
-            description: "Config file to run, will auto set folder to config under e2e-benchmark/ingress-perf"
+            defaultValue: "config/standard.yml",
+            description: "Config file to run, will auto set folder to under e2e-benchmark/ingress-perf"
         )
         string(
             name: "VERSION",
