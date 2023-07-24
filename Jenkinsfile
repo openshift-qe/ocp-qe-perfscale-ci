@@ -125,7 +125,7 @@ pipeline {
                 SOMEVAR2='env2-test'<br/>
                 ...<br/>
                 SOMEVARn='envn-test'<br/>
-                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/ingress-perf">router perf README</a> for more env vars you can set
+                check <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/tree/master/workloads/ingress-perf">ingress perf README</a> for more env vars you can set
             '''
         )
         booleanParam(
