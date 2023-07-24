@@ -162,7 +162,7 @@ pipeline {
     }
 
     stages {
-        stage('Run Router perf tests'){
+        stage('Run Ingress perf tests'){
             steps {
                 script {
                     if (params.SCALE_UP.toInteger() > 0) {
