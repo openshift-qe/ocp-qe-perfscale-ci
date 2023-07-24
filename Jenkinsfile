@@ -232,7 +232,7 @@ pipeline {
                         }
                         else {
                             currentBuild.result = "FAILURE"
-                            status = "Router perf FAIL"
+                            status = "Ingress perf FAIL"
                         }
                     }
                 }
