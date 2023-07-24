@@ -107,13 +107,8 @@ pipeline {
         )
         string(
             name: 'TOLERANCY',
-            defaultValue: '-10',
-            description: '''
-                Tolerancy to replace value of tolerancy in <a href="https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf">tolerancy</a>.<br>
-                i.e a 10 would mean any metric 10% higher than the baseline metric will be considered an error<br>
-                , and -10 would mean the opposite, any metric at least 10% below the baseline value will be considered an error.<br>
-                Set to blank will not use TOLERANCY_RULES.
-            '''
+            defaultValue: '20',
+            description: '''Defines a regression tolerancy percent. By default 20'''
         )
         text(
             name: 'ENV_VARS',
