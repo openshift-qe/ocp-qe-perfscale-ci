@@ -214,7 +214,7 @@ pipeline {
                             env
                             cd workloads/ingress-perf
                             ./run.sh |& tee "ingress_perf.out"
-                            ! grep "Benchmark comparison failed" ingress_perf.out
+                            ! egrep -i "lower than baseline|higher than baseline|error|fail" ingress_perf.out
                             '''
                         )
                         archiveArtifacts(
