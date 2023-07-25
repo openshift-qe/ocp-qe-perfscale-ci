@@ -71,6 +71,14 @@ def main():
         uuid_regex = 'UUID: (.*)"'
         iterations_exists = False
         workload_type = "router-perf"
+    elif "ingress_perf" in WORKLOAD_OUT_FILE:
+        base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
+        starttime_regex = base_regex + 'Running'
+        endtime_regex = base_regex + 'Cleaning'
+        strptime_filter = '%Y-%m-%d %H:%M:%S'
+        uuid_regex = 'Running ingress performance (.*)"'
+        iterations_exists = False
+        workload_type = "ingress-perf"
 
     elif "network-perf-v2" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
