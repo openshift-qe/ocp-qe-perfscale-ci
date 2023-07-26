@@ -32,6 +32,15 @@ def get_net_perf_grafana_url(uuid, start_time, end_time):
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
+def get_ingress_perf_grafana_url(uuid, start_time, end_time):
+    start_time = start_time + "000"
+    end_time = end_time + "000"
+    data_source="QE%20Ingress-perf"
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/nlAhmRyVk/ingress-perf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-termination=edge&var-termination=http&var-termination=passthrough&var-termination=reencrypt&var-latency_metric=avg_lat_us&var-compare_by=uuid.keyword&var-concurrency=18".format(str(start_time), str(end_time), data_source, uuid)
+    print('grafana url ' + str(grafana_url))
+    grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
+    return grafana_cell
+
 def get_metadata_uuid():
     start_time = parse_output_for_starttime()
     to_time = os.getenv("ENDTIME_TIMESTAMP")
@@ -128,6 +137,16 @@ def get_router_perf_uuid(job_output=""):
         metadata = ""
     return get_uuid(), metadata
 
+
+def get_ingress_perf_uuid():
+    start_time = parse_output_for_starttime()
+    to_time = os.getenv("ENDTIME_TIMESTAMP")
+
+    uuid = get_uuid()
+    print ("uuid " +str(uuid))
+    
+    return get_ingress_perf_grafana_url(uuid, start_time, to_time)
+
 def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, status, job_parameters, job_output, env_vars_file, user, es_username, es_password):
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -148,6 +167,8 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
 
     if job_type == "network-perf-v2":
         grafana_cell = find_k8s_perf_uuid_url()
+    elif job_type == "ingress-perf":
+        grafana_cell = get_ingress_perf_uuid()
     elif job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
         if job_output:
@@ -175,7 +196,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     worker_count = write_helper.get_worker_num()
     row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type, worker_count]
 
-    if job_type not in ["network-perf","network-perf-v2", "router-perf"]:
+    if job_type not in ["network-perf","network-perf-v2", "router-perf","ingress-perf"]:
         workload_args = get_workload_params(job_type)
         print('work')
         if workload_args != 0:
@@ -189,7 +210,7 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
             if param:
                 row.append(param)
 
-    if job_type not in ["etcd-perf", "network-perf", "network-perf-v2","router-perf"]:
+    if job_type not in ["etcd-perf", "network-perf", "network-perf-v2","router-perf","ingress-perf"]:
         creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
         row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
 
