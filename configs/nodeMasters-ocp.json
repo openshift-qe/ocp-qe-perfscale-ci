@@ -23,7 +23,7 @@
         ],
         "aggregations": {
           "value": [
-            "avg"
+            "max"
           ]
         }
       }
