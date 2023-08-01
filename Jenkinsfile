@@ -813,7 +813,8 @@ pipeline {
                                 println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${params.BASELINE_UUID}...")
                                 // set additional vars for tolerancy rules check
                                 env.BASELINE_UUID = params.BASELINE_UUID
-                                env.TOLERANCY_RULES = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_touchstone_tolerancy_rules.yaml"
+                                env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
+                                env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
                                 // COMPARISON_CONFIG is changed here to only focus on specific statistics
                                 env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
                                 // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
