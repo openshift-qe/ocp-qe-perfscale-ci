@@ -54,6 +54,16 @@ ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
 DUMP = False
 UPLOAD_FILE = ''
+BASELINE_TO_FETCH = ''
+BASELINE_TO_UPLOAD = ''
+
+
+def get_iso_timestamp(unix_timestamp):
+    ''' takes in a unix timestamp and returns an iso timestamp representation
+        iso timestamp will be Elasticsearch compatible 
+    '''
+    return datetime.datetime.utcfromtimestamp(int(unix_timestamp)).isoformat() + 'Z'
+
 
 def process_query(metric_name, query, raw_data):
     ''' takes in a Prometheus metric name, query and its successful execution result
@@ -70,7 +80,7 @@ def process_query(metric_name, query, raw_data):
             for data_point in result["values"]:
                 metadata = result["metric"]
                 metadata["query"] = query
-                iso_timestamp = datetime.datetime.utcfromtimestamp(data_point[0]).isoformat() + 'Z'
+                iso_timestamp = get_iso_timestamp(data_point[0])
                 clean_data.append(
                     {
                         "uuid": UUID,
@@ -167,7 +177,7 @@ def get_netobserv_env_info():
     '''
 
     # intialize info and base_commands objects
-    iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
+    iso_timestamp = get_iso_timestamp(START_TIME)
     info = {
         "uuid": UUID,
         "jira": JIRA,
@@ -227,7 +237,7 @@ def get_jenkins_env_info():
     '''
 
     # intialize info object
-    iso_timestamp = datetime.datetime.utcfromtimestamp(int(START_TIME)).isoformat() + 'Z'
+    iso_timestamp = get_iso_timestamp(START_TIME)
     info = {
         "uuid": UUID,
         "metric_name": "jenkinsEnv",
@@ -251,10 +261,14 @@ def get_jenkins_env_info():
             raise Exception("No build parameters could be found.")
         for param in build_parameters:
             del param['_class']
-            if param.get('name') == 'WORKLOAD':
-                info['workload'] = str(param.get('value'))
             if param.get('name') == 'VARIABLE':
                 info['variable'] = int(param.get('value'))
+            # if workload is not explicitly set in Jenkins such as with router-perf, take it from the job name 
+            if param.get('name') == 'WORKLOAD':
+                info['workload'] = str(param.get('value'))
+            else:
+                info['workload'] = JENKINS_JOB.split('/')[-1]
+
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
 
@@ -301,7 +315,7 @@ def upload_data_to_elasticsearch():
             index = 'prod-netobserv-jenkins-metadata'
         else:
             index = 'prod-netobserv-datapoints'
-        logging.debug(f"Uploading item {item} to index {index} in Elasticsearch")
+        logging.debug(f"Uploading item '{item}' to index '{index}' in Elasticsearch")
         response = es.index(
             index=index,
             body=item
@@ -310,8 +324,144 @@ def upload_data_to_elasticsearch():
     end = time.time()
     elapsed_time = end - start
 
-    # return elapsed time for upload if no issues
+    # close Elasticsearch object and return elapsed time for upload if no issues
+    es.close()
     return elapsed_time
+
+
+def upload_baseline_to_elasticsearch(uuid):
+    ''' uploads baseline data for a given UUID from Elasticsearch
+    '''
+
+    # create Elasticsearch object
+    es = Elasticsearch(
+        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
+    )
+
+    # get netobserv release info from Elasticsearch based off UUID
+    releaseRes = es.search(
+        index='prod-netobserv-operator-metadata',
+        body={
+            "query": {
+                "match": {
+                    "uuid.keyword": uuid
+                }
+            }
+        }
+    )
+    logging.debug(f"Response back from release fetch attempt was {releaseRes}")
+
+    # ensure exactly 1 result was captured, exit if not
+    releaseResNumHits = len(releaseRes['hits']['hits'])
+    if releaseResNumHits != 1:
+        logging.error(f"Got {releaseResNumHits} hits - should be '1'")
+        sys.exit(1)
+
+    # parse out release info from response object and log
+    release = releaseRes['hits']['hits'][0]['_source']['release']
+    logging.info(f"Got {release} for release from test results for UUID {uuid}")
+
+    # get workload info from Elasticsearch based off UUID
+    workloadRes = es.search(
+        index='prod-netobserv-jenkins-metadata',
+        body={
+            "query": {
+                "match": {
+                    "uuid.keyword": uuid
+                }
+            }
+        }
+    )
+    logging.debug(f"Response back from workload fetch attempt was {workloadRes}")
+
+    # ensure exactly 1 result was captured, exit if not
+    workloadResNumHits = len(workloadRes['hits']['hits'])
+    if workloadResNumHits != 1:
+        logging.error(f"Got {workloadResNumHits} hits - should be '1'")
+        sys.exit(1)
+
+    # parse out workload info from response object and log
+    # if workload is not explicitly set in jenkins data such as with legacy router-perf, take it from the job name 
+    try:
+        workload = workloadRes['hits']['hits'][0]['_source']['workload']
+    except KeyError:
+        job_name = workloadRes['hits']['hits'][0]['_source']['jenkins_job_name']
+        workload = job_name.split('/')[-1]
+    logging.info(f"Got {workload} for workload from test results for UUID {uuid}")
+
+    # assemble baseline document
+    iso_timestamp = get_iso_timestamp(time.time())
+    document = {
+        "uuid": uuid,
+        "data_type": "baseline",
+        "iso_timestamp": iso_timestamp,
+        "workload": workload,
+        "release": release
+    }
+
+    # upload new baseline to Elasticsearch
+    logging.debug(f"Uploading baseline document '{document}' to index 'prod-netobserv-baselines' in Elasticsearch")
+    baselineUploadRes = es.index(
+        index='prod-netobserv-baselines',
+        body=document
+    )
+    logging.debug(f"Response back from upload attempt was {baselineUploadRes}")
+
+    # close Elasticsearch object and return
+    es.close()
+    return None
+
+
+def fetch_baseline_from_elasticsearch(workload):
+    ''' fetches baseline data for a given workload from Elasticsearch
+    '''
+
+    # create Elasticsearch object
+    es = Elasticsearch(
+        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
+    )
+
+    # fetch most recent baseline for given workload
+    baselineRes = es.search(
+        index='prod-netobserv-baselines',
+        body={
+            "query": {
+                "match": {
+                    "workload.keyword": workload
+                }
+            },
+            "sort": [
+                {
+                    "iso_timestamp": {
+                        "order": "desc"
+                    }
+                }
+            ],
+            "size": 1
+        }
+    )
+    logging.debug(f"Response back from baseline fetch attempt was {baselineRes}")
+
+    # ensure exactly 1 result was captured, exit if not
+    baselineResNumHits = len(baselineRes['hits']['hits'])
+    if baselineResNumHits != 1:
+        logging.error(f"Got {baselineResNumHits} hits - should be '1'")
+        sys.exit(1)
+
+    # parse out uuid from response object and log
+    baseline_uuid = baselineRes['hits']['hits'][0]['_source']['uuid']
+    logging.info(f"Got {baseline_uuid} for most recent baseline for workload {workload}")
+
+    # ensure data directory exists (create if not)
+    pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+
+    # dump baseline to JSON so it can be consumed by other actors such as Jenkins
+    with open(DATA_DIR + f'/baseline.json', 'w') as baseline_file:
+        json.dump({'BASELINE_UUID':baseline_uuid}, baseline_file)
+
+    # close Elasticsearch object and return
+    es.close()
+    return None
 
 
 def main():
@@ -377,6 +527,11 @@ if __name__ == '__main__':
     upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
     upload.add_argument("--upload-file", type=str, default='', help='JSON file to upload to Elasticsearch. Must be in the "data" directory. Note this flag runs the NOPE tool in Upload mode and causes all flags other than --debug to be IGNORED.')
 
+    # set baseline mode flags
+    baseline = parser.add_argument_group("Baseline Mode", "Fetch an existing baseline from Elasticsearch or Upload a new baseline")
+    baseline.add_argument("--fetch-baseline", type=str, default='', help='Fetch the most recent baseline for a given workload')
+    baseline.add_argument("--upload-baseline", type=str, default='', help='Upload a new baseline for a given UUID')
+
     # parse arguments
     args = parser.parse_args()
 
@@ -407,6 +562,19 @@ if __name__ == '__main__':
         except Exception as e:
             logging.error(f"Error uploading to Elasticsearch server: {e}")
             sys.exit(1)
+
+    # if running in baseline mode
+    BASELINE_TO_FETCH = args.fetch_baseline
+    BASELINE_TO_UPLOAD = args.upload_baseline
+    if BASELINE_TO_FETCH != '' and BASELINE_TO_UPLOAD != '':
+        logging.error(f"Cannot both fetch and upload a baseline - please pick one or the other!")
+        sys.exit(1)
+    elif BASELINE_TO_FETCH != '':
+        fetch_baseline_from_elasticsearch(BASELINE_TO_FETCH)
+        sys.exit(0)
+    elif BASELINE_TO_UPLOAD != '':
+        upload_baseline_to_elasticsearch(BASELINE_TO_UPLOAD)
+        sys.exit(0)
 
     # sanity check that kubeconfig is set
     result = subprocess.run(['oc', 'whoami'], capture_output=True, text=True)
