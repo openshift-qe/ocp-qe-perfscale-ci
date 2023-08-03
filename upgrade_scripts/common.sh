@@ -150,7 +150,7 @@ function capture_failed_pods_before_upgrade(){
 }
 
 function capture_failed_pods_after_upgrade(){
-  #Save the failed job before upgrade and make sure new failed job caused by upgrade
+  #Save the failed job after upgrade and make sure new failed job caused by upgrade
   echo "Capture failed pods after upgrade OCP, No messages means no errors"
   echo "####################################################################################"
   #Adding re-try steps to avoid temp failed pod
