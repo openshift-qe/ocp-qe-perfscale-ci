@@ -53,9 +53,9 @@ ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1
 ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
 DUMP = False
-UPLOAD_FILE = ''
-BASELINE_TO_FETCH = ''
-BASELINE_TO_UPLOAD = ''
+UPLOAD_FILE = None
+BASELINE_TO_FETCH = None
+BASELINE_TO_UPLOAD = None
 
 
 def get_iso_timestamp(unix_timestamp):
@@ -505,8 +505,14 @@ def main():
 
 if __name__ == '__main__':
 
-    # initialize argument parser
-    parser = argparse.ArgumentParser(description='Network Observability Prometheus and Elasticsearch tool (NOPE)')
+    # initialize argument parser and mode subparsers
+    parser = argparse.ArgumentParser(
+        description='Network Observability Prometheus and Elasticsearch tool (NOPE)'
+    )
+    subparsers = parser.add_subparsers(
+        dest='mode',
+        help='Additional Run Modes'
+    )
 
     # set logging flags
     parser.add_argument("--debug", default=False, action='store_true', help='Flag for additional debug messaging')
@@ -524,13 +530,22 @@ if __name__ == '__main__':
     standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
 
     # set upload mode flags
-    upload = parser.add_argument_group("Upload Mode", "Directly upload data from a previously generated JSON file to Elasticsearch")
-    upload.add_argument("--upload-file", type=str, default='', help='JSON file to upload to Elasticsearch. Must be in the "data" directory. Note this flag runs the NOPE tool in Upload mode and causes all flags other than --debug to be IGNORED.')
+    upload = subparsers.add_parser(
+        "upload",
+        description="Directly upload data from a previously generated JSON file to Elasticsearch",
+        help="Directly upload data from a previously generated JSON file to Elasticsearch"
+    )
+    upload.add_argument("--file", type=str, required=True, help='JSON file to upload to Elasticsearch. Must be in the "data" directory.')
 
     # set baseline mode flags
-    baseline = parser.add_argument_group("Baseline Mode", "Fetch an existing baseline from Elasticsearch or Upload a new baseline")
-    baseline.add_argument("--fetch-baseline", type=str, default='', help='Fetch the most recent baseline for a given workload')
-    baseline.add_argument("--upload-baseline", type=str, default='', help='Upload a new baseline for a given UUID')
+    baseline = subparsers.add_parser(
+        "baseline",
+        description="Fetch an existing baseline from Elasticsearch or Upload a new baseline",
+        help="Fetch an existing baseline from Elasticsearch or Upload a new baseline"
+    )
+    baseline_group = baseline.add_mutually_exclusive_group(required=True)
+    baseline_group.add_argument("--fetch", type=str, help='Fetch the most recent baseline for a given workload')
+    baseline_group.add_argument("--upload", type=str, help='Upload a new baseline for a given UUID')
 
     # parse arguments
     args = parser.parse_args()
@@ -545,8 +560,8 @@ if __name__ == '__main__':
         coloredlogs.install(level='INFO', isatty=True)
 
     # if running in upload mode - immediately load JSON, upload, and exit
-    UPLOAD_FILE = args.upload_file
-    if UPLOAD_FILE != '':
+    if args.mode == 'upload':
+        UPLOAD_FILE = args.file
         upload_file_path = DATA_DIR + '/' + UPLOAD_FILE
         logging.info(f"Running NOPE tool in Upload mode - data from {upload_file_path} will be uploaded to Elasticsearch")
 
@@ -563,18 +578,16 @@ if __name__ == '__main__':
             logging.error(f"Error uploading to Elasticsearch server: {e}")
             sys.exit(1)
 
-    # if running in baseline mode
-    BASELINE_TO_FETCH = args.fetch_baseline
-    BASELINE_TO_UPLOAD = args.upload_baseline
-    if BASELINE_TO_FETCH != '' and BASELINE_TO_UPLOAD != '':
-        logging.error(f"Cannot both fetch and upload a baseline - please pick one or the other!")
-        sys.exit(1)
-    elif BASELINE_TO_FETCH != '':
-        fetch_baseline_from_elasticsearch(BASELINE_TO_FETCH)
-        sys.exit(0)
-    elif BASELINE_TO_UPLOAD != '':
-        upload_baseline_to_elasticsearch(BASELINE_TO_UPLOAD)
-        sys.exit(0)
+    # if running in baseline mode - perform action based on argument and exit
+    if args.mode == 'baseline':
+        BASELINE_TO_FETCH = args.fetch
+        BASELINE_TO_UPLOAD = args.upload
+        if BASELINE_TO_FETCH is not None:
+            fetch_baseline_from_elasticsearch(BASELINE_TO_FETCH)
+            sys.exit(0)
+        else:
+            upload_baseline_to_elasticsearch(BASELINE_TO_UPLOAD)
+            sys.exit(0)
 
     # sanity check that kubeconfig is set
     result = subprocess.run(['oc', 'whoami'], capture_output=True, text=True)
