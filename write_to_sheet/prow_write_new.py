@@ -12,6 +12,7 @@ import get_scale_output
 import os
 import write_scale_results_sheet
 import yaml 
+import update_es_uuid
 creation_time = ""
 data_source = "QE%20kube-burner"
 uuid = ""
@@ -56,6 +57,16 @@ def get_fips():
 
     return str(False)
 
+def get_metadata_es(uuid): 
+    index= "perf_scale_ci" 
+    search_params = {
+        "uuid": uuid
+    }
+    
+    hits = update_es_uuid.es_search(search_params, index=index)
+    return print(hits[0]['_source']['uuid'])
+
+
 def write_prow_results_to_sheet():
     scopes = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -68,7 +79,7 @@ def write_prow_results_to_sheet():
     #open sheet
     index = 2
 
-    job_parameters = os.getenv("ITERATIONS")
+    job_parameters = os.getenv("JOB_ITERATIONS")
     job_type = os.getenv("WORKLOAD_TYPE")
     es_username = os.getenv("ES_USERNAME")
     es_password = os.getenv("ES_PASSWORD")
@@ -78,9 +89,10 @@ def write_prow_results_to_sheet():
     if job_type == "network-perf-v2":
         grafana_cell = write_scale_results_sheet.find_k8s_perf_uuid_url()
     elif job_type == "router-perf":
-        uuid, metadata = write_scale_results_sheet.get_router_perf_uuid()
-        grafana_cell = uuid
+            uuid, metadata = write_scale_results_sheet.get_router_perf_uuid()
+            grafana_cell = uuid
     elif job_type == "ingress-perf":
+        uuid, metadata = write_scale_results_sheet.get_router_perf_uuid()
         grafana_cell = uuid
     else:
         print('call metadata')
@@ -106,12 +118,9 @@ def write_prow_results_to_sheet():
             if param:
                 row.append(param)
 
-    if job_type not in ["network-perf-v2","router-perf" ,"ingress-perf"]:
+    if job_type not in ["network-perf-v2","router-perf","ingress-perf"]:
         creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
         print('get latency params ' + str(uuid) )
-        print('get latency params ' + str(creation_time) )
-        print('get latency params ' + str(es_username) )
-        print('get latency params ' + str(es_password) )
         row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
 
     row.append(str(datetime.now(tz)))
