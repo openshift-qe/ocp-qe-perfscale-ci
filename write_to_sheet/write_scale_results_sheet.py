@@ -49,6 +49,14 @@ def find_k8s_perf_uuid_url():
     print ("uuid " +str(uuid))
     return get_net_perf_grafana_url(uuid, start_time, to_time)
 
+def get_ingress_perf_grafana_url(uuid, start_time, end_time):
+    start_time = start_time + "000"
+    end_time = end_time + "000"
+    data_source="QE%20Ingress-perf"
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/nlAhmRyVk/ingress-perf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-termination=edge&var-termination=http&var-termination=passthrough&var-termination=reencrypt&var-latency_metric=avg_lat_us&var-compare_by=uuid.keyword&var-concurrency=18".format(str(start_time), str(end_time), data_source, uuid)
+    print('grafana url ' + str(grafana_url))
+    grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
+    return grafana_cell
 
 def find_uperf_uuid_url(cluster_name, start_time, es_username, es_password):
 
