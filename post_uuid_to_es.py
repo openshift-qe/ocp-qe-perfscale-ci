@@ -153,6 +153,19 @@ def get_net_perf_v2_data():
     info["uuid"] =  os.getenv('UUID')
     return info
 
+def get_ingress_perf_data(): 
+    info = {}
+    build_parameters = get_jenkins_params()
+    try: 
+        for param in build_parameters:
+            del param['_class']
+            if param.get('name') == 'CONFIG':
+                info['CONFIG'] = str(param.get('value'))
+    except Exception as e:
+        logging.error(f"Failed to collect Jenkins build parameter info: {e}")
+    info["uuid"] =  os.getenv('UUID')
+    return info
+
 def get_nightly_reg_data(): 
     info = {}
     build_parameters = get_jenkins_params()
@@ -363,6 +376,10 @@ if __name__ == '__main__':
             info[k] = v
     elif "network-perf" in workload:
         jenkins_info = get_net_perf_v2_data()
+        for k,v in jenkins_info.items(): 
+            info[k] = v
+    elif "ingress-perf" == workload: 
+        jenkins_info = get_ingress_perf_data()
         for k,v in jenkins_info.items(): 
             info[k] = v
     elif "nightly" not in workload:
