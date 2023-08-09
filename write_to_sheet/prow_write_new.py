@@ -16,36 +16,6 @@ import update_es_uuid
 creation_time = ""
 data_source = "QE%20kube-burner"
 uuid = ""
-
-def install_type():
-
-    cloud_type = get_platform()
-    net_status, network_type_string = write_helper.run("oc get network cluster -o jsonpath='{.status.networkType}'")
-    node_status, node_name=write_helper.run("oc get node --no-headers | grep master| head -1| awk '{print $1}'")
-    node_name = node_name.strip()
-    arch_type_status, architecture_type = write_helper.run("oc get node " + str(node_name) + " --no-headers -ojsonpath='{.status.nodeInfo.architecture}'")
-
-    architecture_type = architecture_type.strip()
-    if "ovn" in network_type_string.lower():
-        network_type = "OVN"
-    else:
-        network_type = "SDN"
-    fips_enabled = get_fips()
-    return cloud_type, architecture_type, network_type, fips_enabled
-
-
-def get_platform():
-    
-    try: 
-        return_code, cluster_config_str = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o jsonpath='{.data.install-config}'")
-        print('config str' + str(type(cluster_config_str)))
-        cluster_config = yaml.load(cluster_config_str, Loader=yaml.SafeLoader)
-        print('loads' + str(cluster_config))
-        platform = list(cluster_config['platform'].keys())[0]
-        print('plat' + str(platform))
-    except: 
-        platform = "unknown"
-    return platform
         
 def get_fips():
 
