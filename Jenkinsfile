@@ -309,6 +309,7 @@ pipeline {
                                 echo "replace tolerancy to $TOLERANCY in mb-tolerancy-rules.yaml"
                                 sed -i "s/tolerancy:.*/tolerancy: $TOLERANCY/" mb-tolerancy-rules.yaml
                             fi
+                            pip install jq
                             ./ingress-performance.sh |& tee "ingress_router.out"
                             ! grep "Benchmark comparison failed" ingress_router.out
                             '''
