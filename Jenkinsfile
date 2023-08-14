@@ -283,6 +283,7 @@ pipeline {
                         set -o pipefail
  
                         cd workloads/kube-burner-ocp-wrapper
+                        pip install jq
                         if [[ $CHURN == true ]]; then
                             echo "churn true"
                             export EXTRA_FLAGS="--churn=true --churn-delay=${CHURN_DELAY} --churn-duration=${CHURN_DURATION} --churn-percent=${CHURN_PERCENT}"
