@@ -331,7 +331,7 @@ pipeline {
                     python3.9 -m virtualenv venv3
                     source venv3/bin/activate
                     python --version
-                    python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt 
+                    python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt
                     python $WORKSPACE/helpful_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                 """)
                 // fail pipeline if Mr. Sandman run failed, continue otherwise
