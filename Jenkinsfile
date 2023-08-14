@@ -170,7 +170,7 @@ pipeline{
           NOTE: this only applies to kube-burner workloads'''
       )
       choice(
-        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-v2","regression-test"], 
+        choices: ["","cluster-density", "cluster-density-ms","cluster-density-v2","node-density", "node-density-heavy","node-density-cni","node-density-cni-networkpolicy","pod-density", "pod-density-heavy", "max-namespaces", "max-services", "concurrent-builds","pods-service-route","networkpolicy-case1","networkpolicy-case2","networkpolicy-case3","pod-network-policy-test","router-perf","ingress-perf","network-perf-hostnetwork-network-test","network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-v2","regression-test"], 
         name: 'CI_TYPE', 
         description: '''Type of scale-ci job to run. Can be left blank to not run ci job <br>
           Router-perf tests will use all defaults if selected, all parameters in this section below will be ignored '''
@@ -264,6 +264,19 @@ pipeline{
         For large_network_policy test case: perfscale_regression_ci/scripts/network/large_network_policy.sh<br>
         If TEST_CASE is specified, SCRIPT will overwrite the TEST_CASE.
         </p>'''
+      )
+      separator(
+        name: "INGRESS_PERF_INFO", 
+        sectionHeader: "Ingress-Perf Job Config", 
+        sectionHeaderStyle: """
+          font-size: 14px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      string(
+        name: 'CONFIG',
+        defaultValue: "config/standard.yml",
+        description: 'Config type for ingress-perf'
       )
       separator(
         name: "NETWORK_PERF_INFO", 
@@ -658,6 +671,19 @@ pipeline{
                          ]
                        currentBuild.description += """
                             <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+                       """
+                    } else if ( ["ingress-perf"].contains(params.CI_TYPE) ) {
+                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf", propagate: false, parameters:[
+                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+                            string(name: "CONFIG", value: CONFIG),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+                         ]
+                       currentBuild.description += """
+                            <b>Scale-Ci: Ingress Perf </b> ${CONFIG} <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                        """
                     } else if (params.CI_TYPE == "regression-test") {
