@@ -20,15 +20,15 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc413',
+            defaultValue: 'oc414',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
             name: 'FLEXY_BUILD_NUMBER',
             defaultValue: '',
             description: '''
-                Build number of Flexy job that installed the cluster.<br/>
-                <b>Note that only AWS clusters are supported at the moment.</b>
+                Build number of Flexy job that installed the cluster<br/>
+                <b>Note that only AWS clusters are supported at the moment</b>
             '''
         )
         separator(
@@ -356,24 +356,30 @@ pipeline {
                     if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
                         error('Spreadsheet cannot be generated if data is not uploaded to Elasticsearch')
                     }
+                    if (params.WORKLOAD == 'None' && params.RUN_BASELINE_COMPARISON == true) {
+                        error('Baseline comparison cannot be run if a workload is not run first')
+                    }
                     println('Job params are valid - continuing execution...')
                 }
             }
         }
         stage('Setup testing environment') {
             steps {
+                // copy artifacts from Flexy install
                 copyArtifacts(
                     fingerprintArtifacts: true,
                     projectName: 'ocp-common/Flexy-install',
                     selector: specific(params.FLEXY_BUILD_NUMBER),
                     target: 'flexy-artifacts'
                 )
+                // checkout ocp-qe-perfscale-ci repo
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: GIT_BRANCH ]],
                     userRemoteConfigs: [[url: GIT_URL ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
                 ])
+                // login to Flexy cluster and set AWS credentials in Shell env for pipeline execution
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
                         buildInfo = readYaml(file: 'flexy-artifacts/BUILDINFO.yml')
@@ -410,6 +416,7 @@ pipeline {
             }
             steps {
                 script {
+                    // call E2E Benchmarking scale job to scale cluster
                     scaleJob = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-workers-scaling/', parameters: [
                         string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
                         string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
@@ -418,9 +425,11 @@ pipeline {
                         booleanParam(name: 'INSTALL_DITTYBOPPER', value: false),
                     ]
                     currentBuild.description += "Scale Job: <b><a href=${scaleJob.absoluteUrl}>${scaleJob.getNumber()}</a></b><br/>"
+                    // fail pipeline if scaling failed
                     if (scaleJob.result != 'SUCCESS') {
                         error('Scale job failed :(')
                     }
+                    // otherwise continue and display newly scaled nodes and count of totals based on role
                     else {
                         println("Successfully scaled cluster to ${params.WORKER_COUNT} worker nodes :)")
                         if (params.INFRA_WORKLOAD_INSTALL) {
@@ -454,15 +463,16 @@ pipeline {
                         env.USER = 'auto'
                     }
                     // attempt installation of Loki Operator from selected source
-                    println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
+                    println("Installing ${params.LOKI_OPERATOR} version of Loki Operator...")
                     lokiReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_lokistack
                     """)
-                    // fail pipeline if installation failed, continue otherwise
+                    // fail pipeline if installation failed
                     if (lokiReturnCode.toInteger() != 0) {
                         error("${params.LOKI_OPERATOR} version of Loki Operator installation failed :(")
                     }
+                    // otherwise continue and display controller and lokistack pods running in cluster
                     else {
                         println("Successfully installed ${params.LOKI_OPERATOR} version of Loki Operator :)")
                         sh(returnStatus: true, script: '''
@@ -492,15 +502,15 @@ pipeline {
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
                     """)
-                    // fail pipeline if installation failed, continue otherwise
+                    // fail pipeline if installation failed
                     if (netobservReturnCode.toInteger() != 0) {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
                     }
+                    // otherwise continue and display controller, FLP, and eBPF pods running in cluster
                     else {
                         println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
                         sh(returnStatus: true, script: '''
                             oc get pods -n openshift-netobserv-operator
-                            oc get pods -n openshift-operators-redhat
                             oc get pods -n netobserv
                             oc get pods -n netobserv-privileged
                         ''')
@@ -517,7 +527,6 @@ pipeline {
                     if (env.RELEASE != '') {
                         currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
                     }
-
                     // attempt updating common parameters of NetObserv and flowcollector where specified
                     println('Updating common parameters of NetObserv and flowcollector where specified...')
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
@@ -562,31 +571,29 @@ pipeline {
                         }
                     }
                     println('Successfully updated common parameters of NetObserv and flowcollector :)')
-
                     // attempt to enable or update Kafka if applicable
-                    println("Checking if Kafka needs to be enabled or updated...")
+                    println('Checking if Kafka needs to be enabled or updated...')
                     if (params.ENABLE_KAFKA == true) {
                         println("Configuring Kafka in flowcollector...")
                         kafkaReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
                         """)
+                        // fail pipeline if installation and/or configuration failed
                         if (kafkaReturnCode.toInteger() != 0) {
                             error('Failed to enable Kafka in flowcollector :(')
                         }
+                        // otherwise continue and display controller and updated FLP pods running in cluster
                         else {
                             println('Successfully enabled Kafka with flowcollector :)')
                             sh(returnStatus: true, script: '''
-                                oc get pods -n openshift-netobserv-operator
-                                oc get pods -n openshift-operators-redhat
                                 oc get pods -n openshift-operators
                                 oc get pods -n netobserv
-                                oc get pods -n netobserv-privileged
                             ''')
                         }
                     }
                     else {
-                        println("Skipping Kafka configuration...")
+                        println('Skipping Kafka configuration...')
                     }
                 }
             }
@@ -618,6 +625,7 @@ pipeline {
                 expression { params.INSTALL_DITTYBOPPER == true }
             }
             steps {
+                // checkout performance dashboards repo
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: params.DITTYBOPPER_REPO_BRANCH ]],
@@ -686,16 +694,18 @@ pipeline {
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL)
                         ]
                     }
+                    // fail pipeline if workload failed
                     if (workloadJob.result != 'SUCCESS') {
                         error('Workload job failed :(')
                     }
+                    // otherwise continue and update build description with workload job link
                     else {
                         println("Successfully ran workload job :)")
-                        // update build description with workload job link
                         env.JENKINS_BUILD = "${workloadJob.getNumber()}"
                         currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
                     }
                 }
+                // copy artifacts from workload job
                 copyArtifacts(
                     fingerprintArtifacts: true, 
                     projectName: env.JENKINS_JOB,
@@ -744,6 +754,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
+                        // construct arguments for NOPE tool and execute
                         NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
@@ -782,6 +793,7 @@ pipeline {
                 expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP == false && currentBuild.currentResult != "UNSTABLE" }
             }
             steps {
+                // checkout e2e-benchmarking repo
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'master' ]],
@@ -791,7 +803,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                     script {
                         println('Running Touchstone to get statistics for workload run...')
-                        // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above)
+                        // set env variables needed for touchstone (note UUID and GSHEET_KEY_LOCATION are needed but already set above) and execute
                         env.CONFIG_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries"
                         env.COMPARISON_CONFIG = 'netobserv_touchstone_statistics_config.json'
                         env.ES_SERVER = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
