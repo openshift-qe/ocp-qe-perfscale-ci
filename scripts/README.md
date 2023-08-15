@@ -2,9 +2,9 @@
 The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance.
 
 Multiple workloads are run to generate traffic for the cluster:
-1. node-density-heavy
-2. router-perf
-3. cluster-density
+1. [node-density-heavy](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56616)
+2. [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618)
+3. [cluster-density-v2](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56617)
 
 ## Prerequisites
 1. Create an OCP4 cluster
@@ -29,7 +29,7 @@ It is recommended to use Loki Operator to create a LokiStack for Network Observa
 
 To create LokiStack manually, the following steps can be performed:
 1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
-2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki-ocpqe-perf` S3 bucket.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-ocpqe-default` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
@@ -64,7 +64,9 @@ Note this is only nessessary if you're running an upstream version of the operat
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
 ### Updating common parameters of flowcollector
-You can update common parameters of flowcollector with the following commands:
+Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta1_flowcollector.yaml`
+
+You can update common parameters of flowcollector individually with the following commands:
 - **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
 - **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
