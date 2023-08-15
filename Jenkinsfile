@@ -842,6 +842,7 @@ pipeline {
                                     }
                                 }
                                 println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
+                                currentBuild.description += "<b>BASELINE_UUID:</b> ${env.BASELINE_UUID}<br/>"
                                 // set additional vars for tolerancy rules check
                                 env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
                                 env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
@@ -859,6 +860,7 @@ pipeline {
                                 // mark pipeline as unstable if Touchstone failed, continue otherwise
                                 if (baselineReturnCode.toInteger() != 0) {
                                     unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
+                                    currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
                                     // rerun Touchstone to generate a JSON for debugging
                                     env.GEN_JSON = true
                                     env.GEN_CSV = false
@@ -871,6 +873,7 @@ pipeline {
                                 }
                                 else {
                                     println('New statistics were within tolerable range of baseline statistics :)')
+                                    currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
                                     NOPE_ARGS = ''
                                     if (params.NOPE_DEBUG == true) {
                                         NOPE_ARGS += ' --debug'
@@ -882,9 +885,11 @@ pipeline {
                                     """)
                                     if (uploadReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                        currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
                                     }
                                     else {
                                         println('Successfully uploaded new baseline to Elasticsearch :)')
+                                        currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
                                     }
                                 }                            
                             }
