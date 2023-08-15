@@ -290,13 +290,21 @@ pipeline {
                 Format should in the form of <b>NETOBSERV-123</b>
             '''
         )
+        booleanParam(
+            name: 'RUN_BASELINE_COMPARISON',
+            defaultValue: false,
+            description: '''
+                If the workload completes successfully and is uploaded to Elasticsearch, checking this box will configure Touchstone to run a comparison between the job run and a baseline UUID<br/>
+                By default, the NOPE tool will be used to fetch the most recent baseline for the given workload from Elasticsearch<br/>
+                Alternatively, you can specify a specific baseline UUID to run the comparison with using the text box below
+            '''
+        )
         string(
-            name: 'BASELINE_UUID',
+            name: 'BASELINE_UUID_OVERRIDE',
             defaultValue: '',
             description: '''
-                Baseline UUID to compare this run to<br/>
-                If the workload completes successfully and is uploaded to Elasticsearch, adding a UUID here will configure Touchstone to run a comparison between the job run and the given baseline UUID<br/>
-                If no UUID is specified, no comparison will be made
+                Override baseline UUID to compare this run to<br/>
+                Note you will still need to check the box above to run the comparison
             '''
         )
         separator(
@@ -376,7 +384,7 @@ pipeline {
                         env.MINOR_VERSION = installData.INSTALLER.VER_Y
                         currentBuild.displayName = "${currentBuild.displayName}-${params.FLEXY_BUILD_NUMBER}"
                         currentBuild.description = "Flexy-install Job: <a href=\"${buildInfo.buildUrl}\">${params.FLEXY_BUILD_NUMBER}</a> using OCP build <b>${OCP_BUILD}</b><br/>"
-                        returnCode = sh(returnStatus: true, script: """
+                        setupReturnCode = sh(returnStatus: true, script: """
                             mkdir -p ~/.kube
                             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
                             oc get route console -n openshift-console
@@ -386,7 +394,7 @@ pipeline {
                             region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
                             output = text" > ~/.aws/config
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (setupReturnCode.toInteger() != 0) {
                             error("Failed to setup testing environment :(")
                         }
                         else {
@@ -447,12 +455,12 @@ pipeline {
                     }
                     // attempt installation of Loki Operator from selected source
                     println "Installing ${params.LOKI_OPERATOR} version of Loki Operator..."
-                    returnCode = sh(returnStatus: true, script: """
+                    lokiReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_lokistack
                     """)
                     // fail pipeline if installation failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
+                    if (lokiReturnCode.toInteger() != 0) {
                         error("${params.LOKI_OPERATOR} version of Loki Operator installation failed :(")
                     }
                     else {
@@ -480,12 +488,12 @@ pipeline {
                     }
                     // attempt installation of Network Observability from selected source
                     println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")
-                    returnCode = sh(returnStatus: true, script: """
+                    netobservReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
                     """)
                     // fail pipeline if installation failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
+                    if (netobservReturnCode.toInteger() != 0) {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
                     }
                     else {
@@ -513,43 +521,43 @@ pipeline {
                     // attempt updating common parameters of NetObserv and flowcollector where specified
                     println('Updating common parameters of NetObserv and flowcollector where specified...')
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
-                        returnCode = sh(returnStatus: true, script: """
+                        controllerReturnCode = sh(returnStatus: true, script: """
                             oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
                             sleep 60
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (controllerReturnCode.toInteger() != 0) {
                             error('Updating controller memory limit failed :(')
                         }
                     }
                     if (params.EBPF_SAMPLING_RATE != '') {
-                        returnCode = sh(returnStatus: true, script: """
+                        samplingReturnCode = sh(returnStatus: true, script: """
                             oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.EBPF_SAMPLING_RATE}}] -n netobserv"
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (samplingReturnCode.toInteger() != 0) {
                             error('Updating eBPF sampling rate failed :(')
                         }
                     }
                     if (params.EBPF_MEMORY_LIMIT != '') {
-                        returnCode = sh(returnStatus: true, script: """
+                        ebpfMemReturnCode = sh(returnStatus: true, script: """
                             oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "${params.EBPF_MEMORY_LIMIT}"}] -n netobserv"
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (ebpfMemReturnCode.toInteger() != 0) {
                             error('Updating eBPF memory limit failed :(')
                         }
                     }
                     if (params.FLP_CPU_LIMIT != '') {
-                        returnCode = sh(returnStatus: true, script: """
+                        flpCpuReturnCode = sh(returnStatus: true, script: """
                             oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (flpCpuReturnCode.toInteger() != 0) {
                             error('Updating FLP CPU limit failed :(')
                         }
                     }
                     if (params.FLP_MEMORY_LIMIT != '') {
-                        returnCode = sh(returnStatus: true, script: """
+                        flpMemReturnCode = sh(returnStatus: true, script: """
                             oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (flpMemReturnCode.toInteger() != 0) {
                             error('Updating FLP memory limit failed :(')
                         }
                     }
@@ -559,11 +567,11 @@ pipeline {
                     println("Checking if Kafka needs to be enabled or updated...")
                     if (params.ENABLE_KAFKA == true) {
                         println("Configuring Kafka in flowcollector...")
-                        returnCode = sh(returnStatus: true, script: """
+                        kafkaReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
                         """)
-                        if (returnCode.toInteger() != 0) {
+                        if (kafkaReturnCode.toInteger() != 0) {
                             error('Failed to enable Kafka in flowcollector :(')
                         }
                         else {
@@ -591,12 +599,12 @@ pipeline {
                 script {
                     // attempt setup of FLP service and creation of service-monitor
                     println('Setting up FLP service and creating service-monitor...')
-                    returnCode = sh(returnStatus: true, script:  """
+                    metricsReturnCode = sh(returnStatus: true, script:  """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         populate_netobserv_metrics
                     """)
                     // fail pipeline if setup failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
+                    if (metricsReturnCode.toInteger() != 0) {
                         error('Setting up FLP service and creating service-monitor failed :(')
                     }
                     else {
@@ -625,13 +633,13 @@ pipeline {
                         DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json"
                     }
                     // attempt installation of dittybopper
-                    returnCode = sh(returnStatus: true, script: """
+                    dittybopperReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         setup_dittybopper_template
                         . $WORKSPACE/performance-dashboards/dittybopper/deploy.sh $DITTYBOPPER_PARAMS
                     """)
                     // fail pipeline if installation failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
+                    if (dittybopperReturnCode.toInteger() != 0) {
                         error('Installation of Dittybopper failed :(')
                     }
                     else {
@@ -696,7 +704,7 @@ pipeline {
                 )
                 script {
                     // run Mr. Sandman
-                    returnCode = sh(returnStatus: true, script: """
+                    sandmanReturnCode = sh(returnStatus: true, script: """
                         python3.9 --version
                         python3.9 -m pip install virtualenv
                         python3.9 -m virtualenv venv3
@@ -707,7 +715,7 @@ pipeline {
                         python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
                     """)
                     // fail pipeline if Mr. Sandman run failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
+                    if (sandmanReturnCode.toInteger() != 0) {
                         error('Mr. Sandman tool failed :(')
                     }
                     else {
@@ -746,7 +754,7 @@ pipeline {
                         if (params.NOPE_JIRA != '') {
                             NOPE_ARGS += " --jira ${params.NOPE_JIRA}"
                         }
-                        returnCode = sh(returnStatus: true, script: """
+                        nopeReturnCode = sh(returnStatus: true, script: """
                             python3.9 --version
                             python3.9 -m pip install virtualenv
                             python3.9 -m virtualenv venv3
@@ -756,10 +764,10 @@ pipeline {
                             python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
-                        if (returnCode.toInteger() == 2) {
+                        if (nopeReturnCode.toInteger() == 2) {
                             unstable('NOPE tool ran, but Elasticsearch upload failed - check build artifacts for data and try uploading it locally :/')
                         }
-                        else if (returnCode.toInteger() != 0) {
+                        else if (nopeReturnCode.toInteger() != 0) {
                             error('NOPE tool failed :(')
                         }
                         else {
@@ -792,7 +800,7 @@ pipeline {
                         env.GEN_JSON = false
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
                         env.WORKLOAD = params.WORKLOAD
-                        returnCode = sh(returnStatus: true, script: """
+                        statisticsReturnCode = sh(returnStatus: true, script: """
                             python3.9 --version
                             python3.9 -m pip install virtualenv
                             python3.9 -m virtualenv venv3
@@ -803,23 +811,45 @@ pipeline {
                             run_benchmark_comparison
                         """)
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
-                        if (returnCode.toInteger() != 0) {
+                        if (statisticsReturnCode.toInteger() != 0) {
                             unstable('Touchstone tool failed - run locally with the given UUID to get workload run statistics :(')
                         }
                         else {
                             println('Successfully ran Touchstone tool :)')
-                            // do tolerancy rules check if a baseline UUID is provided
-                            if (params.BASELINE_UUID != '') {
-                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${params.BASELINE_UUID}...")
+                            // do tolerancy rules check if specified
+                            if (params.RUN_BASELINE_COMPARISON) {
+                                // use baseline override if specified
+                                if (params.BASELINE_UUID_OVERRIDE != '') {
+                                    env.BASELINE_UUID = params.BASELINE_UUID_OVERRIDE
+                                }
+                                // otherwise call the NOPE tool to fetch the most recent baseline for the given workload
+                                else {
+                                    NOPE_ARGS = ''
+                                    if (params.NOPE_DEBUG == true) {
+                                        NOPE_ARGS += ' --debug'
+                                    }
+                                    NOPE_ARGS += ' baseline --fetch $WORKLOAD'
+                                    fetchReturnCode = sh(returnStatus: true, script: """
+                                        source venv3/bin/activate
+                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                    """)
+                                    if (fetchReturnCode.toInteger() != 0) {
+                                        unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
+                                    }
+                                    else {                             
+                                        baselineInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/baseline.json")
+                                        baselineInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                                    }
+                                }
+                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
                                 // set additional vars for tolerancy rules check
-                                env.BASELINE_UUID = params.BASELINE_UUID
                                 env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
                                 env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
                                 // COMPARISON_CONFIG is changed here to only focus on specific statistics
                                 env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
                                 // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                                 env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                returnCode = sh(returnStatus: true, script: """
+                                baselineReturnCode = sh(returnStatus: true, script: """
                                     cd $WORKSPACE/e2e-benchmarking/utils
                                     rm -rf /tmp/**/*.csv
                                     rm -rf *.csv
@@ -827,12 +857,12 @@ pipeline {
                                     run_benchmark_comparison
                                 """)
                                 // mark pipeline as unstable if Touchstone failed, continue otherwise
-                                if (returnCode.toInteger() != 0) {
+                                if (baselineReturnCode.toInteger() != 0) {
                                     unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
                                     // rerun Touchstone to generate a JSON for debugging
                                     env.GEN_JSON = true
                                     env.GEN_CSV = false
-                                    returnCode = sh(returnStatus: true, script: """
+                                    jsonReturnCode = sh(returnStatus: true, script: """
                                         cd $WORKSPACE/e2e-benchmarking/utils
                                         source compare.sh
                                         run_benchmark_comparison
@@ -841,6 +871,21 @@ pipeline {
                                 }
                                 else {
                                     println('New statistics were within tolerable range of baseline statistics :)')
+                                    NOPE_ARGS = ''
+                                    if (params.NOPE_DEBUG == true) {
+                                        NOPE_ARGS += ' --debug'
+                                    }
+                                    NOPE_ARGS += ' baseline --upload $UUID'
+                                    uploadReturnCode = sh(returnStatus: true, script: """
+                                        source venv3/bin/activate
+                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                    """)
+                                    if (uploadReturnCode.toInteger() != 0) {
+                                        unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                    }
+                                    else {
+                                        println('Successfully uploaded new baseline to Elasticsearch :)')
+                                    }
                                 }                            
                             }
                         }
@@ -867,11 +912,11 @@ pipeline {
                 // uninstall NetObserv operator and related resources if desired
                 if (params.NUKEOBSERV == true) {
                     println("Deleting Network Observability operator...")
-                    returnCode = sh(returnStatus: true, script: """
+                    nukeReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         nukeobserv
                     """)
-                    if (returnCode.toInteger() != 0) {
+                    if (nukeReturnCode.toInteger() != 0) {
                         error('Operator deletion unsuccessful - please delete manually :(')
                     }
                     else {
