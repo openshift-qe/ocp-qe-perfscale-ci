@@ -594,10 +594,14 @@ pipeline{
                      proxy_settings = sh returnStdout: true, script: 'cat flexy-artifacts/workdir/install-dir/client_proxy_setting.sh'
                      proxy_settings = proxy_settings.replace('export ', '')
                     }
+                    
+                    if ( !ENV_VARS.contains("http_proxy") ) {
 
-                    ENV_VARS += '\n' + proxy_settings
-                    println "$ENV_VARS $global_scale_num"
-
+                      ENV_VARS += '\n' + proxy_settings
+                      println "$ENV_VARS $global_scale_num"
+                    } else {
+                      println "proxy settings already set"
+                    }
                  }
                }
             }
