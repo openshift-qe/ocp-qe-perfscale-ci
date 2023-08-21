@@ -38,8 +38,8 @@ def main():
             workload_first_str = workload_logs.split(workload_regex)[1]
             workload_type = workload_first_str.split(workload_end_regex)[0]
         except: 
-            print("Couldn't find workload type properly, setting to generic kube-burner-ocp type")
-            workload_type = "kube-burner-ocp"
+            print("Couldn't find workload type properly, exiting")
+            sys.exit(1)
 
         if "node-density" in workload_type:
             iterations_start = " --pods-per-node="
@@ -61,8 +61,8 @@ def main():
         try: 
             workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
         except: 
-            print("Couldn't find workload type properly, setting to generic kube burner type")
-            workload_type = "kube-burner"
+            print("Couldn't find workload type properly, exiting")
+            sys.exit(1)
         uuid_regex = 'UUID: (.*)"'
 
         # find iterations 
