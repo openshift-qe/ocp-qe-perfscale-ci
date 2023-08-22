@@ -447,24 +447,6 @@ pipeline {
             }
         }
     }
-    stage("Cleanup cluster of objects created in workload") {
-      agent { label params['JENKINS_AGENT_LABEL'] }
-      when {
-          expression { params.CLEANUP == true}
-      }
-        steps {
-          script {
-              // if the build fails, cleaning and scale down will not happen, letting user review and decide if cluster is ready for scale down or re-run the job on same cluster
-              build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-cleaner',
-                  parameters: [
-                      string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
-                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                      string(name: "CI_TYPE", value: WORKLOAD)
-                  ],
-                  propagate: false
-              }
-          }
-    }
     stage("Scale down workers") {
       agent { label params['JENKINS_AGENT_LABEL'] }
       when {
