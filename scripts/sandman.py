@@ -47,7 +47,7 @@ def main():
         else: 
             iterations_start = " --iterations="
             iterations_end = " "
-    
+
     elif "kube-burner" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
         starttime_regex = base_regex + 'Starting'
