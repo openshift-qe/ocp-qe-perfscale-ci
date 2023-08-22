@@ -27,10 +27,10 @@ def main():
 
     # initialize regexs based on file type
     if "kube-burner-ocp" in WORKLOAD_OUT_FILE:
-        base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
+        base_regex = 'time="(\d+-\d+-\d+T\d+:\d+:\d+Z)".*'
         starttime_regex = base_regex + 'Starting'
         endtime_regex = base_regex + 'Exiting'
-        strptime_filter = '%Y-%m-%d %H:%M:%S'
+        strptime_filter = '%Y-%m-%dT%H:%M:%SZ'
         workload_regex = 'Job '
         workload_end_regex = ':'
         uuid_regex = 'UUID (.*)"'
