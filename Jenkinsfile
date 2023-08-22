@@ -23,6 +23,9 @@ pipeline {
         '''
         )
         booleanParam(name:'INFRA_NODES', defaultValue:true, description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
+        booleanParam(name:'IF_MOVE_INGRESS', defaultValue:true, description:'If set to true, move ingress pod to infra nodes')
+        booleanParam(name:'IF_MOVE_REGISTRY', defaultValue:true, description:'If set to true, move registry pod to infra nodes')
+        booleanParam(name:'IF_MOVE_MONITORING', defaultValue:true, description:'If set to true, move monitoring pods to infra nodes')
         text(name: 'ENV_VARS', defaultValue: '''PLEASE FILL ME''', description:'''<p>
                Enter list of additional Env Vars you need to pass to the script, one pair on each line. <br>
                For OPENSHIFT_PROMETHEUS_STORAGE_CLASS and OPENSHIFT_ALERTMANAGER_STORAGE_CLASS, use `oc get storageclass` to get them on your cluster.<br>
@@ -142,6 +145,9 @@ pipeline {
 
               SECONDS=0
               ./openshift-qe-workers-infra-workload-commands.sh
+              export $IF_MOVE_INGRESS
+              export $IF_MOVE_REGISTRY
+              export $IF_MOVE_MONITORING
               ./openshift-qe-move-pods-infra-commands.sh
               status=$?
               echo "final status $status"
