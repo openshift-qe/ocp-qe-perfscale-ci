@@ -186,7 +186,7 @@ if __name__ == '__main__':
     # set argument flags
     parser.add_argument("--file", type=str, required=True, help='Workload out file to parse')
     parser.add_argument("--output", type=str, default='json', choices=['json', 'sh'], help="Sandman out file type to generate - defaults to 'json'")
-    parser.add_argument("--exit", default=False, required=False, help="Exit if any commands fail to get values, defaults to False")
+    parser.add_argument("--exit", default=False, required=False,action='store_true', help="Exit if any commands fail to get values, defaults to False")
 
     # parse arguments
     args = parser.parse_args()
