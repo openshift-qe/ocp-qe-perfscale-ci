@@ -722,7 +722,7 @@ pipeline {
                         python --version
                         wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
                         python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
+                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out --exit
                     """)
                     // fail pipeline if Mr. Sandman run failed, continue otherwise
                     if (sandmanReturnCode.toInteger() != 0) {
