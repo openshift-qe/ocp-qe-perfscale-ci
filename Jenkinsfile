@@ -41,6 +41,27 @@ pipeline {
             description: 'Install workload and infrastructure nodes even if less than 50 nodes'
         )
         booleanParam(
+            name: 'IF_MOVE_INGRESS',
+            defaultValue: true,
+            description: '''
+                If set to true, move ingress pods to infra nodes.
+            '''
+        )
+        booleanParam(
+            name: 'IF_MOVE_MONITORING',
+            defaultValue: true,
+            description: '''
+                If set to true, move monitoring pods to infra nodes.
+            '''
+        )
+        booleanParam(
+            name: 'IF_MOVE_REGISTRY',
+            defaultValue: true,
+            description: '''
+                If set to true, move registry pods to infra nodes.
+            '''
+        )
+        booleanParam(
             name: 'INSTALL_DITTYBOPPER',
             defaultValue: true,
             description: 'Value to install dittybopper dashboards to cluster'
@@ -168,7 +189,11 @@ OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge'''
                 string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
                 string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+                booleanParam(name: 'INFRA_NODES', value: true),
+                booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+                booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+                booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+                booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
                 string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
                 string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
                 string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -187,7 +212,11 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              booleanParam(name: 'INFRA_NODES', value: true),,booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              booleanParam(name: 'INFRA_NODES', value: true),
+              booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+              booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+              booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+              booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
               string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
               string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
               string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -206,7 +235,11 @@ OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              booleanParam(name: 'INFRA_NODES', value: true),
+              booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+              booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+              booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+              booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
               string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
               string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
               string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -225,7 +258,11 @@ OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32''')
                       string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
                       string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
                       string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                      booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+                      booleanParam(name: 'INFRA_NODES', value: true),
+                      booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+                      booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+                      booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+                      booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
                       string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
                       string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
                       string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -245,7 +282,11 @@ OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment''')]
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              booleanParam(name: 'INFRA_NODES', value: true),
+              booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+              booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+              booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+              booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
               string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
               string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
               string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -262,7 +303,11 @@ OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=alicloud-disk
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-              booleanParam(name: 'INFRA_NODES', value: true),booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
+              booleanParam(name: 'INFRA_NODES', value: true),
+              booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+              booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+              booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
+              booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
               string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
               string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
               string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
@@ -278,6 +323,9 @@ OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
               string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
               string(name: 'INFRA_NODES', value: 'true'),
+              booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+              booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+              booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.m5.xlarge
 OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.m5.large
