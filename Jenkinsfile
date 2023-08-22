@@ -152,6 +152,7 @@ pipeline {
                 expression { (!["nightly-regression","loaded-upgrade","upgrade","nightly-regression-longrun"].contains(params.WORKLOAD)) }
             }
             steps {
+                deleteDir()
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'main' ]],
@@ -199,6 +200,7 @@ pipeline {
                 GLOBAL_USER_ID = "${userId}"
             }
             steps {
+                deleteDir()
                 checkout([
                   $class: 'GitSCM',
                   branches: [[name: GIT_BRANCH ]],
