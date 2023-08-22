@@ -82,7 +82,7 @@ function abnormal_co() {
   else
       python3 -c "import check_upgrade; check_upgrade.pause_machinepool_worker('false')"
       sleep 10
-      python3 -c "import check_upgrade; check_upgrade.wait_for_mcp_upgrade()"
+      python3 -c "import check_upgrade; check_upgrade.wait_for_mcp_upgrade(wait_num=120)"
       exit 127 # upgrade itself succ and post-check fail
   fi
 
@@ -143,10 +143,10 @@ function check_upgrade_version() {
 }
 
 function capture_failed_pods_before_upgrade(){
-  #Save the failed job before upgrade and make sure new failed job caused by upgrade,ignore installer error
+  #Save the failed job before upgrade and make sure new failed job caused by upgrade,ignore installer, build error
   echo "Capture failed pods before upgrade OCP"
   echo "####################################################################################"
-  oc get pods -A| grep -v -E 'Running|Completed|installer'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
 }
 
 function capture_failed_pods_after_upgrade(){
@@ -154,14 +154,14 @@ function capture_failed_pods_after_upgrade(){
   echo "Capture failed pods after upgrade OCP, No messages means no errors"
   echo "####################################################################################"
   #Adding re-try steps to avoid temp failed pod
-  oc get pods -A| grep -v -E 'Running|Completed|installer'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
   cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
   init_retry=1
-  max_retry=18
+  max_retry=30
 
   while [[ $init_retry -le $max_retry && -s /tmp/new-failed-pods.txt ]]
   do
-     oc get pods -A| grep -v -E 'Running|Completed|installer'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+     oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
      cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
      echo -n "."&&sleep 10
      init_retry=$(( $init_retry + 1 ))

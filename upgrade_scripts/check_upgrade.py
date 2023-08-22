@@ -102,9 +102,18 @@ def wait_for_mcp_upgrade(wait_num=90):
         print("MCP workers are updating, waiting 20 seconds")
         counter += 1
         if counter >= wait_num:
+            print("#"*118)
             return_code, node_not_ready = invoke("oc get nodes | grep 'NotReady\|SchedulingDisabled'")
             print("Node list: " + str(node_not_ready))
+            print("-"*118)
+            return_code, mcp_status = invoke("oc get mcp")
+            print("oc get mcp: " + str(mcp_status))
+            print("-"*118)
+            return_code, describe_mcp = invoke("for mcpname in `oc get mcp -oname`;do oc describe $mcpname;echo;echo '-----------------------------------------------------------'; done")
+            print("oc describe mcp mcpname: " + str(describe_mcp))
+            print("-"*118)
             print("ERROR, mcp workers are still updating after 30 minutes")
+            print("#"*118)
             sys.exit(1)
 
 def pause_machinepool_worker(pause_val):
