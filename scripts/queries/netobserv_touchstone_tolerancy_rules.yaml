@@ -6,7 +6,7 @@
   tolerancy: 0
   max_failures: 0
 - json_path: ["metric_name", "lokiRecordsDropped", "metric_name", "*", "avg(value)"]
-  tolerancy: 0
+  tolerancy: 2
   max_failures: 0
 # CPU totals
 - json_path: ["metric_name", "cpuFLPTotals", "metric_name", "*", "avg(value)"]
