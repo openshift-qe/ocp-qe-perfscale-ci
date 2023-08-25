@@ -77,7 +77,7 @@ deploy_lokistack() {
     deploy_unreleased_catalogsource
     oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
   else
-    echo "====> No Loki Operator config was found - using Released"
+    echo "====> No Loki Operator config was found - using 'Released'"
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
     oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   fi
@@ -110,7 +110,7 @@ deploy_lokistack() {
   elif [[ $LOKISTACK_SIZE == "1x.medium" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
-    echo "====> No LokiStack config was found - using 1x.extra-small"
+    echo "====> No LokiStack config was found - using '1x.extra-small'"
     echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
@@ -156,13 +156,6 @@ deploy_main_catalogsource() {
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
 }
 
-deploy_loki() {
-  echo "====> Deploying Loki"
-  oc apply -f $SCRIPTS_DIR/loki/loki-storage-1.yaml
-  oc apply -f $SCRIPTS_DIR/loki/loki-storage-2.yaml
-  oc wait --timeout=120s --for=condition=ready pod -l app=loki -n netobserv
-}
-
 deploy_kafka() {
   echo "====> Deploying Kafka"
   oc create namespace netobserv --dry-run=client -o yaml | oc apply -f -
@@ -193,7 +186,7 @@ deploy_kafka() {
 
   echo "====> Update flowcollector replicas"
   if [[ -z $FLP_KAFKA_REPLICAS ]]; then
-    echo "====> No flowcollector replicas config was found - using 3"
+    echo "====> No flowcollector replicas config was found - using '3'"
     echo "====> To set config, set FLP_KAFKA_REPLICAS variable to desired number"
     FLP_KAFKA_REPLICAS=3
   fi
@@ -263,8 +256,8 @@ delete_lokistack() {
 
 delete_kafka() {
   echo "====> Deleting Kafka (if applicable)"
-  oc delete kafka/kafka-cluster -n netobserv
-  oc delete kafkaTopic/network-flows -n netobserv
+  oc delete --ignore-not-found kafka/kafka-cluster -n netobserv
+  oc delete --ignore-not-found kafkaTopic/network-flows -n netobserv
   oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
 }
@@ -282,7 +275,7 @@ delete_netobserv_operator() {
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
-  oc delete crd/flowcollectors.flows.netobserv.io
+  oc delete --ignore-not-found crd/flowcollectors.flows.netobserv.io
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
