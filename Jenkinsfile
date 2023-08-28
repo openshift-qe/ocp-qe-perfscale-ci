@@ -211,8 +211,16 @@ pipeline {
                             oc config view
                             oc projects
                             ls -ls ~/.kube/
-                            env
                             cd workloads/ingress-perf
+
+                            current_infra_nodes=$(oc get nodes -l node-role.kubernetes.io/infra="" --no-headers | wc -l | xargs)
+                            if [[ $current_infra_nodes < 2 ]]; then
+                                echo "Be sure to add infra nodes to your cluster before running ingress-perf" >> "ingress_perf.out"
+                                exit 1
+                            fi
+
+                            env
+                            
                             ./run.sh |& tee "ingress_perf.out"
                             ! egrep -i "lower than baseline|higher than baseline|error|fail" ingress_perf.out
                             '''
