@@ -9,12 +9,12 @@ ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
 
 
-def es_search(params):
+def es_search(params, index = 'perfscale-jenkins-metadata'):
      # create Elasticsearch object and attempt index
     es = Elasticsearch(
         [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
     )
-    index = 'perfscale-jenkins-metadata'
+    
     filter_data = []
     filter_data.append({
           "match_all": {}

@@ -26,9 +26,9 @@ def get_fips():
     return_code, fips_enabled = run("oc get cm cluster-config-v1 -n kube-system -o json | jq -r '.data' | grep 'fips'")
     if return_code == 0: 
         if fips_enabled != "":
-            return True
+            return str(True)
         else:
-            return False
+            return str(False)
 
 
 def get_multi_az(node_type):
@@ -139,29 +139,22 @@ def get_node_sizing(scale_data):
             master_size = EXTRA_LAUNCHER_VARS['vm_type_masters']
     return worker_size, master_size
 
-def find_uuid(workload, metric_name):
-    
-    network_type= get_net_type()
+def find_uuid(workload, metric_name, uuid_data):
 
-    worker_count = get_node_count("node-role.kubernetes.io/worker=")
-    var_loc = os.getenv('VARIABLES_LOCATION')
+    
     search_params = {
         "metric_name": metric_name, 
         "workload": workload,
-        "LAUNCHER_VARS": var_loc,
-        "network_type": network_type,
-        "worker_count": int(worker_count)
+        "network_type": uuid_data['networkType'],
+        "worker_count": int(uuid_data['workerNodesCount']),
+        "platform": uuid_data['platform'],
+        "worker_size": uuid_data['workerNodesType']
+
     }
 
     hits = update_es_uuid.es_search(search_params)
     
     if len(hits) == 0: 
-        search_params["LAUNCHER_VARS"] = var_loc.replace("-ci","")
-        hits = update_es_uuid.es_search(search_params)
-
-        if len(hits) == 0: 
-            return False
-        else: 
-            return hits[0]['_source']['uuid']
+        return False
     else: 
         return hits[0]['_source']['uuid']

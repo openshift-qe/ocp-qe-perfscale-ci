@@ -50,8 +50,8 @@ CI_PROFILE = os.getenv('CI_PROFILE')
 PROFILE_SCALE_SIZE = os.getenv('PROFILE_SCALE_SIZE')
 
 
-TEST_STATUS = os.getenv("CI_STATUS")
 METRIC_NAME = ""
+current_run_data = {}
 def run(command):
     try:
         output = subprocess.check_output(command, shell=True, universal_newlines=True)
@@ -78,17 +78,17 @@ def get_jenkins_params():
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
     return []
 
-def set_es_obj_info():
+def set_es_obj_info(uuid_data):
     ''' gathers information about Jenkins env
         if build parameter data cannot be collected, only command line data will be included
     '''
     print('setting es obj')
     # intialize info object
     iso_timestamp = datetime.datetime.utcnow()
-    version = helper_uuid.get_oc_version()
-    network_type= helper_uuid.get_net_type()
+    version = uuid_data['ocpVersion']
+    network_type= uuid_data['networkType']
     arch_type = helper_uuid.get_arch_type()
-    worker_count = helper_uuid.get_node_count("node-role.kubernetes.io/worker=")
+    worker_count = int(uuid_data['workerNodesCount'])
     print('ci profile ' + str(CI_PROFILE))
     if CI_PROFILE == "": 
         print('if')
@@ -102,7 +102,8 @@ def set_es_obj_info():
     if profile != "": 
         info = {
             "metric_name": METRIC_NAME,
-            "status": TEST_STATUS,
+            "clusterType": uuid_data['clusterType'],
+            "status": uuid_data['jobStatus'],
             "data_type": "metadata",
             "iso_timestamp": iso_timestamp,
             "jenkins_job_name": JENKINS_JOB,
@@ -114,13 +115,13 @@ def set_es_obj_info():
             "network_type": network_type,
             "arch_type": arch_type,
             "worker_count": worker_count,
-            "master_size": helper_uuid.get_node_type("node-role.kubernetes.io/master="),
-            "worker_size": helper_uuid.get_node_type("node-role.kubernetes.io/worker="),
-            "infra_node_count": helper_uuid.get_node_count("node-role.kubernetes.io/infra="), 
-            "workload_node_count": helper_uuid.get_node_count("node-role.kubernetes.io/workload="),
+            "master_size": uuid_data['masterNodesType'],
+            "worker_size": uuid_data['workerNodesType'],
+            "infra_node_count": uuid_data['infraNodesCount'],
             "LAUNCHER_VARS": os.getenv('VARIABLES_LOCATION'),
             "fips_enabled": helper_uuid.get_fips(),
-            "across_az": helper_uuid.get_multi_az("node-role.kubernetes.io/worker=")
+            "across_az": helper_uuid.get_multi_az("node-role.kubernetes.io/worker="),
+            "platform": uuid_data['platform']
         }
         return info
     return None
@@ -164,47 +165,6 @@ def get_ingress_perf_data():
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
     info["uuid"] =  os.getenv('UUID')
-    return info
-
-def get_nightly_reg_data(): 
-    info = {}
-    build_parameters = get_jenkins_params()
-    try: 
-        for param in build_parameters:
-            del param['_class']
-            if param.get('name') == 'TESTS_TO_RUN':
-                info['tests_ran'] = str(param.get('value'))
-    except Exception as e:
-        logging.error(f"Failed to collect Jenkins build parameter info: {e}")
-    info["failed_tests"] = os.getenv('FAILED_JOBS')
-    return info
-
-
-# This is a work in progress and needs to be updated with proper data
-def get_loaded_up_data(): 
-    info = {}
-    build_parameters = get_jenkins_params()
-    try: 
-        for param in build_parameters:
-            del param['_class']
-            if param.get('name') == 'TESTS_TO_RUN':
-                info['tests_ran'] = str(param.get('value'))
-    except Exception as e:
-        logging.error(f"Failed to collect Jenkins build parameter info: {e}")
-    info["failed_tests"] = os.getenv('FAILED_JOBS')
-    return info
-
-def get_upgrade_data(): 
-    info = {}
-    build_parameters = get_jenkins_params()
-    try: 
-        for param in build_parameters:
-            del param['_class']
-            if param.get('name') == 'UPGRADE_VERSION':
-                info['upgrade_version'] = str(param.get('value'))
-    except Exception as e:
-        logging.error(f"Failed to collect Jenkins build parameter info: {e}")
-    info["failed_tests"] = os.getenv('FAILED_JOBS')
     return info
 
 def dump_data_locally(timestamp, partial=False):
@@ -288,6 +248,35 @@ def search_for_entry(info):
     else: 
         # returning true that entry was found for the job already
         return True
+        
+
+def find_uuid_data(current_run_uuid):
+    global workload
+    if workload == "network-perf-v2": 
+        workload = "k8s-netperf"
+    search_params = {
+        "uuid": current_run_uuid,
+        "benchmark": workload
+    }
+
+    # if workload == "ingress-perf":
+    #     index="ingress-perf*"
+    # elif workload == "network-perf-v2":
+    #     index="k8s-netperf"
+    # elif workload == "router-perf":
+    #     index="router-test-results"
+    # elif workload == "network-perf":
+    #     index="ripsaw-uperf"
+    # elif workload not in ["upgrade","loaded-upgrade", "nightly-regression"]:
+    #     index="ripsaw-kube-burner"
+    #     search_params["metricName"]= "clusterMetadata"
+
+    index = "perf_scale_ci*"
+    
+    hits = update_es_uuid.es_search(search_params, index=index)
+    print('hits ' + str(hits))
+    uuid_data = hits[0]['_source']
+    return uuid_data
 
 
 if __name__ == '__main__':
@@ -316,17 +305,25 @@ if __name__ == '__main__':
     
     baseline = args.baseline
     workload = os.getenv('WORKLOAD')
+    current_run_uuid =  os.getenv('UUID')
+
+    current_run_data = find_uuid_data(current_run_uuid) 
+    
+    if "jobStatus" in current_run_data.keys() and current_run_data['jobStatus'] != "success":
+        logging.info("Current run failed, not posting result as baseline")
+        sys.exit(0) 
     if str(baseline) == "true": 
         # find matching profile
         # if data already exists, don't post 
         METRIC_NAME = "base_line_uuids"
-        base_line_uuid = helper_uuid.find_uuid(workload, METRIC_NAME)
+        base_line_uuid = helper_uuid.find_uuid(workload, METRIC_NAME, current_run_data)
         print('baseline ' + str(base_line_uuid))
         if base_line_uuid is not False:
             logging.info("Baseline UUID for this configuration is already set")
             sys.exit(0)
     else: 
         # here we can find the profile information if it matches but will still want to post results either way 
+        # path no longer being called
         METRIC_NAME = "jenkinsEnv"
 
     USER = args.user
@@ -338,7 +335,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # determine UUID
-    info = set_es_obj_info()
+    info = set_es_obj_info(current_run_data)
 
     helper_uuid.run("unset https_proxy http_proxy")
     # check if Jenkins arguments are valid and if so set constants
@@ -360,21 +357,9 @@ if __name__ == '__main__':
 
     if search_for_entry(info): 
         logging.info(f"Jenkins build job: {JENKINS_JOB} was already found logged in ElasticSearch")
-        sys.exit(1)
-
-    if workload == "nightly-regression":
-        jenkins_info = get_nightly_reg_data()
-        for k,v in jenkins_info.items(): 
-            info[k] = v
-    elif workload == "upgrade":
-        jenkins_info = get_upgrade_data()
-        for k,v in jenkins_info.items(): 
-            info[k] = v
-    elif workload == "loaded-upgrade": 
-        jenkins_info = get_loaded_up_data()
-        for k,v in jenkins_info.items(): 
-            info[k] = v
-    elif "network-perf" in workload:
+        sys.exit(0)
+    info['WORKLOAD'] = workload
+    if "network-perf" in workload:
         jenkins_info = get_net_perf_v2_data()
         for k,v in jenkins_info.items(): 
             info[k] = v
@@ -382,13 +367,12 @@ if __name__ == '__main__':
         jenkins_info = get_ingress_perf_data()
         for k,v in jenkins_info.items(): 
             info[k] = v
-    elif "nightly" not in workload:
+    elif "nightly" not in workload and "upgrade" not in workload:
         jenkins_info = get_scale_ci_data()
         for k,v in jenkins_info.items(): 
             info[k] = v
     RESULTS['data'].append(info)
     
-
     if (ES_USERNAME is None) or (ES_PASSWORD is None):
         logging.error("Credentials need to be set to upload data to Elasticsearch")
         sys.exit(1)

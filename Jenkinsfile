@@ -190,7 +190,7 @@ pipeline {
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
 
                     // UUID
-                    currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
+                    currentBuild.description = "<b>UUID:</b> ${env.UUID}<br/>"
                 }
             }
         }
@@ -198,6 +198,9 @@ pipeline {
             environment{
                 EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
                 GLOBAL_USER_ID = "${userId}"
+            }
+            when {
+                expression { params.UPLOAD_BASELINE == true && (params.CI_STATUS == "PASS" || params.CI_STATUS == "SUCCESS" ) }
             }
             steps {
                 deleteDir()
@@ -237,7 +240,7 @@ pipeline {
                 script {
                     buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
                     currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}-${params.WORKLOAD}"
-                    currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
+                    currentBuild.description += "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
                     buildinfo.params.each { env.setProperty(it.key, it.value) }
                 }
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
@@ -256,17 +259,9 @@ pipeline {
                             source venv3/bin/activate
                             python --version
                             pip install -r requirements.txt
-                            python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline false
-                        """)
-
-                        if ( params.UPLOAD_BASELINE == true && (params.CI_STATUS == "PASS" || params.CI_STATUS == "SUCCESS" )) {
-                          // post a new baseline uuid if one doesn't exist
-                            baseline_returnCode = sh(returnStatus: true, script: """
-                                source venv3/bin/activate
-                                python --version
-                                python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline true
+                            python post_uuid_to_es.py --user $GLOBAL_USER_ID --baseline true
                             """)
-                        }
+                        
                         // fail pipeline if upload to ES run failed
                         if ( result_returnCode.toInteger() != 0 || (baseline_returnCode != null && baseline_returnCode.toInteger() != 0)) {
                             error('Post to ES tool failed :(')
@@ -274,9 +269,10 @@ pipeline {
                         else {
                             println 'Successfully ran Es tool :)'
                         }
+                        }
                     }
-                }
             }
         }
     }
 }
+
