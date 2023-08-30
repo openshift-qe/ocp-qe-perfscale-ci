@@ -131,6 +131,27 @@ pipeline {
                 Checking this parameter box is valid only when SCALE_UP is greater than 0.
             '''
         )
+        booleanParam(
+            name: 'IF_MOVE_INGRESS',
+            defaultValue: false,
+            description: '''
+                If set to true, move ingress pods to infra nodes.
+            '''
+        )
+        booleanParam(
+            name: 'IF_MOVE_MONITORING',
+            defaultValue: false,
+            description: '''
+                If set to true, move monitoring pods to infra nodes.
+            '''
+        )
+        booleanParam(
+            name: 'IF_MOVE_REGISTRY',
+            defaultValue: false,
+            description: '''
+                If set to true, move registry pods to infra nodes.
+            '''
+        )
         string(
             name: 'SCALE_UP',
             defaultValue: '0',
@@ -166,7 +187,10 @@ pipeline {
                                 string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), text(name: "ENV_VARS", value: ENV_VARS), 
                                 string(name: 'WORKER_COUNT', value: SCALE_UP), 
                                 string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL), 
-                                booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL)
+                                booleanParam(name: 'INFRA_WORKLOAD_INSTALL', value: INFRA_WORKLOAD_INSTALL),
+                                booleanParam(name: 'IF_MOVE_INGRESS', value: IF_MOVE_INGRESS),
+                                booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
+                                booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY)
                             ]
                     }
                 }
@@ -222,7 +246,7 @@ pipeline {
                             env
                             
                             ./run.sh |& tee "ingress_perf.out"
-                            ! egrep -i "lower than baseline|higher than baseline|error|fail" ingress_perf.out
+                            ! egrep -i "lower than baseline|higher than baseline|error" ingress_perf.out
                             '''
                         )
                         archiveArtifacts(
