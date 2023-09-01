@@ -181,6 +181,11 @@ pipeline {
           defaultValue: 'master',
           description: 'You can change this to point to a branch on your fork if needed.'
       )
+      string(
+          name: 'KUBE_BURNER_VERSION',
+          defaultValue: '1.7.6',
+          description: 'You can change this to point to an older kube-burner version if needed.'
+      )
   }
   stages {  
     stage('Scale up cluster') {
