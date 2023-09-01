@@ -27,7 +27,7 @@ function set_storage_class() {
 }
 
 function wait_for_prometheus_status() {
-    token=$(oc sa get-token -n openshift-monitoring prometheus-k8s || oc sa new-token -n openshift-monitoring prometheus-k8s || oc create token -n openshift-monitoring prometheus-k8s --duration=6h)
+    token=$(oc create token -n openshift-monitoring prometheus-k8s --duration=6h || oc sa get-token -n openshift-monitoring prometheus-k8s || oc sa new-token -n openshift-monitoring prometheus-k8s)
 
     URL=https://$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath="{.spec.host}")
     sleep 30
