@@ -183,7 +183,7 @@ pipeline {
       )
       string(
           name: 'KUBE_BURNER_VERSION',
-          defaultValue: 'v1.7.6',
+          defaultValue: '1.7.6',
           description: 'You can change this to point to an older kube-burner version if needed.'
       )
   }
