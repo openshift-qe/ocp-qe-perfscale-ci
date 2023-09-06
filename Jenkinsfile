@@ -217,7 +217,6 @@ pipeline {
         }
       }
     }
-    stages {
     stage('Transfer infrastructure pods'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       when {
