@@ -70,6 +70,11 @@ pipeline {
                   </p>'''
     )
     string(
+        name: 'KUBE_BURNER_VERSION',
+        defaultValue: '1.7.6',
+        description: 'You can change this to point to an older kube-burner version if needed.'
+    )
+    string(
         name: 'SVT_REPO', 
         defaultValue:'https://github.com/openshift/svt', 
         description:'''<p>
