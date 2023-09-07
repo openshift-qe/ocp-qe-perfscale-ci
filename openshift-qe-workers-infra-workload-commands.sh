@@ -534,8 +534,8 @@ platform_type=$(oc get infrastructure cluster -ojsonpath='{.status.platformStatu
 platform_type=$(echo $platform_type | tr -s 'A-Z' 'a-z')
 node_arch=$(echo $node_arch | tr -s " " "\n"| sort -u)
 all_machinesets=$(oc -n openshift-machine-api get machineset -ojsonpath='{.items[*].metadata.name}{"\n"}')
-machineset_list=$(echo $all_machinesets | tr -s ' ' '\n'| sort -u| grep -v -i -E "infra|workload|win|additional"| head -n3)
-machineset_count=$(echo $all_machinesets | tr -s ' ' '\n'| sort -u| grep -v -i -E "infra|workload|win|additional"| head -n3 |wc -l)
+machineset_list=$(echo $all_machinesets | tr -s ' ' '\n'| sort -u| grep -v -i -E "infra|workload|win|additional|edge"| head -n3)
+machineset_count=$(echo $all_machinesets | tr -s ' ' '\n'| sort -u| grep -v -i -E "infra|workload|win|additional|edge"| head -n3 |wc -l)
 total_worker_nodes=$(oc get nodes -l node-role.kubernetes.io/worker= -oname|wc -l)
 
 scale_type=""

@@ -63,9 +63,13 @@ function check_monitoring_statefulset_status()
   for statefulset in $statefulset_list; do
     echo "statefulset in openshift-monitoring is $statefulset"	  
     retries=0
+    echo "retries is $retries"
     ready_replicas=$(oc get statefulsets $statefulset -n openshift-monitoring -ojsonpath='{.status.availableReplicas}')
+    echo "ready_replicas is $ready_replicas"
     wanted_replicas=$(oc get statefulsets $statefulset -n openshift-monitoring -ojsonpath='{.spec.replicas}')
+    echo "wanted_replicas is $wanted_replicas"
     infra_pods=$(oc get pods -n openshift-monitoring --no-headers -o wide | grep -E "$infra_nodes" | grep Running | grep "$statefulset" | wc -l  | xargs)
+    echo "wanted_replicas is $wanted_replicas"
     echo
     echo "-------------------------------------------------------------------------------------------"
     echo "current replicas in $statefulset: wanted--$wanted_replicas, current ready--$ready_replicas!"
