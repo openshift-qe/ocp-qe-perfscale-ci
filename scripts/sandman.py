@@ -2,11 +2,12 @@
 
 import re
 import sys
-import time
 import json
 import pathlib
+import logging
 import argparse
 import datetime
+import coloredlogs
 
 # constants 
 ROOT_DIR = str(pathlib.Path(__file__).parent.parent)
@@ -38,7 +39,7 @@ def main():
             workload_first_str = workload_logs.split(workload_regex)[1]
             workload_type = workload_first_str.split(workload_end_regex)[0]
         except Exception as e:
-            print(f"Couldn't find workload type properly: {e}")
+            logging.error(f"Couldn't find workload type properly: {e}")
             sys.exit(1)
 
         if "node-density" in workload_type:
@@ -60,7 +61,7 @@ def main():
         try:
             workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
         except Exception as e:
-            print(f"Couldn't find workload type properly: {e}")
+            logging.error(f"Couldn't find workload type properly: {e}")
             sys.exit(1)
         uuid_regex = 'UUID: (.*)"'
 
@@ -103,24 +104,24 @@ def main():
     try:
         starttime_string = re.findall(starttime_regex, workload_logs)[0]
     except Exception as e:
-        print(f"Error getting start time: {e}")
+        logging.error(f"Error getting start time: {e}")
         if SANDMAN_EXIT_ON_FAILURE:
             sys.exit(1)
         else:
             starttime_string = ""
-    print(f"starttime_string: {starttime_string}")
+    logging.info(f"starttime_string: {starttime_string}")
 
     try:
         endtime_string = re.findall(endtime_regex, workload_logs)[0]
     except Exception as e:
         # if can't find the end time properly (error during run)
         # find the last time posted in workload_logs file
-        print(f"Error getting end time: {e}")
+        logging.error(f"Error getting end time: {e}")
         if SANDMAN_EXIT_ON_FAILURE: 
             sys.exit(1)
         else: 
             endtime_string = ""
-    print(f"endtime_string: {endtime_string}")
+    logging.info(f"endtime_string: {endtime_string}")
 
     # construct JSON of workload data
     workload_data = {
@@ -132,11 +133,11 @@ def main():
     # convert string times to unix timestamps
     if starttime_string:
         starttime_timestamp = int(datetime.datetime.strptime(starttime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
-        print(f"starttime_timestamp: {starttime_timestamp}")
+        logging.info(f"starttime_timestamp: {starttime_timestamp}")
         workload_data["STARTTIME_TIMESTAMP"] = str(starttime_timestamp)
     if endtime_string:
         endtime_timestamp = int(datetime.datetime.strptime(endtime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
-        print(f"endtime_timestamp: {endtime_timestamp}")
+        logging.info(f"endtime_timestamp: {endtime_timestamp}")
         workload_data['ENDTIME_TIMESTAMP'] = str(endtime_timestamp)
 
     # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
@@ -144,10 +145,10 @@ def main():
     if uuid_exists:
         try:
             uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
-            print(f"uuid: {uuid}")
+            logging.info(f"uuid: {uuid}")
             workload_data['UUID'] = str(uuid)
         except Exception as e:
-            print(f"No uuid found: {e}")
+            logging.error(f"No uuid found: {e}")
 
     # Depending on the workload, we want to find the number of iterations 
     # Specific regex configurations set based on file type above 
@@ -155,10 +156,10 @@ def main():
         try:
             # rework to use an end
             iterations = workload_logs.split(iterations_start)[1].split(iterations_end)[0]
-            print(f"iterations: {iterations}")
+            logging.info(f"iterations: {iterations}")
             workload_data['ITERATIONS'] = str(iterations)
         except Exception as e:
-            print(f"Error getting iterations count: {e}")
+            logging.error(f"Error getting iterations count: {e}")
 
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
@@ -192,6 +193,10 @@ if __name__ == '__main__':
     WORKLOAD_OUT_FILE = args.file
     SANDMAN_OUT_FILE_TYPE = args.output
     SANDMAN_EXIT_ON_FAILURE = args.exit
+
+    # set logging config
+    logging.basicConfig(level=logging.INFO)
+    coloredlogs.install(level='INFO', isatty=True)
 
     # begin main program execution
     main()
