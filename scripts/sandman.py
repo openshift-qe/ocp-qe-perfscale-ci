@@ -33,18 +33,18 @@ def main():
         workload_regex = 'Job '
         workload_end_regex = ':'
         uuid_regex = 'UUID (.*)"'
-        try: 
+        try:
             # capture and log strings representations of workload name
             workload_first_str = workload_logs.split(workload_regex)[1]
             workload_type = workload_first_str.split(workload_end_regex)[0]
-        except: 
-            print("Couldn't find workload type properly, exiting")
+        except Exception as e:
+            print(f"Couldn't find workload type properly: {e}")
             sys.exit(1)
 
         if "node-density" in workload_type:
             iterations_start = " --pods-per-node="
             iterations_end = " "
-        else: 
+        else:
             iterations_start = " --iterations="
             iterations_end = " "
 
@@ -57,21 +57,21 @@ def main():
         workload_end_regex = '\n'
 
         # capture and log strings representations of workload name
-        try: 
+        try:
             workload_type = workload_logs.split(workload_regex)[1].split(workload_end_regex)[0]
-        except: 
-            print("Couldn't find workload type properly, exiting")
+        except Exception as e:
+            print(f"Couldn't find workload type properly: {e}")
             sys.exit(1)
         uuid_regex = 'UUID: (.*)"'
 
-        # find iterations 
+        # find iterations
         if "node-density" in workload_type:
             iterations_start = "Pods per node: "
             iterations_end = "\n"
-        else: 
+        else:
             iterations_start = "Job iterations: "
             iterations_end = "\n"
-        
+
     elif "ingress_router" in WORKLOAD_OUT_FILE:
         base_regex = '([a-zA-z]{3}\s+\d+ \d+:\d+:\d+ [a-zA-z]{3} \d+).*'
         starttime_regex = base_regex + 'Testing'
@@ -80,6 +80,7 @@ def main():
         uuid_regex = 'UUID: (.*)"'
         iterations_exists = False
         workload_type = "router-perf"
+
     elif "ingress_perf" in WORKLOAD_OUT_FILE:
         base_regex = 'time="(\d+-\d+-\d+ \d+:\d+:\d+)".*'
         starttime_regex = base_regex + 'Running'
@@ -97,25 +98,24 @@ def main():
         uuid_regex = 'UUID (.*)"'
         iterations_exists = False
         workload_type = "network-perf-v2"
-    
+
     # capture and log strings representations of start and end times
-    try: 
+    try:
         starttime_string = re.findall(starttime_regex, workload_logs)[0]
-    except: 
-        print("Error getting start time")
-        if SANDMAN_EXIT_ON_FAILURE: 
+    except Exception as e:
+        print(f"Error getting start time: {e}")
+        if SANDMAN_EXIT_ON_FAILURE:
             sys.exit(1)
-        else: 
+        else:
             starttime_string = ""
-    
     print(f"starttime_string: {starttime_string}")
 
-    try: 
+    try:
         endtime_string = re.findall(endtime_regex, workload_logs)[0]
-    except: 
+    except Exception as e:
         # if can't find the end time properly (error during run)
         # find the last time posted in workload_logs file
-        print("Error getting end time")
+        print(f"Error getting end time: {e}")
         if SANDMAN_EXIT_ON_FAILURE: 
             sys.exit(1)
         else: 
@@ -129,37 +129,36 @@ def main():
         "ENDTIME_STRING": str(endtime_string)
     }
 
-
     # convert string times to unix timestamps
-    if starttime_string: 
+    if starttime_string:
         starttime_timestamp = int(datetime.datetime.strptime(starttime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
         print(f"starttime_timestamp: {starttime_timestamp}")
         workload_data["STARTTIME_TIMESTAMP"] = str(starttime_timestamp)
-    if endtime_string: 
+    if endtime_string:
         endtime_timestamp = int(datetime.datetime.strptime(endtime_string, strptime_filter).replace(tzinfo=datetime.timezone.utc).timestamp())
         print(f"endtime_timestamp: {endtime_timestamp}")
         workload_data['ENDTIME_TIMESTAMP'] = str(endtime_timestamp)
-    
+
     # Depending on the workload, we want to find the uuid (not existent for network-perf-v2)
     # Specific regex configurations set based on file type above 
     if uuid_exists:
-        try: 
+        try:
             uuid = re.findall(uuid_regex, workload_logs)[0].split('"')[0]
             print(f"uuid: {uuid}")
             workload_data['UUID'] = str(uuid)
-        except: 
-            print("No uuid found")
+        except Exception as e:
+            print(f"No uuid found: {e}")
 
     # Depending on the workload, we want to find the number of iterations 
     # Specific regex configurations set based on file type above 
     if iterations_exists:
-        try: 
+        try:
             # rework to use an end
             iterations = workload_logs.split(iterations_start)[1].split(iterations_end)[0]
             print(f"iterations: {iterations}")
             workload_data['ITERATIONS'] = str(iterations)
-        except: 
-            print("Error getting iterations count")
+        except Exception as e:
+            print(f"Error getting iterations count: {e}")
 
     # ensure data directory exists (create if not)
     pathlib.Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
