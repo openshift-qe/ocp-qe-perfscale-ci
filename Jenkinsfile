@@ -245,7 +245,7 @@ pipeline {
                     python --version
                     pip install -r requirements.txt
                     env
-                    
+
                     if [[ ( -z "$BASELINE_UUID" ) && ( -n $TOLERANCY_RULES_PARAM ) ]]; then
                       export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
@@ -266,13 +266,9 @@ pipeline {
                     elif [[ $WORKLOAD == "cluster-density-v2" ]]; then 
                           export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/nodeWorkers/nodeAggWorkers})
                           ## kubelet and crio metrics aren't in aggregated metrics files
-                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/kubelet-ocp.json/})
-                          export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/crio-ocp.json/})
                           export COMPARISON_CONFIG_PARAM=$(echo ${COMPARISON_CONFIG_PARAM/containerMetrics.json/})
 
                           export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/worker-tolerancy/worker-agg-tolerancy})
-                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kubelet-tolerancy-ocp.yaml/})
-                          export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/crio-tolerancy-ocp.yaml/})
                           export TOLERANCY_RULES_PARAM=$(echo ${TOLERANCY_RULES_PARAM/kube-burner-cp-tolerancy.yaml/})
                           
                     fi
