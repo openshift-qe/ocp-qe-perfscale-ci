@@ -47,6 +47,7 @@ JENKINS_JOB = None
 JENKINS_BUILD = None
 JENKINS_SERVER = None
 UUID = None
+SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'cluster-density', 'cluster-density-v2']
 
 # elasticsearch constants
 ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com'
@@ -263,11 +264,14 @@ def get_jenkins_env_info():
             del param['_class']
             if param.get('name') == 'VARIABLE':
                 info['variable'] = int(param.get('value'))
-            # if workload is not explicitly set in Jenkins such as with router-perf, take it from the job name 
             if param.get('name') == 'WORKLOAD':
                 info['workload'] = str(param.get('value'))
-            else:
-                info['workload'] = JENKINS_JOB.split('/')[-1]
+        # if workload is not explicitly set in Jenkins such as with router-perf, take it from the job name 
+        if info.get('workload') is None:
+            info['workload'] = JENKINS_JOB.split('/')[-1]
+        # check if a valid workload has been parsed
+        if info['workload'] not in SUPPORTED_WORKLOADS:
+            raise Exception(f"{info['workload']} is not in the list of supported workloads: {SUPPORTED_WORKLOADS}")
 
     except Exception as e:
         logging.error(f"Failed to collect Jenkins build parameter info: {e}")
