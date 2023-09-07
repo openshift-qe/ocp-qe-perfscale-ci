@@ -903,7 +903,7 @@ pipeline {
                                         println('Successfully uploaded new baseline to Elasticsearch :)')
                                         currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
                                     }
-                                }                            
+                                }
                             }
                         }
                     }
