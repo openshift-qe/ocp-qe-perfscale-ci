@@ -217,60 +217,6 @@ pipeline {
         }
       }
     }
-    stage('Transfer infrastructure pods'){
-      agent { label params['JENKINS_AGENT_LABEL'] }
-      when {
-          expression { (params.IF_MOVE_INGRESS == true ) || (params.IF_MOVE_REGISTRY == true) || (params.IF_MOVE_MONITORING == true ) }
-      }
-      steps{
-        copyArtifacts(
-            filter: '',
-            fingerprintArtifacts: true,
-            projectName: 'ocp-common/Flexy-install',
-            selector: specific(params.BUILD_NUMBER),
-            target: 'flexy-artifacts'
-        )
-        script {
-          buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
-          currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
-          currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
-          buildinfo.params.each { env.setProperty(it.key, it.value) }
-        }
-        script {
-        withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS'),
-                         file(credentialsId: 'eb22dcaa-555c-4ebe-bb39-5b25628cc6bb', variable: 'OCP_GCP'),
-                         file(credentialsId: 'ocp-azure', variable: 'OCP_AZURE')]) {
-            def RETURNSTATUS = sh(returnStatus: true, script: '''
-              # Get ENV VARS Supplied by the user to this job and store in .env_override
-              echo "$ENV_VARS" > .env_override
-              # Export those env vars so they could be used by CI Job
-              set -a && source .env_override && set +a
-              mkdir -p ~/.kube
-              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-
-              oc config view
-              oc projects
-              ls -ls ~/.kube/
-              env
-              set -x
-              ./openshift-qe-move-pods-infra-commands.sh
-              status=$?
-              echo "final status $status"
-              duration=$SECONDS
-              echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
-              exit $status
-              rm -rf ~/.kube ~/.aws
-            ''')
-            if (RETURNSTATUS.toInteger() == 0) {
-                status = "PASS"
-            }
-            else { 
-                currentBuild.result = "FAILURE"
-            }
-          }
-        }
-      }
-    }
     stage('Install Dittybopper') {
       agent { label params['JENKINS_AGENT_LABEL'] }
       when {
