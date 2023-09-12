@@ -145,10 +145,6 @@ pipeline {
 
               SECONDS=0
               ./openshift-qe-workers-infra-workload-commands.sh
-              export $IF_MOVE_INGRESS
-              export $IF_MOVE_REGISTRY
-              export $IF_MOVE_MONITORING
-              ./openshift-qe-move-pods-infra-commands.sh
               status=$?
               echo "final status $status"
               duration=$SECONDS
@@ -202,6 +198,7 @@ pipeline {
               ls -ls ~/.kube/
               env
               set -x
+              SECONDS=0
               ./openshift-qe-move-pods-infra-commands.sh
               status=$?
               echo "final status $status"
