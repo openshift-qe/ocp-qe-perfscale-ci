@@ -131,6 +131,10 @@ spec:
     metrics:
       ignoreTags:
       - egress
+      - nodes-flows
+      - namespaces-flows
+      - workloads-flows
+      - namespaces
       server:
         port: 9102
         tls:
