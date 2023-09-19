@@ -20,6 +20,9 @@ spec:
           cpu: 100m
           memory: 50Mi
       sampling: 1
+      debug:
+        env:
+          ENABLE_GARBAGE_COLLECTION: "false"
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
