@@ -9,7 +9,6 @@ if [[ -n "$BASELINE_UUID" ]]; then
     echo "setting baseline server"
     export ES_SERVER_BASELINE=$ES_SERVER
     echo "grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/8wDGrVY4k/kube-burner-compare-update?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload=${WORKLOAD}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver&var-uuid=${UUID}&var-uuid=${BASELINE_UUID}"
-
 fi
 
 ls
@@ -22,15 +21,24 @@ echo "ls remove"
 ls
 source compare.sh
 mkdir results
-failed_comparison=0
 
 COMPARISON_OUTPUT_LIST=""
+
+if [[ ( -n $TOLERANCY_RULES_PARAM ) && ( -z "$BASELINE_UUID" ) ]]; then 
+    echo "Wanted to compare using tolerancy rules but no baseline uuid found"
+    echo "Won't run comparison"
+    exit 0
+elif [[ ${UUID} == ${BASELINE_UUID} ]]; then 
+    echo "Not running comparison as uuid and baseline are the same"
+    exit 0
+fi
 
 export COMPARISON_CONFIG=${COMPARISON_CONFIG_PARAM}
 export TOLERANCY_RULES=${TOLERANCY_RULES_PARAM}
 
 echo $CONFIG_LOC
 run_benchmark_comparison
+failed_comparison=$?
 
 cp *.csv results/
 cd ../..

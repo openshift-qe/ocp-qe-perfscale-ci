@@ -19,11 +19,11 @@
           "metricName.keyword": "nodeMemoryUtilization-Masters"
         },
         "buckets": [
-          "jobConfig.namespace.keyword"
+          "jobConfig.name.keyword"
         ],
         "aggregations": {
           "value": [
-            "avg"
+            "max"
           ]
         }
       }
