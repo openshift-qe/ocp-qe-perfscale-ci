@@ -110,7 +110,7 @@ pipeline {
       )
       string(
           name: "TOLERANCY_RULES",
-          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy.yaml kubelet-tolerancy.yaml",
+          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy-ocp.yaml worker-agg-tolerancy-ocp.yaml etcd-tolerancy-ocp.yaml crio-tolerancy-ocp.yaml kubelet-tolerancy-ocp.yaml",
           description: '''JSON config files of what data to compare with and put output into a Google Sheet'''
         )
       booleanParam(
