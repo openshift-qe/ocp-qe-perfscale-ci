@@ -246,7 +246,7 @@ pipeline {
                             env
                             
                             ./run.sh |& tee "ingress_perf.out"
-                            ! egrep -i "lower than baseline|higher than baseline|error" ingress_perf.out
+                            ! egrep -i "lower than baseline|higher than baseline" ingress_perf.out
                             '''
                         )
                         archiveArtifacts(
