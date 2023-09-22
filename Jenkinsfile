@@ -105,7 +105,7 @@ pipeline {
       )
       string(
           name: "COMPARISON_CONFIG",
-          defaultValue: "clusterVersion.json podLatency.json containerMetrics.json kubelet-ocp.json etcd-ocp.json crio-ocp.json nodeMasters-ocp.json nodeWorkers-ocp.json",
+          defaultValue: "podLatency.json nodeMasters-ocp.json nodeWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json",
           description: 'JSON config files of what data to output into a Google Sheet'
       )
       string(
