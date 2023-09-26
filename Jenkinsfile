@@ -303,7 +303,7 @@ pipeline {
                         ls /tmp
                         folder_name=$(ls -t -d /tmp/*/ | head -1)
                         file_loc=$folder_name"*"
-                        cp $file_loc workloads/kube-burner-ocp-wrapper/
+                        cp $file_loc .
 
 
                     ''')
