@@ -314,12 +314,12 @@ pipeline {
                     )
 
                     archiveArtifacts(
-                        artifacts: 'workloads/kube-burner-ocp-wrapper/*.json',
+                        artifacts: 'workloads/kube-burner-ocp-wrapper/index_data.json',
                         allowEmptyArchive: true,
                         fingerprint: true
                     )
 
-                    workloadInfo = readJSON file: "workloads/kube-burner-ocp-wrapper/*.json"
+                    workloadInfo = readJSON file: "workloads/kube-burner-ocp-wrapper/index_data.json"
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // update build description fields
                     // UUID
