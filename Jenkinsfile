@@ -301,6 +301,8 @@ pipeline {
                         export GC=${CLEANUP}
                         ./run.sh |& tee "kube-burner-ocp.out"
 
+                        ls /tmp
+
                     ''')
                     archiveArtifacts(
                         artifacts: 'workloads/kube-burner-ocp-wrapper/kube-burner-ocp.out',
