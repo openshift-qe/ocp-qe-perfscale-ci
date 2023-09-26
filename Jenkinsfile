@@ -300,7 +300,7 @@ pipeline {
                         fi
                         export GC=${CLEANUP}
                         ./run.sh |& tee "kube-burner-ocp.out"
-
+                        ls /tmp
                         folder_name=$(ls -t -d /tmp/*/ | HEAD -n 1)
                         file_loc=$folder_name"*"
                         cp $file_loc workloads/kube-burner-ocp-wrapper/
