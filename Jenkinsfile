@@ -332,47 +332,6 @@ pipeline {
                     }
                 }
             }
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: 'main' ]],
-                userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'helpful_scripts']]
-            ])
-            copyArtifacts(
-                fingerprintArtifacts: true, 
-                projectName: JOB_NAME,
-                selector: specific(JENKINS_JOB_NUMBER),
-                target: 'workload-artifacts'
-            )
-            script {
-                // run Mr. Sandman
-                returnCode = sh(returnStatus: true, script: """
-                    python3.9 --version
-                    python3.9 -m pip install virtualenv
-                    python3.9 -m virtualenv venv3
-                    source venv3/bin/activate
-                    python --version
-                    python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt
-                    python $WORKSPACE/helpful_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
-                """)
-                // fail pipeline if Mr. Sandman run failed, continue otherwise
-                if (returnCode.toInteger() != 0) {
-                    error('Mr. Sandman tool failed :(')
-                }
-                else {
-                    println 'Successfully ran Mr. Sandman tool :)'
-                }
-                archiveArtifacts(
-                    artifacts: 'helpful_scripts/data/*',
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                )
-                workloadInfo = readJSON file: "helpful_scripts/data/workload.json"
-                workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
-                // update build description fields
-                // UUID
-                currentBuild.description += "\n<b>UUID:</b> ${env.UUID}<br/>"
-            }
         }
     }
     stage("Create google sheet") {
