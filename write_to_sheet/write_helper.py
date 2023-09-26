@@ -1,7 +1,8 @@
 import json
 import subprocess
-from datetime import datetime
+import datetime
 import get_es_data
+import os 
 
 def run(command):
     try:
@@ -12,6 +13,10 @@ def run(command):
         return exc.returncode, exc.output
     return 0, output
 
+
+def transform_time_to_int(time):
+    return int(datetime.datetime.strptime(time, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc).timestamp())
+        
 
 def get_env_vars_from_file(file_name): 
     with open(file_name, encoding='utf8', mode="r") as f:
@@ -35,16 +40,16 @@ def get_upgrade_duration():
                 all_versions.append(hist['version'])
                 start_time = hist['startedTime']
                 if not hist['completionTime']:
-                    latestCompletiontime = datetime.now()
+                    latestCompletiontime = datetime.datetime.now()
 
                 else:
                     end_time = hist['completionTime']
-                    end_date_time = datetime.strptime(end_time[:-1], "%Y-%m-%dT%H:%M:%S")
+                    end_date_time = datetime.datetime.strptime(end_time[:-1], "%Y-%m-%dT%H:%M:%S")
                     if end_date_time > latestCompletiontime:
 
                         latestCompletiontime = end_date_time
 
-                start_date_time = datetime.strptime(start_time[:-1], "%Y-%m-%dT%H:%M:%S")
+                start_date_time = datetime.datetime.strptime(start_time[:-1], "%Y-%m-%dT%H:%M:%S")
                 if (start_date_time < earliesetStartingTime) and lastVersion:
                     earliesetStartingTime = start_date_time
 
@@ -53,10 +58,10 @@ def get_upgrade_duration():
         return str(time_elapsed), all_versions
     return get_oc_version(), ""
 
-def get_pod_latencies(uuid="",creation_time="",es_username="", es_password=""):
+def get_pod_latencies(uuid=""):
     if uuid != "":
         # In the form of [[json_data['quantileName'], json_data['avg'], json_data['P99']...]
-        pod_latencies_list = get_es_data.get_pod_latency_data(uuid, creation_time,es_username,es_password)
+        pod_latencies_list = get_es_data.get_pod_latency_data(uuid)
         if len(pod_latencies_list) != 0:
             avg_list = []
             p99_list = []
@@ -94,6 +99,30 @@ def flexy_install_type(flexy_url):
     else:
         print("Error getting flexy installtion")
         return "", "", ""
+
+def get_fips():
+
+    return_code, fips_enabled = run("oc get cm cluster-config-v1 -n kube-system -o json | jq -r '.data' | grep 'fips'")
+    if return_code == 0: 
+        if fips_enabled != "":
+            return str(True)
+
+    return str(False)
+
+def install_type():
+
+    cloud_type = os.getenv("PLATFORM")
+    cluster_type = os.getenv("CLUSTERTYPE")
+    network_type = os.getenv("NETWORKTYPE")
+
+    node_status, node_name=run("oc get node --no-headers | grep master| head -1| awk '{print $1}'")
+    node_name = node_name.strip()
+    arch_type_status, architecture_type = run("oc get node " + str(node_name) + " --no-headers -ojsonpath='{.status.nodeInfo.architecture}'")
+
+    architecture_type = architecture_type.strip()
+
+    fips_enabled = get_fips()
+    return cloud_type, cluster_type, architecture_type, network_type, fips_enabled
 
 def get_worker_num(scale="false"):
     return_code, worker_count = run("oc get nodes | grep worker | wc -l | xargs")

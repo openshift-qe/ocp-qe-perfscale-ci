@@ -16,45 +16,6 @@ creation_time = ""
 data_source = "QE%20kube-burner"
 uuid = ""
 
-def install_type():
-
-    cloud_type = get_platform()
-    net_status, network_type_string = write_helper.run("oc get network cluster -o jsonpath='{.status.networkType}'")
-    node_status, node_name=write_helper.run("oc get node --no-headers | grep master| head -1| awk '{print $1}'")
-    node_name = node_name.strip()
-    arch_type_status, architecture_type = write_helper.run("oc get node " + str(node_name) + " --no-headers -ojsonpath='{.status.nodeInfo.architecture}'")
-
-    architecture_type = architecture_type.strip()
-    if "ovn" in network_type_string.lower():
-        network_type = "OVN"
-    else:
-        network_type = "SDN"
-    fips_enabled = get_fips()
-    return cloud_type, architecture_type, network_type, fips_enabled
-
-
-def get_platform():
-    
-    try: 
-        return_code, cluster_config_str = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o jsonpath='{.data.install-config}'")
-        print('config str' + str(type(cluster_config_str)))
-        cluster_config = yaml.load(cluster_config_str, Loader=yaml.SafeLoader)
-        print('loads' + str(cluster_config))
-        platform = list(cluster_config['platform'].keys())[0]
-        print('plat' + str(platform))
-    except: 
-        platform = "unknown"
-    return platform
-        
-def get_fips():
-
-    return_code, fips_enabled = write_helper.run("oc get cm cluster-config-v1 -n kube-system -o json | jq -r '.data' | grep 'fips'")
-    print('return code' + str(return_code))
-    if return_code == 0: 
-        if fips_enabled != "":
-            return str(True)
-
-    return str(False)
 
 def write_prow_results_to_sheet():
     scopes = [
@@ -69,7 +30,7 @@ def write_prow_results_to_sheet():
     index = 2
 
     job_parameters = os.getenv("ITERATIONS")
-    job_type = os.getenv("WORKLOAD_TYPE")
+    job_type = os.getenv("BENCHMARK")
     es_username = os.getenv("ES_USERNAME")
     es_password = os.getenv("ES_PASSWORD")
 
@@ -85,13 +46,13 @@ def write_prow_results_to_sheet():
     else:
         print('call metadata')
         grafana_cell = write_scale_results_sheet.get_metadata_uuid()
-    cloud_type, architecture_type, network_type, fips_enabled = install_type()
+    cloud_type, cluster_type, architecture_type, network_type, fips_enabled = write_helper.install_type()
     
-    version = write_helper.get_oc_version()
+    version = os.getenv("OCPVERSION")
     tz = timezone('EST')
 
-    worker_count = write_helper.get_worker_num()
-    row = [version, grafana_cell, cloud_type, architecture_type, network_type, fips_enabled, worker_count]
+    worker_count = os.getenv('WORKERNODESCOUNT')
+    row = [version, grafana_cell, cluster_type, cloud_type, architecture_type, network_type, fips_enabled, worker_count]
 
     if job_type not in ["network-perf-v2", "router-perf", "ingress-perf"]:
         workload_args = write_scale_results_sheet.get_workload_params(job_type)
@@ -107,12 +68,8 @@ def write_prow_results_to_sheet():
                 row.append(param)
 
     if job_type not in ["network-perf-v2","router-perf" ,"ingress-perf"]:
-        creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
-        print('get latency params ' + str(uuid) )
-        print('get latency params ' + str(creation_time) )
-        print('get latency params ' + str(es_username) )
-        print('get latency params ' + str(es_password) )
-        row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
+        creation_time = write_scale_results_sheet.get_starttime().replace('Z', ".000Z")
+        row.extend(write_helper.get_pod_latencies(uuid))
 
     row.append(str(datetime.now(tz)))
     ws = sheet.worksheet(job_type)

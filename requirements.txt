@@ -3,3 +3,4 @@ oauth2client
 datetime
 pytz
 pyyaml
+elasticsearch==7.13.1
