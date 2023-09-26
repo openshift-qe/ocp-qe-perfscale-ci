@@ -301,7 +301,7 @@ pipeline {
                         export GC=${CLEANUP}
                         ./run.sh |& tee "kube-burner-ocp.out"
                         ls /tmp
-                        folder_name=$(ls -t -d /tmp/*/ | HEAD -n 1)
+                        folder_name=$(ls -t -d /tmp/*/ | head -1)
                         file_loc=$folder_name"*"
                         cp $file_loc workloads/kube-burner-ocp-wrapper/
 
@@ -319,6 +319,11 @@ pipeline {
                         fingerprint: true
                     )
 
+                    workloadInfo = readJSON file: "workloads/kube-burner-ocp-wrapper/*.json"
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                    // update build description fields
+                    // UUID
+                    currentBuild.description += "\n<b>UUID:</b> ${env.UUID}<br/>"
                     if (RETURNSTATUS.toInteger() == 0) {
                         status = "PASS"
                     }
