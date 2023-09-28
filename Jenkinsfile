@@ -193,13 +193,23 @@ pipeline {
             export WORKLOAD=$WORKLOAD_TYPE
             set -o pipefail
             ./run.sh |& tee "network-perf-v2.out"
+            ls /tmp
+            folder_name=$(ls -t -d /tmp/*/ | head -1)
+            file_loc=$folder_name"*"
+            cp $file_loc .
             ''')
-            output = sh(returnStdout: true, script: 'cat workloads/network-perf-v2/network-perf-v2.out')
             archiveArtifacts(
-                        artifacts: 'workloads/network-perf-v2/network-perf-v2.out',
-                        allowEmptyArchive: true,
-                        fingerprint: true
-                    )
+                artifacts: 'workloads/network-perf-v2/network-perf-v2.out',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+            archiveArtifacts(
+                artifacts: 'workloads/network-perf-v2/index_data.json',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+            workloadInfo = readJSON file: "workloads/network-perf-v2/index_data.json"
+            workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
             if (RETURNSTATUS.toInteger() == 0) {
                   status = "PASS"
               } else { 
