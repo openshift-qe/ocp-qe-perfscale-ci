@@ -138,10 +138,11 @@ def run_commands(commands, outputs={}):
     # iterate through commands dictionary
     for command in commands:
         logging.debug(f"Executing command '{commands[command]}' to get {command} data")
-        result = subprocess.run(commands[command], capture_output=True, text=True, shell=True, timeout=600)
+        try:
+            # execute next command in iteration
+            result = subprocess.run(commands[command], capture_output=True, text=True, shell=True, timeout=600)
 
-        # record command stdout if execution was succesful
-        if result.returncode == 0:
+            # record command stdout if execution was succesful
             output = result.stdout
             logging.debug(f"Got back result: {output}")
 
@@ -154,19 +155,22 @@ def run_commands(commands, outputs={}):
                 outputs['aws_s3_bucket_objects'] = aws_buckets
                 logging.debug(f"aws_s3_bucket_size calculated as {aws_size}")
                 outputs['aws_s3_bucket_size'] = aws_size
+
             # otherwise map command output to dict entry
             else:
                 outputs[command] = output
 
-        # if command failed but was AWS-specific, don't block, just continue
-        elif 'aws' in command:
-            output = result.stdout
-            logging.debug(f"Got back result: {output} from AWS command - skipping...")
-            outputs[command] = "N/A"
+        except Exception as e:
+            # if command failed but was AWS-specific, don't block, just continue
+            if 'aws' in command:
+                output = result.stderr
+                logging.error(f"Got back result: {output} from AWS command - skipping...")
+                outputs[command] = "N/A"
 
-        # otherwise raise an Exception with stderr
-        else:
-            raise Exception(f"Command '{command}' execution resulted in stderr output: {result.stderr}")
+            # otherwise, log the error and exit
+            else:
+                logging.error(f"Command '{command}' execution resulted in stderr output: {e}")
+                sys.exit(1)
 
     # if all commands were successful return outputs dictionary
     return outputs
@@ -307,7 +311,10 @@ def upload_data_to_elasticsearch():
 
     # create Elasticsearch object and attempt index
     es = Elasticsearch(
-        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
+        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443'],
+        timeout=30,
+        max_retries=10,
+        retry_on_timeout=True
     )
 
     start = time.time()
@@ -339,7 +346,10 @@ def upload_baseline_to_elasticsearch(uuid):
 
     # create Elasticsearch object
     es = Elasticsearch(
-        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
+        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443'],
+        timeout=30,
+        max_retries=10,
+        retry_on_timeout=True
     )
 
     # get netobserv release info from Elasticsearch based off UUID
@@ -422,7 +432,10 @@ def fetch_baseline_from_elasticsearch(workload):
 
     # create Elasticsearch object
     es = Elasticsearch(
-        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
+        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443'],
+        timeout=30,
+        max_retries=10,
+        retry_on_timeout=True
     )
 
     # fetch most recent baseline for given workload
