@@ -186,11 +186,6 @@ pipeline {
           defaultValue: 'master',
           description: 'You can change this to point to a branch on your fork if needed.'
       )
-      string(
-          name: 'KUBE_BURNER_VERSION',
-          defaultValue: '1.7.6',
-          description: 'You can change this to point to an older kube-burner version if needed.'
-      )
   }
   stages {  
     stage('Scale up cluster') {
@@ -305,6 +300,11 @@ pipeline {
                         fi
                         export GC=${CLEANUP}
                         ./run.sh |& tee "kube-burner-ocp.out"
+                        ls /tmp
+                        folder_name=$(ls -t -d /tmp/*/ | head -1)
+                        file_loc=$folder_name"*"
+                        cp $file_loc .
+
 
                     ''')
                     archiveArtifacts(
@@ -313,6 +313,17 @@ pipeline {
                         fingerprint: true
                     )
 
+                    archiveArtifacts(
+                        artifacts: 'workloads/kube-burner-ocp-wrapper/index_data.json',
+                        allowEmptyArchive: true,
+                        fingerprint: true
+                    )
+
+                    workloadInfo = readJSON file: "workloads/kube-burner-ocp-wrapper/index_data.json"
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                    // update build description fields
+                    // UUID
+                    currentBuild.description += "\n<b>UUID:</b> ${env.UUID}<br/>"
                     if (RETURNSTATUS.toInteger() == 0) {
                         status = "PASS"
                     }
