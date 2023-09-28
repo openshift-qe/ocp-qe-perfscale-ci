@@ -34,7 +34,7 @@ def write_prow_results_to_sheet():
 
     global uuid
     uuid = write_scale_results_sheet.get_uuid()
-    if job_type == "k8s-net-perf":
+    if job_type == "k8s-netperf":
         job_type = "network-perf-v2"
     if job_type == "network-perf-v2":
         grafana_cell = write_scale_results_sheet.find_k8s_perf_uuid_url()
