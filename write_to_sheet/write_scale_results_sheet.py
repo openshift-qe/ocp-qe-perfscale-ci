@@ -16,16 +16,16 @@ data_source = "QE%20kube-burner"
 uuid = ""
     
 def get_grafana_url(uuid, start_time, end_time):
-    start_time = start_time + "000"
-    end_time = end_time + "000"
+    start_time = str(start_time) + "000"
+    end_time = str(end_time) + "000"
     grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/FwPsenw7z/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=OpenShiftSDN&var-job=All&var-uuid={}&var-namespace=All".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
 def get_net_perf_grafana_url(uuid, start_time, end_time):
-    start_time = start_time + "000"
-    end_time = end_time + "000"
+    start_time = str(start_time) + "000"
+    end_time = str(end_time) + "000"
     data_source="QE+K8s+netperf"
     grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/wINGhybVz/k8s-netperf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-hostNetwork=true&var-service=All&var-parallelism=All&var-profile=All&var-messageSize=All".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
@@ -33,8 +33,8 @@ def get_net_perf_grafana_url(uuid, start_time, end_time):
     return grafana_cell
 
 def get_ingress_perf_grafana_url(uuid, start_time, end_time):
-    start_time = start_time + "000"
-    end_time = end_time + "000"
+    start_time = str(start_time) + "000"
+    end_time = str(end_time) + "000"
     data_source="QE%20Ingress-perf"
     grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/nlAhmRyVk/ingress-perf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-termination=edge&var-termination=http&var-termination=passthrough&var-termination=reencrypt&var-latency_metric=avg_lat_us&var-compare_by=uuid.keyword&var-concurrency=18".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
@@ -43,7 +43,7 @@ def get_ingress_perf_grafana_url(uuid, start_time, end_time):
 
 def get_metadata_uuid():
     start_time = parse_output_for_starttime()
-    to_time = os.getenv("ENDTIME_TIMESTAMP")
+    to_time = parse_output_for_endtime()
 
     global uuid
     uuid = get_uuid()
@@ -52,32 +52,47 @@ def get_metadata_uuid():
 
 def find_k8s_perf_uuid_url():
     start_time = parse_output_for_starttime()
-    to_time = os.getenv("ENDTIME_TIMESTAMP")
+    to_time = parse_output_for_endtime()
 
     uuid = get_uuid()
     print ("uuid " +str(uuid))
     return get_net_perf_grafana_url(uuid, start_time, to_time)
 
 def get_ingress_perf_grafana_url(uuid, start_time, end_time):
-    start_time = start_time + "000"
-    end_time = end_time + "000"
+    start_time = str(start_time) + "000"
+    end_time = str(end_time) + "000"
     data_source="QE%20Ingress-perf"
     grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/nlAhmRyVk/ingress-perf?orgId=1&from={}&to={}&var-datasource={}&var-uuid={}&var-termination=edge&var-termination=http&var-termination=passthrough&var-termination=reencrypt&var-latency_metric=avg_lat_us&var-compare_by=uuid.keyword&var-concurrency=18".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
 
-def find_uperf_uuid_url(cluster_name, start_time, es_username, es_password):
+def find_uperf_uuid_url(cluster_name):
 
-    uuid = get_es_data.get_uuid_uperf(cluster_name, start_time, es_username, es_password)
+    uuid = get_es_data.get_uuid_uperf(cluster_name)
     if uuid != "":
         return uuid
     return ""
 
-def parse_output_for_starttime():
+
+def get_starttime():
     global creation_time
-    creation_time = os.getenv("STARTTIME_TIMESTAMP")
+    creation_time = os.getenv("STARTDATE")
+    print('creation time' + str(creation_time))
     return creation_time
+
+
+def get_endtime():
+    global end_time
+    end_time = os.getenv("ENDDATE")
+    return creation_time
+
+def parse_output_for_starttime(): 
+    return write_helper.transform_time_to_int(get_starttime())
+
+def parse_output_for_endtime():
+    return write_helper.transform_time_to_int(get_endtime())
+
 
 def get_workload_params(job_type):
     workload_args = get_scale_output.get_output(job_type)
@@ -148,7 +163,7 @@ def get_router_perf_uuid(job_output=""):
 
 def get_ingress_perf_uuid():
     start_time = parse_output_for_starttime()
-    to_time = os.getenv("ENDTIME_TIMESTAMP")
+    to_time = parse_output_for_endtime()
 
     uuid = get_uuid()
     print ("uuid " +str(uuid))
@@ -179,13 +194,12 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
         grafana_cell = get_ingress_perf_uuid()
     elif job_type == "network-perf":
         return_code, CLUSTER_NAME=write_helper.run("oc get machineset -n openshift-machine-api -o=go-template='{{(index (index .items 0).metadata.labels \"machine.openshift.io/cluster-api-cluster\" )}}'")
-        if job_output:
-            global uuid
-            start_time = parse_output_for_starttime()
-            uuid, metadata = find_uperf_uuid_url(CLUSTER_NAME,start_time,es_username,es_password)
-            grafana_cell = uuid
-        else:
-            grafana_cell = ""
+        
+        global uuid
+        start_time = parse_output_for_starttime()
+        uuid, metadata = find_uperf_uuid_url(CLUSTER_NAME)
+        grafana_cell = uuid
+        
     elif job_type == "router-perf":
         if job_output:
             uuid, metadata = get_router_perf_uuid(job_output)
@@ -199,10 +213,10 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
     ci_cell = f'=HYPERLINK("{job_url}","{ci_job}")'
     version = write_helper.get_oc_version()
     tz = timezone('EST')
-    cloud_type, architecture_type, network_type = write_helper.flexy_install_type(flexy_url)
+    cloud_type, cluster_type, architecture_type, network_type, fips_type = write_helper.install_type()
 
     worker_count = write_helper.get_worker_num()
-    row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, architecture_type, network_type, worker_count]
+    row = [version, flexy_cell, ci_cell, grafana_cell, status, cloud_type, cluster_type, architecture_type, network_type, fips_type, worker_count]
 
     if job_type not in ["network-perf","network-perf-v2", "router-perf","ingress-perf"]:
         workload_args = get_workload_params(job_type)
@@ -219,13 +233,13 @@ def write_to_sheet(google_sheet_account, flexy_id, ci_job, job_type, job_url, st
                 row.append(param)
 
     if job_type not in ["etcd-perf", "network-perf", "network-perf-v2","router-perf","ingress-perf"]:
-        creation_time = os.getenv("STARTTIME_STRING").replace(' ', "T") + ".000Z"
-        row.extend(write_helper.get_pod_latencies(uuid, creation_time, es_username,es_password))
+        row.extend(write_helper.get_pod_latencies(uuid))
 
-    if job_output:
+    #need to find new way to get google sheet link from benchmark-comparison 
+    # if job_output:
 
-        google_sheet_url = parse_output_for_sheet(job_output)
-        row.append(google_sheet_url)
+    #     google_sheet_url = parse_output_for_sheet(job_output)
+    #     row.append(google_sheet_url)
 
     row.append(str(datetime.now(tz)))
     row.append(str(write_helper.get_env_vars_from_file(env_vars_file)))

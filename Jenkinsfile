@@ -76,12 +76,6 @@ pipeline {
         agent { label params['JENKINS_AGENT_LABEL'] }
         steps {
             deleteDir()
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: 'main' ]],
-                userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'help_scripts']]
-            ])
             copyArtifacts(
                 fingerprintArtifacts: true, 
                 projectName: JENKINS_JOB_PATH,
@@ -89,44 +83,28 @@ pipeline {
                 target: 'workload-artifacts'
             )
             script {
-                // run Mr. Sandman
-                returnCode = sh(returnStatus: true, script: """
-                    python3.9 --version
-                    python3.9 -m pip install virtualenv
-                    python3.9 -m virtualenv venv3
-                    source venv3/bin/activate
-                    python --version
-                    python -m pip install -r $WORKSPACE/help_scripts/scripts/requirements.txt
-                    python $WORKSPACE/help_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
-                """)
-                // fail pipeline if Mr. Sandman run failed, continue otherwise
-                if (returnCode.toInteger() != 0) {
-                    error('Mr. Sandman tool failed :(')
-                }
-                else {
-                    println 'Successfully ran Mr. Sandman tool :)'
-                }
-                // update build description fields 
-                workloadInfo = readJSON file: 'help_scripts/data/workload.json'
+                sh label: '', script: """
+                ls $WORKSPACE/workload-artifacts/workloads/*/
+                cp $WORKSPACE/workload-artifacts/workloads/*/*.json . 
+                ls
+                pwd
 
-                // Add environment variables of sandman values
+                """
+
+                workloadInfo = readJSON file: "index_data.json"
                 workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                // update build description fields
 
-                currentBuild.description = "Write to sheet sandman info: <br/>"
+                currentBuild.description = "Write to sheet info: <br/>"
                 // UUID of workload that was ran 
                 currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                // WORKLOAD_TYPE is string rep of what job was
-                currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
 
-                currentBuild.description += "<b>WORKLOAD_TYPE:</b> ${env.WORKLOAD_TYPE}<br/>"
+                currentBuild.description += "<b>BENCHMARK:</b> ${env.BENCHMARK}<br/>"
                 // STARTTIME_STRING is string rep of start time
-                currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
+                currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
                 // ENDTIME_STRING is string rep of end time
-                currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
+                currentBuild.description += "<b>ENDATE:</b> ${env.ENDDATE}<br/>"
                 // STARTTIME_TIMESTAMP is unix timestamp of start time
-                currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
-                // ENDTIME_TIMESTAMP is unix timestamp of end time
-                currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
             }
         }
     }
@@ -188,7 +166,8 @@ pipeline {
 
                 cd write_to_sheet
                 printf "${params.ENV_VARS}"  >> env_vars.out
-                
+                export ES_SERVER="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+
                 export PYTHONIOENCODING=utf8
                 if [[ "${params.JOB}" == "loaded-upgrade" ]]; then
                     python -c "import write_loaded_results; write_loaded_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.UPGRADE_JOB_URL}','${params.LOADED_JOB_URL}', '${params.CI_STATUS}', '${params.SCALE}', 'env_vars.out', '${params.USER}', '${params.PROFILE}','${params.PROFILE_SIZE}')"
@@ -198,7 +177,7 @@ pipeline {
                     python -c "import write_nightly_results; write_nightly_results.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER}, '${params.CI_JOB_URL}', '${params.RAN_JOBS}', '${params.FAILED_JOBS}', '${params.CI_STATUS}', 'env_vars.out', '${params.JOB}', '${params.PROFILE}','${params.PROFILE_SIZE}', '${params.USER}')"
                 else
                     echo "else job"
-                    python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.JENKINS_JOB_NUMBER}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', '$WORKSPACE/workload-artifacts/workloads/**/*.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
+                    python -c "import write_scale_results_sheet; write_scale_results_sheet.write_to_sheet('$GSHEET_KEY_LOCATION', ${params.BUILD_NUMBER},  '${params.JENKINS_JOB_NUMBER}', '${params.JOB}', '${params.CI_JOB_URL}', '${params.CI_STATUS}', '${params.JOB_PARAMETERS}', '$WORKSPACE/workload-artifacts/workloads/*/*.out', 'env_vars.out', '${params.USER}', '$ES_USERNAME', '$ES_PASSWORD')"
                 fi
                 rm -rf ~/.kube
               """
