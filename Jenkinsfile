@@ -348,13 +348,24 @@ pipeline {
                         pwd
                         echo "workspace $WORKSPACE"
                         ./run.sh |& tee "kube-burner.out"
+                        ls /tmp
+                        folder_name=$(ls -t -d /tmp/*/ | head -1)
+                        file_loc=$folder_name"*"
+                        cp $file_loc .
                     ''')
-                    output = sh(returnStdout: true, script: 'cat workloads/kube-burner/kube-burner.out')
                     archiveArtifacts(
                         artifacts: 'workloads/kube-burner/kube-burner.out',
                         allowEmptyArchive: true,
                         fingerprint: true
                     )
+
+                    archiveArtifacts(
+                        artifacts: 'workloads/kube-burner/index_data.json',
+                        allowEmptyArchive: true,
+                        fingerprint: true
+                    )
+                    workloadInfo = readJSON file: "workloads/network-perf-v2/index_data.json"
+                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     if (RETURNSTATUS.toInteger() == 0) {
                         status = "PASS"
                     }
