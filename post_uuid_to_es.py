@@ -358,7 +358,7 @@ if __name__ == '__main__':
     if search_for_entry(info): 
         logging.info(f"Jenkins build job: {JENKINS_JOB} was already found logged in ElasticSearch")
         sys.exit(0)
-    info['WORKLOAD'] = workload
+    info['workload'] = workload
     if "network-perf" in workload:
         jenkins_info = get_net_perf_v2_data()
         for k,v in jenkins_info.items(): 
