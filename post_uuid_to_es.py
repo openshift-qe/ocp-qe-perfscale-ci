@@ -304,7 +304,7 @@ if __name__ == '__main__':
         coloredlogs.install(level='INFO', isatty=True)
     
     baseline = args.baseline
-    workload = os.getenv('WORKLOAD')
+    workload = os.getenv('BENCHMARK') 
     current_run_uuid =  os.getenv('UUID')
 
     current_run_data = find_uuid_data(current_run_uuid) 

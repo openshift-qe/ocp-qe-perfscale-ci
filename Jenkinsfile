@@ -166,31 +166,28 @@ pipeline {
                     target: 'workload-artifacts'
                 )
                 script {
-                    // run Mr. Sandman
-                    returnCode = sh(returnStatus: true, script: """
-                        python3.9 --version
-                        python3.9 -m pip install virtualenv
-                        python3.9 -m virtualenv venv3
-                        source venv3/bin/activate
-                        python --version
-                        python -m pip install -r $WORKSPACE/helpful_scripts/scripts/requirements.txt
-                        python $WORKSPACE/helpful_scripts/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out
-                        ls $WORKSPACE/helpful_scripts/data
-                    """)
-                    // fail pipeline if Mr. Sandman run failed, continue otherwise
-                    if (returnCode.toInteger() != 0) {
-                        error('Mr. Sandman tool failed :(')
-                    }
-                    else {
-                        println 'Successfully ran Mr. Sandman tool :)'
-                    }
-                    // update build description fields
-                    
-                    workloadInfo = readJSON file: "helpful_scripts/data/workload.json"
-                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                  sh label: '', script: """
+                  ls $WORKSPACE/workload-artifacts/workloads/*/
+                  cp $WORKSPACE/workload-artifacts/workloads/*/*.json . 
+                  ls
+                  pwd
 
-                    // UUID
-                    currentBuild.description = "<b>UUID:</b> ${env.UUID}<br/>"
+                  """
+
+                  workloadInfo = readJSON file: "index_data.json"
+                  workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+                  // update build description fields
+
+                  currentBuild.description = "Write to sheet info: <br/>"
+                  // UUID of workload that was ran 
+                  currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
+
+                  currentBuild.description += "<b>BENCHMARK:</b> ${env.BENCHMARK}<br/>"
+                  // STARTTIME_STRING is string rep of start time
+                  currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
+                  // ENDTIME_STRING is string rep of end time
+                  currentBuild.description += "<b>ENDATE:</b> ${env.ENDDATE}<br/>"
+                  // STARTTIME_TIMESTAMP is unix timestamp of start time
                 }
             }
         }
