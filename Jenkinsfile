@@ -364,7 +364,7 @@ pipeline {
                         allowEmptyArchive: true,
                         fingerprint: true
                     )
-                    workloadInfo = readJSON file: "workloads/network-perf-v2/index_data.json"
+                    workloadInfo = readJSON file: "workloads/kube-burner/index_data.json"
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     if (RETURNSTATUS.toInteger() == 0) {
                         status = "PASS"
