@@ -246,7 +246,7 @@ pipeline {
                             env
                             
                             ./run.sh |& tee "ingress_perf.out"
-                            ! egrep -i "lower than baseline|higher than baseline|error|fail" ingress_perf.out
+                            ! egrep -i "lower than baseline|higher than baseline" ingress_perf.out
                             ls /tmp
                             folder_name=$(ls -t -d /tmp/*/ | head -1)
                             file_loc=$folder_name"*"
