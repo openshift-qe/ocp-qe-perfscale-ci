@@ -304,7 +304,7 @@ if __name__ == '__main__':
         coloredlogs.install(level='INFO', isatty=True)
     
     baseline = args.baseline
-    workload = os.getenv('WORKLOAD')
+    workload = os.getenv('BENCHMARK') 
     current_run_uuid =  os.getenv('UUID')
 
     current_run_data = find_uuid_data(current_run_uuid) 
@@ -358,7 +358,7 @@ if __name__ == '__main__':
     if search_for_entry(info): 
         logging.info(f"Jenkins build job: {JENKINS_JOB} was already found logged in ElasticSearch")
         sys.exit(0)
-    info['WORKLOAD'] = workload
+    info['workload'] = workload
     if "network-perf" in workload:
         jenkins_info = get_net_perf_v2_data()
         for k,v in jenkins_info.items(): 
