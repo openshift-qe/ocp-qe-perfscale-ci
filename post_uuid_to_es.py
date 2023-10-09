@@ -3,7 +3,6 @@
 import os
 import sys
 import json
-import time
 import urllib3
 import pathlib
 import jenkins
@@ -12,9 +11,8 @@ import argparse
 import datetime
 import subprocess
 import coloredlogs
-from elasticsearch import Elasticsearch
-import helper_uuid
-import update_es_uuid
+from helpful_scripts.scripts import find_cluster_data
+from helpful_scripts.es_scripts import help_find_es
 
 # disable SSL and warnings
 os.environ['PYTHONHTTPSVERIFY'] = '0'
@@ -87,12 +85,12 @@ def set_es_obj_info(uuid_data):
     iso_timestamp = datetime.datetime.utcnow()
     version = uuid_data['ocpVersion']
     network_type= uuid_data['networkType']
-    arch_type = helper_uuid.get_arch_type()
+    arch_type = find_cluster_data.get_arch_type()
     worker_count = int(uuid_data['workerNodesCount'])
     print('ci profile ' + str(CI_PROFILE))
     if CI_PROFILE == "": 
         print('if')
-        profile = helper_uuid.get_scale_profile_name(version, arch_type, network_type, worker_count)[0]
+        profile = find_cluster_data.get_scale_profile_name(version, arch_type, network_type, worker_count)[0]
         profile_size = ""
     else:
         print('else')
@@ -118,9 +116,8 @@ def set_es_obj_info(uuid_data):
             "master_size": uuid_data['masterNodesType'],
             "worker_size": uuid_data['workerNodesType'],
             "infra_node_count": uuid_data['infraNodesCount'],
-            "LAUNCHER_VARS": os.getenv('VARIABLES_LOCATION'),
-            "fips_enabled": helper_uuid.get_fips(),
-            "across_az": helper_uuid.get_multi_az("node-role.kubernetes.io/worker="),
+            "fips_enabled": find_cluster_data.get_fips(),
+            "across_az": find_cluster_data.get_multi_az("node-role.kubernetes.io/worker="),
             "platform": uuid_data['platform']
         }
         return info
@@ -187,31 +184,6 @@ def dump_data_locally(timestamp, partial=False):
     # return if no issues
     return None
 
-
-def upload_data_to_elasticsearch():
-    ''' uploads captured data in RESULTS dictionary to Elasticsearch
-    '''
-
-    # create Elasticsearch object and attempt index
-    es = Elasticsearch(
-        [f'https://{ES_USERNAME}:{ES_PASSWORD}@{ES_URL}:443']
-    )
-
-    start = time.time()
-    for item in RESULTS['data']:
-        index = 'perfscale-jenkins-metadata'
-        logging.info(f"Uploading item {item} to index {index} in Elasticsearch")
-        response = es.index(
-            index=index,
-            body=item
-        )
-        logging.info(f"Response back was {response}")
-    end = time.time()
-    elapsed_time = end - start
-
-    # return elapsed time for upload if no issues
-    return elapsed_time
-
 def main():
 
     # log success if no issues
@@ -220,7 +192,7 @@ def main():
     # either dump data locally or upload it to Elasticsearch
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     try:
-        elapsed_time = upload_data_to_elasticsearch()
+        elapsed_time = help_find_es.post_result_data(RESULTS)
         logging.info(f"Elasticsearch upload completed in {elapsed_time} seconds")
 
     except Exception as e:
@@ -231,52 +203,6 @@ def main():
 
     # exit if no issues
     sys.exit(0)
-
-
-def search_for_entry(info): 
-    search_params = {
-        "metric_name": METRIC_NAME,
-        "jenkins_job_name": info['jenkins_job_name'],
-        "jenkins_build_num": info['jenkins_build_num'],
-    }
-
-    hits = update_es_uuid.es_search(search_params)
-    
-    if len(hits) == 0: 
-        # return false, no entry was found 
-        return False
-    else: 
-        # returning true that entry was found for the job already
-        return True
-        
-
-def find_uuid_data(current_run_uuid):
-    global workload
-    if workload == "network-perf-v2": 
-        workload = "k8s-netperf"
-    search_params = {
-        "uuid": current_run_uuid,
-        "benchmark": workload
-    }
-
-    # if workload == "ingress-perf":
-    #     index="ingress-perf*"
-    # elif workload == "network-perf-v2":
-    #     index="k8s-netperf"
-    # elif workload == "router-perf":
-    #     index="router-test-results"
-    # elif workload == "network-perf":
-    #     index="ripsaw-uperf"
-    # elif workload not in ["upgrade","loaded-upgrade", "nightly-regression"]:
-    #     index="ripsaw-kube-burner"
-    #     search_params["metricName"]= "clusterMetadata"
-
-    index = "perf_scale_ci*"
-    
-    hits = update_es_uuid.es_search(search_params, index=index)
-    print('hits ' + str(hits))
-    uuid_data = hits[0]['_source']
-    return uuid_data
 
 
 if __name__ == '__main__':
@@ -307,8 +233,8 @@ if __name__ == '__main__':
     workload = os.getenv('BENCHMARK') 
     current_run_uuid =  os.getenv('UUID')
 
-    current_run_data = find_uuid_data(current_run_uuid) 
-    
+    current_run_data = help_find_es.find_uuid_data(workload,current_run_uuid) 
+    print("Current run data details" + str(current_run_data))
     if "jobStatus" in current_run_data.keys() and current_run_data['jobStatus'] != "success":
         logging.info("Current run failed, not posting result as baseline")
         sys.exit(0) 
@@ -316,7 +242,7 @@ if __name__ == '__main__':
         # find matching profile
         # if data already exists, don't post 
         METRIC_NAME = "base_line_uuids"
-        base_line_uuid = helper_uuid.find_uuid(workload, METRIC_NAME, current_run_data)
+        base_line_uuid = help_find_es.find_uuid(workload, METRIC_NAME, current_run_data)
         print('baseline ' + str(base_line_uuid))
         if base_line_uuid is not False:
             logging.info("Baseline UUID for this configuration is already set")
@@ -337,7 +263,7 @@ if __name__ == '__main__':
     # determine UUID
     info = set_es_obj_info(current_run_data)
 
-    helper_uuid.run("unset https_proxy http_proxy")
+    find_cluster_data.run("unset https_proxy http_proxy")
     # check if Jenkins arguments are valid and if so set constants
     raw_jenkins_job = JENKINS_JOB
     raw_jenkins_build = jenkins_build
@@ -355,9 +281,6 @@ if __name__ == '__main__':
             logging.error("Error connecting to Jenkins server: ", e)
             sys.exit(1)
 
-    if search_for_entry(info): 
-        logging.info(f"Jenkins build job: {JENKINS_JOB} was already found logged in ElasticSearch")
-        sys.exit(0)
     info['workload'] = workload
     if "network-perf" in workload:
         jenkins_info = get_net_perf_v2_data()

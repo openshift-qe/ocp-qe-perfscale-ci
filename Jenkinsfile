@@ -227,6 +227,19 @@ pipeline {
                           url: "${params.CI_PROFILES_URL}"
                       ]]
                   ]
+                  checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "main_scripts" ]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                            [$class: 'PruneStaleBranch'],
+                            [$class: 'CleanCheckout'],
+                            [$class: 'IgnoreNotifyCommit'],
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'helpful_scripts']
+                        ],
+                        userRemoteConfigs: [[url: "https://github.com/paigerube14/ocp-qe-perfscale-ci.git" ]]
+                    ])
                 copyArtifacts(
                     filter: '',
                     fingerprintArtifacts: true,
