@@ -219,7 +219,7 @@ populate_netobserv_metrics() {
 
 setup_dittybopper_template() {
   echo "====> Checking NetObserv installation..."
-  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A)
+  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[3].value}' -A)
   if [[ $IS_DOWNSTREAM == "true" ]]; then
     echo "===> Downstream installation was detected - no custom Dittybopper template is needed"
   else
