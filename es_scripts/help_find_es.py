@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-from elasticsearch import Elasticsearch
 from . import update_es_uuid
 
 
