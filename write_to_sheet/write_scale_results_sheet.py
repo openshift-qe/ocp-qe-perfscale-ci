@@ -18,7 +18,7 @@ uuid = ""
 def get_grafana_url(uuid, start_time, end_time):
     start_time = str(start_time) + "000"
     end_time = str(end_time) + "000"
-    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/FwPsenw7z/kube-burner-report?orgId=1&from={}&to={}&var-Datasource={}&var-sdn=OpenShiftSDN&var-job=All&var-uuid={}&var-namespace=All".format(str(start_time), str(end_time), data_source, uuid)
+    grafana_url = "https://grafana.rdu2.scalelab.redhat.com:3000/d/9qdKt3K4z/kube-burner-report-ocp-wrapper?orgId=1&from={}&to={}&var-Datasource={}&var-job=All&var-uuid={}&var-namespace=All".format(str(start_time), str(end_time), data_source, uuid)
     print('grafana url ' + str(grafana_url))
     grafana_cell = f'=HYPERLINK("{grafana_url}","{uuid}")'
     return grafana_cell
@@ -85,7 +85,7 @@ def get_starttime():
 def get_endtime():
     global end_time
     end_time = os.getenv("ENDDATE")
-    return creation_time
+    return end_time
 
 def parse_output_for_starttime(): 
     return write_helper.transform_time_to_int(get_starttime())
