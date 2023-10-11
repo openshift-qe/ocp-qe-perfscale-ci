@@ -23,7 +23,7 @@ def es_search(params, index='perfscale-jenkins-metadata', size=10, from_pos=0):
         match_data['match_phrase'] = {}
         match_data['match_phrase'][p] = v
         filter_data.append(match_data)
-    search_result = es.search(index=index, body={"query": {"bool": {"filter": filter_data}},  "size": size, "from": from_pos})
+    search_result = es.search(index=index, body={"query": {"bool": {"filter": filter_data}},  "size": size, "from": from_pos},request_timeout=40)
     hits = []
     if "hits" in search_result.keys() and "hits" in search_result['hits'].keys():
         return search_result['hits']['hits']
