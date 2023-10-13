@@ -31,10 +31,11 @@ pipeline {
         string(
           name: 'BUILD_NUMBER', 
           defaultValue: '', 
-          description: 'Build number of job that has installed the cluster.'
+          description: '''Build number of job that has installed the cluster.</br>
+          Note: the cluster does not need to be the one the test was ran on, the scripts will get cluster configuration based on metadata from workload ran'''
         )
         choice(
-          choices: ["cluster-density-v2","cluster-density","cluster-density-ms","node-density","node-density-heavy","node-density-cni","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","etcd-perf"],
+          choices: ["cluster-density-v2","cluster-density","cluster-density-ms","node-density","node-density-heavy","node-density-cni","pod-density","pod-density-heavy","max-namespaces","max-services", "concurrent-builds","network-perf","router-perf","k8s-netperf","network-perf-v2","ingress-perf"],
           name: 'WORKLOAD', 
           description: '''Type of kube-burner job to run'''
         )
@@ -62,13 +63,17 @@ pipeline {
           name: "COMPARISON_CONFIG_PARAM",
           defaultValue: "podLatency.json nodeMasters.json nodeWorkers.json etcd.json crio.json kubelet.json",
           description: '''JSON config files of what data to output into a Google Sheet<br/>
-          For kube-burner-ocp workloads use "podLatency.json nodeMasters-ocp.json nodeAggWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json"'''
+          For kube-burner-ocp workloads use "podLatency.json nodeMasters-ocp.json nodeAggWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json"<br/>
+          For k8s-netperf use "k8s-touchstone.json"<br/>
+          For ingress-perf use "ingress.json"'''
         )
         string(
           name: "TOLERANCY_RULES_PARAM",
           defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy.yaml kubelet-tolerancy.yaml",
           description: '''JSON config files of what data to output into a Google Sheet<br/>
-          For kube-burner-ocp workloads use: "pod-latency-tolerancy-rules.yaml master-tolerancy-ocp.yaml worker-agg-tolerancy-ocp.yaml etcd-tolerancy-ocp.yaml crio-tolerancy-ocp.yaml kubelet-tolerancy-ocp.yaml"'''
+          For kube-burner-ocp workloads use: "pod-latency-tolerancy-rules.yaml master-tolerancy-ocp.yaml worker-agg-tolerancy-ocp.yaml etcd-tolerancy-ocp.yaml crio-tolerancy-ocp.yaml kubelet-tolerancy-ocp.yaml"<br/>
+          For k8s-netperf use "k8s-tolerancy.yaml"<br/>
+          For ingress-perf use "ingress-tolerancy.yaml"'''
         )
         booleanParam(
             name: 'GEN_CSV',
@@ -145,12 +150,26 @@ pipeline {
       steps{
 
         deleteDir()
+        
         checkout([
           $class: 'GitSCM',
           branches: [[name: GIT_BRANCH ]],
           doGenerateSubmoduleConfigurations: false,
           userRemoteConfigs: [[url: GIT_URL ]
           ]])
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: "main" ]],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [
+                [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                [$class: 'PruneStaleBranch'],
+                [$class: 'CleanCheckout'],
+                [$class: 'IgnoreNotifyCommit'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'helpful_scripts']
+            ],
+            userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci.git" ]]
+        ])
         checkout([
             $class: 'GitSCM',
             branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
@@ -245,7 +264,6 @@ pipeline {
                     python --version
                     pip install -r requirements.txt
                     env
-
                     if [[ ( -z "$BASELINE_UUID" ) && ( -n $TOLERANCY_RULES_PARAM ) ]]; then
                       export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
