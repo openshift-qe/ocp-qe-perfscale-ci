@@ -64,7 +64,7 @@ Note this is only nessessary if you're running an upstream version of the operat
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
 ### Updating common parameters of flowcollector
-Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta1_flowcollector.yaml`
+Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta2_flowcollector.yaml`
 
 You can update common parameters of flowcollector individually with the following commands:
 - **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`

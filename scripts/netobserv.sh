@@ -51,7 +51,7 @@ deploy_netobserv() {
   done
 
   echo "====> Creating Flow Collector"
-  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta1_flowcollector.yaml
+  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
 
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
