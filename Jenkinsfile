@@ -44,7 +44,7 @@ pipeline {
               spec:
                 containers:
                 - name: "jnlp"
-                  image: "quay.io/openshift-qe-optional-operators/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
+                  image: "image-registry.openshift-image-registry.svc:5000/aos-qe-ci/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
                   resources:
                     requests:
                       memory: "8Gi"
@@ -55,8 +55,6 @@ pipeline {
                   imagePullPolicy: Always
                   workingDir: "/home/jenkins/ws"
                   tty: true
-                imagePullSecrets:
-                - name: "docker-config-quay.io"
               """.stripIndent()
           }
         }
