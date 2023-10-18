@@ -28,8 +28,8 @@ def get_upgrade_duration():
     all_versions = []
     if return_code == 0:
         version_json = json.loads(version_str)
-        earliesetStartingTime = datetime.max
-        latestCompletiontime = datetime.min
+        earliesetStartingTime = datetime.datetime.max
+        latestCompletiontime = datetime.datetime.min
         for item in version_json['items']:
             lastVersion = True
             counter = 0
