@@ -106,6 +106,16 @@ pipeline {
             description: "Check this box to send a Slack notification to #ocp-qe-scale-ci-results upon the job's completion"
         )
         string(
+            name: "COMPARISON_CONFIG",
+            defaultValue: "ingress.json",
+            description: 'JSON config files of what data to output into a Google Sheet'
+        )
+        string(
+            name: "TOLERANCY_RULES",
+            defaultValue: "ingress-tolerancy.yaml",
+            description: '''JSON config files of what data to compare with and put output into a Google Sheet'''
+        )
+        string(
             name: 'TOLERANCY',
             defaultValue: '20',
             description: '''Defines a regression tolerancy percent. By default 20'''
@@ -274,6 +284,18 @@ pipeline {
                             status = "Ingress perf FAIL"
                         }
                     }
+                }
+                script {
+                        
+                  compare_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-comparison',
+                      parameters: [
+                          string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                          string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "GEN_CSV", value: GEN_CSV),
+                          string(name: "WORKLOAD", value: "ingress-perf"), string(name: "UUID", value: env.UUID),
+                          string(name: "COMPARISON_CONFIG_PARAM", value: COMPARISON_CONFIG),string(name: "TOLERANCY_RULES_PARAM", value: TOLERANCY_RULES),
+                          string(name: "EMAIL_ID_OVERRIDE", value: EMAIL_ID_OVERRIDE)
+                      ],
+                      propagate: false
                 }
                 script{
                     if (params.CERBERUS_CHECK == true) {
