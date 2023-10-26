@@ -146,7 +146,7 @@ function capture_failed_pods_before_upgrade(){
   #Save the failed job before upgrade and make sure new failed job caused by upgrade,ignore installer, build error
   echo "Capture failed pods before upgrade OCP"
   echo "####################################################################################"
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|Terminating'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
 }
 
 function capture_failed_pods_after_upgrade(){
@@ -154,7 +154,7 @@ function capture_failed_pods_after_upgrade(){
   echo "Capture failed pods after upgrade OCP, No messages means no errors"
   echo "####################################################################################"
   #Adding re-try steps to avoid temp failed pod
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|Terminating'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
   cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
   init_retry=1
   max_retry=30

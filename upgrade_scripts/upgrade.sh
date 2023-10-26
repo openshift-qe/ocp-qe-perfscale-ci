@@ -155,8 +155,10 @@ do
   SECONDS=0
   CONSOLE_LAST_LINE="$($upgrade_line)"
   echo $CONSOLE_LAST_LINE
+  export UPGRADE_WAIT_NUM=${UPGRADE_WAIT_NUM:-300}
   export PYTHONUNBUFFERED=1
-  python3 -c "import check_upgrade; check_upgrade.check_upgrade('$target_version_prefix')"
+  echo "Specify UPGRADE_WAIT_NUM is $UPGRADE_WAIT_NUM"
+  python3 -c "import check_upgrade; check_upgrade.check_upgrade('$target_version_prefix',wait_num=$UPGRADE_WAIT_NUM)"
   duration=$SECONDS
   echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
   sleep 30
