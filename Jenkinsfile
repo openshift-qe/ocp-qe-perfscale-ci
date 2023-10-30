@@ -58,6 +58,29 @@ pipeline {
       name: 'WORKLOAD_TYPE', 
       description: 'Workload type'
     )
+    string(
+        name: "COMPARISON_CONFIG",
+        defaultValue: "k8s-touchstone.json",
+        description: 'JSON config files of what data to output into a Google Sheet'
+    )
+    string(
+        name: "TOLERANCY_RULES",
+        defaultValue: "k8s-tolerancy.yaml",
+        description: '''JSON config files of what data to compare with and put output into a Google Sheet'''
+    )
+    booleanParam(
+          name: 'GEN_CSV',
+          defaultValue: true,
+          description: 'Boolean to create a google sheet with comparison data'
+    )
+    string(
+        name: 'EMAIL_ID_OVERRIDE',
+        defaultValue: '',
+        description: '''
+          Email to share Google Sheet results with<br/>
+          By default shares with email of person who ran the job
+        '''
+    )
     booleanParam(
       name: 'WRITE_TO_FILE', 
       defaultValue: false, 
@@ -210,6 +233,9 @@ pipeline {
             )
             workloadInfo = readJSON file: "workloads/network-perf-v2/index_data.json"
             workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
+            // update build description fields
+            // UUID
+            currentBuild.description += "\n<b>UUID:</b> ${env.UUID}<br/>"
             if (RETURNSTATUS.toInteger() == 0) {
                   status = "PASS"
               } else { 
@@ -217,7 +243,18 @@ pipeline {
               }
           }
         }
-
+        script {
+                        
+          compare_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/benchmark-comparison',
+              parameters: [
+                  string(name: 'BUILD_NUMBER', value: BUILD_NUMBER),text(name: "ENV_VARS", value: ENV_VARS),
+                  string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),booleanParam(name: "GEN_CSV", value: GEN_CSV),
+                  string(name: "WORKLOAD", value: "network-perf-v2"), string(name: "UUID", value: env.UUID),
+                  string(name: "COMPARISON_CONFIG_PARAM", value: COMPARISON_CONFIG),string(name: "TOLERANCY_RULES_PARAM", value: TOLERANCY_RULES),
+                  string(name: "EMAIL_ID_OVERRIDE", value: EMAIL_ID_OVERRIDE)
+              ],
+              propagate: false
+        }
         script{
             if(params.CERBERUS_CHECK == true) {
                 cerberus_job = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cerberus',
