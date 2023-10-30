@@ -120,6 +120,11 @@ pipeline {
             defaultValue: '20',
             description: '''Defines a regression tolerancy percent. By default 20'''
         )
+        booleanParam(
+          name: 'GEN_CSV',
+          defaultValue: true,
+          description: 'Boolean to create a google sheet with comparison data'
+        )
         text(
             name: 'ENV_VARS',
             defaultValue: '',
