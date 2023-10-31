@@ -258,7 +258,7 @@ pipeline {
               spec:
                 containers:
                 - name: "jnlp"
-                  image: "image-registry.openshift-image-registry.svc:5000/aos-qe-ci/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
+                  image: "image-registry.openshift-image-registry.svc:5000/aosqe/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
                   resources:
                     requests:
                       memory: "8Gi"
