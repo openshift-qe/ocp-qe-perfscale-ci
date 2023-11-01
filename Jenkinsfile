@@ -216,9 +216,12 @@ pipeline {
             export WORKLOAD=$WORKLOAD_TYPE
             set -o pipefail
             ./run.sh |& tee "network-perf-v2.out"
+            ''')
+            sh(returnStatus: true, script: '''
             ls /tmp
             folder_name=$(ls -t -d /tmp/*/ | head -1)
             file_loc=$folder_name"*"
+            cd workloads/network-perf-v2
             cp $file_loc .
             ''')
             archiveArtifacts(
