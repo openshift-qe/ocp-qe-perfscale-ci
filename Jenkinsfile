@@ -83,12 +83,12 @@ pipeline {
     )
     booleanParam(
       name: 'WRITE_TO_FILE', 
-      defaultValue: false, 
+      defaultValue: true, 
       description: 'Value to write to google sheet (will run https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/job/write-scale-ci-results)'
     )
     booleanParam(
         name: 'WRITE_TO_ES',
-        defaultValue: false,
+        defaultValue: true,
         description: 'Value to write to elastic seach under metricName: jenkinsEnv'
     )
     booleanParam(
