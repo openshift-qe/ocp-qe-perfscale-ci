@@ -131,12 +131,12 @@ deploy_unreleased_catalogsource() {
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
-  if [[ -z $IMAGE ]]; then
+  if [[ -z $DOWNSTREAM_IMAGE ]]; then
     echo "====> No image config was found - cannot create CatalogSource"
-    echo "====> To set config, set IMAGE variable to desired endpoint"
+    echo "====> To set config, set DOWNSTREAM_IMAGE variable to desired endpoint"
     exit 1
   else
-    echo "====> Using image $IMAGE for CatalogSource"
+    echo "====> Using image $DOWNSTREAM_IMAGE for CatalogSource"
   fi
 
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml

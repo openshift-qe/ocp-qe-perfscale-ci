@@ -5,5 +5,5 @@ metadata:
   namespace: openshift-marketplace
 spec:
   displayName: NetObservUnreleasedTesting
-  image: ${IMAGE}
+  image: ${DOWNSTREAM_IMAGE}
   sourceType: grpc
