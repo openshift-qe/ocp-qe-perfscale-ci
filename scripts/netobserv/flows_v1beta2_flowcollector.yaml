@@ -95,6 +95,7 @@ spec:
         type: secret
     topic: network-flows
   loki:
+    enable: true
     mode: LokiStack
     lokiStack:
       name: lokistack

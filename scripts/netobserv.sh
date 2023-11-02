@@ -150,8 +150,21 @@ deploy_unreleased_catalogsource() {
 }
 
 deploy_main_catalogsource() {
+  echo "====> Determining CatalogSource config"
+  if [[ -z $UPSTREAM_IMAGE ]]; then
+    echo "====> No image config was found - using main"
+    echo "====> To set config, set UPSTREAM_IMAGE variable to desired endpoint"
+    export UPSTREAM_IMAGE="quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
+  else
+    echo "====> Using image $UPSTREAM_IMAGE for CatalogSource"
+  fi
+
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
+  envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
+
   echo "====> Creating netobserv-main-testing CatalogSource from the main bundle"
-  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  oc apply -f $TMP_CATALOGCONFIG
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
 }

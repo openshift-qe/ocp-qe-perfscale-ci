@@ -17,6 +17,7 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
+$ export UPSTREAM_IMAGE      # only needed if deploying 'Source' and testing a premerge image
 $ export DOWNSTREAM_IMAGE    # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
 $ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
@@ -56,7 +57,9 @@ Continuous internal bundles are created via the CPaaS system and hosted internal
 The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
 
 #### Source
-GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `main` tag is used to track the Github `main` branch.
+
+If you want to install a premerge image that is present on quay.io instead of the `main` image, you can do so by setting the `$UPSTREAM_IMAGE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note this only works for premerge testing of the Operator image, not component images such as eBPF or FLP.
 
 ### Setting up FLP service and creating service-monitor
 Note this is only nessessary if you're running an upstream version of the operator.
