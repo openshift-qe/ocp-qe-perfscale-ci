@@ -17,7 +17,8 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
-$ export IMAGE               # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
+$ export UPSTREAM_IMAGE      # only needed if deploying 'Source' and testing a premerge image
+$ export DOWNSTREAM_IMAGE    # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
 $ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export LOKI_OPERATOR       # will use 'Released' if not set otherwise
@@ -50,13 +51,15 @@ There are four sources from which you can install the operator which are detaile
 The latest officially-released version of the downstream operator. It is hosted on the [Red Hat Catalog](https://catalog.redhat.com/software/containers/network-observability/network-observability-operator-bundle) and is the productized version of the operator available to Red Hat customers.
 
 #### Internal
-Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$IMAGE` env variable mentioned in the 'Prerequisites' section).
+Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$DOWNSTREAM_IMAGE` env variable mentioned in the 'Prerequisites' section).
 
 #### OperatorHub
 The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
 
 #### Source
-GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `main` tag is used to track the Github `main` branch.
+
+If you want to install a premerge image that is present on quay.io instead of the `main` image, you can do so by setting the `$UPSTREAM_IMAGE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note this only works for premerge testing of the Operator image, not component images such as eBPF or FLP.
 
 ### Setting up FLP service and creating service-monitor
 Note this is only nessessary if you're running an upstream version of the operator.
@@ -64,7 +67,7 @@ Note this is only nessessary if you're running an upstream version of the operat
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
 ### Updating common parameters of flowcollector
-Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta1_flowcollector.yaml`
+Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta2_flowcollector.yaml`
 
 You can update common parameters of flowcollector individually with the following commands:
 - **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`

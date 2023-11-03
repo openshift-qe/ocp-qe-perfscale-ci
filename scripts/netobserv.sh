@@ -51,7 +51,7 @@ deploy_netobserv() {
   done
 
   echo "====> Creating Flow Collector"
-  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta1_flowcollector.yaml
+  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
 
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
@@ -131,12 +131,12 @@ deploy_unreleased_catalogsource() {
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
-  if [[ -z $IMAGE ]]; then
+  if [[ -z $DOWNSTREAM_IMAGE ]]; then
     echo "====> No image config was found - cannot create CatalogSource"
-    echo "====> To set config, set IMAGE variable to desired endpoint"
+    echo "====> To set config, set DOWNSTREAM_IMAGE variable to desired endpoint"
     exit 1
   else
-    echo "====> Using image $IMAGE for CatalogSource"
+    echo "====> Using image $DOWNSTREAM_IMAGE for CatalogSource"
   fi
 
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
@@ -150,8 +150,21 @@ deploy_unreleased_catalogsource() {
 }
 
 deploy_main_catalogsource() {
+  echo "====> Determining CatalogSource config"
+  if [[ -z $UPSTREAM_IMAGE ]]; then
+    echo "====> No image config was found - using main"
+    echo "====> To set config, set UPSTREAM_IMAGE variable to desired endpoint"
+    export UPSTREAM_IMAGE="quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
+  else
+    echo "====> Using image $UPSTREAM_IMAGE for CatalogSource"
+  fi
+
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
+  envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
+
   echo "====> Creating netobserv-main-testing CatalogSource from the main bundle"
-  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  oc apply -f $TMP_CATALOGCONFIG
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
 }

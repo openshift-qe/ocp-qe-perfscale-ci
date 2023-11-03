@@ -129,6 +129,15 @@ pipeline {
             '''
         )
         string(
+            name: 'OPERATOR_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rathar than using the main branch<br/>
+                These SHA hashes can be found in PRs after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
             name: 'CONTROLLER_MEMORY_LIMIT',
             defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
@@ -453,7 +462,7 @@ pipeline {
                 script {
                     // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
                     if (params.LOKI_OPERATOR == 'Unreleased') {
-                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
+                        env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
                     }
                     // set USER variable to be included in AWS bucket name
                     if (userId) {
@@ -491,10 +500,17 @@ pipeline {
                 script {
                     // if an 'Internal' installation, determine whether to use aosqe-index image or specific IIB image
                     if (params.INSTALLATION_SOURCE == 'Internal' && params.IIB_OVERRIDE != '') {
-                        env.IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
+                        env.DOWNSTREAM_IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
                     }
                     else {
-                        env.IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
+                        env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
+                    }
+                    // if a 'Source' installation, determine whether to use main image or specific premerge image
+                    if (params.INSTALLATION_SOURCE == 'Source' && params.OPERATOR_PREMERGE_OVERRIDE != '') {
+                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
+                    }
+                    else {
+                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
                     }
                     // attempt installation of Network Observability from selected source
                     println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")

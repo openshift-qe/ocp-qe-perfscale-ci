@@ -1,4 +1,4 @@
-apiVersion: flows.netobserv.io/v1beta1
+apiVersion: flows.netobserv.io/v1beta2
 kind: FlowCollector
 metadata:
   name: cluster
@@ -95,25 +95,16 @@ spec:
         type: secret
     topic: network-flows
   loki:
-    authToken: FORWARD
-    batchSize: 10485760
+    enable: true
+    mode: LokiStack
+    lokiStack:
+      name: lokistack
+      namespace: netobserv
     batchWait: 1s
+    batchSize: 10485760
+    minBackoff: 1s
     maxBackoff: 5s
     maxRetries: 2
-    minBackoff: 1s
-    staticLabels:
-      app: netobserv-flowcollector
-    tenantID: network
-    timeout: 10s
-    tls:
-      caCert:
-        certFile: service-ca.crt
-        name: lokistack-gateway-ca-bundle
-        type: configmap
-      enable: true
-      insecureSkipVerify: false
-      userCert: {}
-    url: https://lokistack-gateway-http.netobserv.svc.cluster.local:8080/api/logs/v1/network/
   namespace: netobserv
   processor:
     debug: {}
