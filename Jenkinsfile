@@ -129,7 +129,7 @@ pipeline {
             '''
         )
         string(
-            name: 'PREMERGE_OVERRIDE',
+            name: 'OPERATOR_PREMERGE_OVERRIDE',
             defaultValue: '',
             description: '''
                 If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rathar than using the main branch<br/>
@@ -506,8 +506,8 @@ pipeline {
                         env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
                     }
                     // if a 'Source' installation, determine whether to use main image or specific premerge image
-                    if (params.INSTALLATION_SOURCE == 'Source' && params.PREMERGE_OVERRIDE != '') {
-                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${PREMERGE_OVERRIDE}"
+                    if (params.INSTALLATION_SOURCE == 'Source' && params.OPERATOR_PREMERGE_OVERRIDE != '') {
+                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
                     }
                     else {
                         env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
