@@ -196,6 +196,9 @@ pipeline {
         script{
            if(params.Network_Policy == true) {
              sh(returnStatus: true, script: '''
+	     mkdir -p ~/.kube
+             cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+             export KUBECONFIG=~/.kube/config
 	     CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
 	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
 	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
