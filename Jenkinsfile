@@ -76,7 +76,7 @@ pipeline {
      booleanParam(
           name: 'Network_Policy',
           defaultValue: true,
-          description: 'Boolean to create a google sheet with comparison data'
+          description: 'Boolean to create network policy to open up the security group rules in your aws deployment'
     )
 
     string(
