@@ -73,6 +73,12 @@ pipeline {
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
     )
+     booleanParam(
+          name: 'Network_Policy',
+          defaultValue: true,
+          description: 'Boolean to create a google sheet with comparison data'
+    )
+
     string(
         name: 'EMAIL_ID_OVERRIDE',
         defaultValue: '',
@@ -187,7 +193,23 @@ pipeline {
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
-        script {
+        script{
+           if(params.Network_Policy == true) {
+             CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
+	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
+	     VPC=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u)
+	     echo "VPC ID $VPC"
+	     for sg in $(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC" --output json | jq -r .SecurityGroups[].GroupId); 
+	     do
+    	         echo "Adding rule to SG $sg"
+    	         aws ec2 authorize-security-group-ingress --group-id $sg --protocol tcp --port 10000-20000 --cidr 0.0.0.0/0
+    	         aws ec2 authorize-security-group-ingress --group-id $sg --protocol udp --port 10000-20000 --cidr 0.0.0.0/0
+	     done
+                propagate: false
+           }
+      }
+	script {
           withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
             file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
             RETURNSTATUS = sh(returnStatus: true, script: '''
