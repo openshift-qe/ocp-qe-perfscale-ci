@@ -194,7 +194,10 @@ pipeline {
           buildinfo.params.each { env.setProperty(it.key, it.value) }
         }
         script{
-           if(params.Network_Policy == true) {
+           withCredentials([
+                            file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'AWS_SECRET_FILE')
+                        ])
+	   if(params.Network_Policy == true) {
              sh(returnStatus: true, script: '''
 	     mkdir -p ~/.kube
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
@@ -207,7 +210,7 @@ pipeline {
 	     else
   	       echo "Did not find compatible cloud provider cluster_profile"
   	       exit 1
-	     fi
+	   fi
 	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
 	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
 	     VPC=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u)
