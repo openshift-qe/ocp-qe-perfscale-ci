@@ -203,15 +203,15 @@ pipeline {
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
 	     CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
-	     AWSCRED_KEY_ID=`cat \$AWS_SECRET_FILE | grep aws_access_key_id | awk '{print \$NF}'`
-             AWSCRED_ACCESS_KEY=`cat \$AWS_SECRET_FILE | grep aws_secret_access_key | awk '{print \$NF}'`
-             AWSCRED=".awscred"
-             echo "">$AWSCRED
-             echo "[default]" >> $AWSCRED
-             echo $AWSCRED_KEY_ID >> $AWSCRED
-             echo $AWSCRED_ACCESS_KEY >> $AWSCRED
-	   if [[ -f "${AWSCRED}" ]]; then
-  	       export AWS_SHARED_CREDENTIALS_FILE="${AWSCRED}"
+	     #AWSCRED_KEY_ID=`cat \$AWS_SECRET_FILE | grep aws_access_key_id | awk '{print \$NF}'`
+             #AWSCRED_ACCESS_KEY=`cat \$AWS_SECRET_FILE | grep aws_secret_access_key | awk '{print \$NF}'`
+             #AWSCRED=".awscred"
+             #echo "">$AWSCRED
+             #echo "[default]" >> $AWSCRED
+             #echo $AWSCRED_KEY_ID >> $AWSCRED
+             #echo $AWSCRED_ACCESS_KEY >> $AWSCRED
+	   if [[ -f "${AWS_SECRET_FILE}" ]]; then
+  	       export AWS_SHARED_CREDENTIALS_FILE="${AWS_SECRET_FILE}"
   	       export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
 	     else
   	       echo "Did not find compatible cloud provider cluster_profile"
