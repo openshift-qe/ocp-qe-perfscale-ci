@@ -196,7 +196,7 @@ pipeline {
         script{
            withCredentials([
                             file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'AWS_SECRET_FILE')
-                        ])
+                        ]){
 	   if(params.Network_Policy == true) {
              sh(returnStatus: true, script: '''
 	     mkdir -p ~/.kube
@@ -223,7 +223,8 @@ pipeline {
 	     done
                 propagate: false
           ''')
-           }
+              }
+	   }
       }
 	script {
           withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
