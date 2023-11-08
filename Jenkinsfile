@@ -203,7 +203,8 @@ pipeline {
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
 	     CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
-	     AWSCRED= sh(script: "cat \$AWS_SECRET_FILE")
+	     #AWSCRED= sh(script: "cat \$AWS_SECRET_FILE")
+	     AWSCRED= sh("cat \$AWS_SECRET_FILE")
 	     if [[ -f "${AWSCRED}" ]]; then
   	       export AWS_SHARED_CREDENTIALS_FILE="${AWSCRED}"
   	       export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
