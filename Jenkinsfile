@@ -202,7 +202,7 @@ pipeline {
 	     mkdir -p ~/.kube
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
-	     CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+	     export CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
 	     #AWSCRED_KEY_ID=`cat \$AWS_SECRET_FILE | grep aws_access_key_id | awk '{print \$NF}'`
              #AWSCRED_ACCESS_KEY=`cat \$AWS_SECRET_FILE | grep aws_secret_access_key | awk '{print \$NF}'`
              #AWSCRED=".awscred"
@@ -219,6 +219,10 @@ pipeline {
 	   fi
 	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
 	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
+	     python3.9 -m pip install virtualenv
+             python3.9 -m virtualenv venv3
+             source venv3/bin/activate
+             python --version
 	     VPC=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u)
 	     echo "VPC ID $VPC"
 	     for sg in $(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC" --output json | jq -r .SecurityGroups[].GroupId); 
@@ -227,7 +231,6 @@ pipeline {
     	         aws ec2 authorize-security-group-ingress --group-id $sg --protocol tcp --port 10000-20000 --cidr 0.0.0.0/0
     	         aws ec2 authorize-security-group-ingress --group-id $sg --protocol udp --port 10000-20000 --cidr 0.0.0.0/0
 	     done
-                propagate: false
           ''')
               }
 	   }
