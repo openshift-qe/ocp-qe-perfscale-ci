@@ -200,6 +200,14 @@ pipeline {
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
 	     CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+	     AWSCRED= sh(script: "cat \$AWS_SECRET_FILE)"
+	     if [[ -f "${AWSCRED}" ]]; then
+  	       export AWS_SHARED_CREDENTIALS_FILE="${AWSCRED}"
+  	       export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
+	     else
+  	       echo "Did not find compatible cloud provider cluster_profile"
+  	       exit 1
+	     fi
 	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
 	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
 	     VPC=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u)
