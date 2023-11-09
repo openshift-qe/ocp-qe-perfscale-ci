@@ -59,7 +59,8 @@ echo "force $enable_force"
 echo "scale $scale"
 echo "target version $taget_build_arr"
 echo "eus $eus"
-
+#wait 120s for all pod get ready
+sleep 120
 capture_failed_pods_before_upgrade
 python3 -c "import check_upgrade; check_upgrade.set_max_unavailable($maxUnavail)"
 echo ARCH_TYPE is $ARCH_TYPE
@@ -155,8 +156,10 @@ do
   SECONDS=0
   CONSOLE_LAST_LINE="$($upgrade_line)"
   echo $CONSOLE_LAST_LINE
+  export UPGRADE_WAIT_NUM=${UPGRADE_WAIT_NUM:-300}
   export PYTHONUNBUFFERED=1
-  python3 -c "import check_upgrade; check_upgrade.check_upgrade('$target_version_prefix')"
+  echo "Specify UPGRADE_WAIT_NUM is $UPGRADE_WAIT_NUM"
+  python3 -c "import check_upgrade; check_upgrade.check_upgrade('$target_version_prefix',wait_num=$UPGRADE_WAIT_NUM)"
   duration=$SECONDS
   echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
   sleep 30
@@ -181,5 +184,7 @@ if [ "X$scale" == "Xtrue" ]; then
   oc scale --replicas=$machine_replicas -n openshift-machine-api $machine_name
   python3 -c "import check_upgrade; check_upgrade.wait_for_replicas('$machine_replicas','$machine_name')"
 fi
+#wait 120s for all pod get ready
+sleep 120
 capture_failed_pods_after_upgrade
 exit 0 #upgrade succ and post-check succ
