@@ -120,12 +120,10 @@ spec:
     kafkaConsumerReplicas: 3
     logLevel: info
     metrics:
-      ignoreTags:
-      - egress
-      - nodes-flows
-      - namespaces-flows
-      - workloads-flows
-      - namespaces
+      includeList:
+        - node_ingress_bytes_total
+        - workload_ingress_bytes_total
+        - namespace_flows_total
       server:
         port: 9102
         tls:
