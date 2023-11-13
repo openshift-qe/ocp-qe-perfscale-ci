@@ -203,6 +203,15 @@ pipeline {
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
 	     export CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+	     mkdir -p ~/.aws
+       	     cp -f $OCP_AWS ~/.aws/credentials
+             echo "[profile default]
+             region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
+             output = text" > ~/.aws/config
+             AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
+             AWS_SECRET_ACCESS_KEY="$(aws configure get aws_secret_access_key)"
+             AWS_DEFAULT_REGION="$(aws configure get region)"
+             ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com" ` 
 	     #AWSCRED_KEY_ID=`cat \$AWS_SECRET_FILE | grep aws_access_key_id | awk '{print \$NF}'`
              #AWSCRED_ACCESS_KEY=`cat \$AWS_SECRET_FILE | grep aws_secret_access_key | awk '{print \$NF}'`
              #AWSCRED=".awscred"
@@ -210,7 +219,7 @@ pipeline {
              #echo "[default]" >> $AWSCRED
              #echo $AWSCRED_KEY_ID >> $AWSCRED
              #echo $AWSCRED_ACCESS_KEY >> $AWSCRED
-	   if [[ -f "${AWS_SECRET_FILE}" ]]; then
+	   if [[ -f "${AWS_SECRET_ACCESS_KEY}" ]]; then
   	       export AWS_SHARED_CREDENTIALS_FILE="${AWS_SECRET_FILE}"
   	       export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
 	     else
