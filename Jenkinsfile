@@ -198,9 +198,9 @@ pipeline {
                             file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')
                         ]){
 	   if(params.Network_Policy == true) {
-             AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
-             AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
 	     sh(returnStatus: true, script: '''
+	     AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+             AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
 	     mkdir -p ~/.kube
              cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
              export KUBECONFIG=~/.kube/config
