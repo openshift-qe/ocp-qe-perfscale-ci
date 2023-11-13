@@ -195,7 +195,7 @@ pipeline {
         }
         script{
            withCredentials([
-                            file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'AWS_SECRET_FILE')
+                            file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')
                         ]){
 	   if(params.Network_Policy == true) {
              sh(returnStatus: true, script: '''
