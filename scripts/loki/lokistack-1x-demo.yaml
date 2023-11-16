@@ -10,8 +10,8 @@ spec:
         ingestionBurstSize: 100
         ingestionRate: 500
         maxGlobalStreamsPerTenant: 100000
-        perStreamRateLimit: 9
-        perStreamRateLimitBurst: 45
+        perStreamRateLimit: 6
+        perStreamRateLimitBurst: 30
   tenants:
     mode: openshift-network
   managementState: Managed
@@ -22,5 +22,5 @@ spec:
     secret:
       name: s3-secret
       type: s3
-  size: 1x.medium
+  size: 1x.demo
   storageClassName: ${DEFAULT_SC}

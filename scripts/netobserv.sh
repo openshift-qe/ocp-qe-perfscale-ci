@@ -51,7 +51,7 @@ deploy_netobserv() {
   done
 
   echo "====> Creating Flow Collector"
-  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta1_flowcollector.yaml
+  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
 
   echo "====> Waiting for flowlogs-pipeline pods to be ready"
   while :; do
@@ -77,28 +77,28 @@ deploy_lokistack() {
     deploy_unreleased_catalogsource
     oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
   else
-    echo "====> No Loki Operator config was found - using Released"
+    echo "====> No Loki Operator config was found - using 'Released'"
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
     oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   fi
 
-  echo "====> Generate S3_BUCKETNAME"
+  echo "====> Generate S3_BUCKET_NAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
-    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$RAND_SUFFIX"
+    export S3_BUCKET_NAME="netobserv-ocpqe-$USER-$RAND_SUFFIX"
   else
-    export S3_BUCKETNAME="netobserv-ocpqe-$USER-$WORKLOAD-$RAND_SUFFIX"
+    export S3_BUCKET_NAME="netobserv-ocpqe-$USER-$WORKLOAD-$RAND_SUFFIX"
   fi
 
   # if cluster is to be preserved, do the same for S3 bucket
   CLUSTER_NAME=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}')
   if [[ $CLUSTER_NAME =~ "preserve" ]]; then
-    S3_BUCKETNAME+="-preserve"
+    S3_BUCKET_NAME+="-preserve"
   fi
-  echo "====> S3_BUCKETNAME is $S3_BUCKETNAME"
+  echo "====> S3_BUCKET_NAME is $S3_BUCKET_NAME"
 
   echo "====> Creating S3 secret for Loki"
-  $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKETNAME
+  $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKET_NAME
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
@@ -110,7 +110,7 @@ deploy_lokistack() {
   elif [[ $LOKISTACK_SIZE == "1x.medium" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-medium.yaml
   else
-    echo "====> No LokiStack config was found - using 1x.extra-small"
+    echo "====> No LokiStack config was found - using '1x.extra-small'"
     echo "====> To set config, set LOKISTACK_SIZE variable to either '1x.extra-small', '1x.small', or '1x.medium'"
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   fi
@@ -131,12 +131,12 @@ deploy_unreleased_catalogsource() {
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
   echo "====> Determining CatalogSource config"
-  if [[ -z $IMAGE ]]; then
+  if [[ -z $DOWNSTREAM_IMAGE ]]; then
     echo "====> No image config was found - cannot create CatalogSource"
-    echo "====> To set config, set IMAGE variable to desired endpoint"
+    echo "====> To set config, set DOWNSTREAM_IMAGE variable to desired endpoint"
     exit 1
   else
-    echo "====> Using image $IMAGE for CatalogSource"
+    echo "====> Using image $DOWNSTREAM_IMAGE for CatalogSource"
   fi
 
   CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
@@ -150,17 +150,23 @@ deploy_unreleased_catalogsource() {
 }
 
 deploy_main_catalogsource() {
+  echo "====> Determining CatalogSource config"
+  if [[ -z $UPSTREAM_IMAGE ]]; then
+    echo "====> No image config was found - using main"
+    echo "====> To set config, set UPSTREAM_IMAGE variable to desired endpoint"
+    export UPSTREAM_IMAGE="quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
+  else
+    echo "====> Using image $UPSTREAM_IMAGE for CatalogSource"
+  fi
+
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
+  envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
+
   echo "====> Creating netobserv-main-testing CatalogSource from the main bundle"
-  oc apply -f $SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  oc apply -f $TMP_CATALOGCONFIG
   sleep 30
   oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
-}
-
-deploy_loki() {
-  echo "====> Deploying Loki"
-  oc apply -f $SCRIPTS_DIR/loki/loki-storage-1.yaml
-  oc apply -f $SCRIPTS_DIR/loki/loki-storage-2.yaml
-  oc wait --timeout=120s --for=condition=ready pod -l app=loki -n netobserv
 }
 
 deploy_kafka() {
@@ -193,7 +199,7 @@ deploy_kafka() {
 
   echo "====> Update flowcollector replicas"
   if [[ -z $FLP_KAFKA_REPLICAS ]]; then
-    echo "====> No flowcollector replicas config was found - using 3"
+    echo "====> No flowcollector replicas config was found - using '3'"
     echo "====> To set config, set FLP_KAFKA_REPLICAS variable to desired number"
     FLP_KAFKA_REPLICAS=3
   fi
@@ -202,25 +208,31 @@ deploy_kafka() {
   echo "====> Update ClusterRoleBinding ServiceAccount from flowlogs-pipeline to flowlogs-pipeline-transformer"
   oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD-kafka.yaml
 
+  echo "====> Waiting for Flow Collector to reload with new FLP pods..."
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
 
 populate_netobserv_metrics() {
   echo "====> Creating cluster-monitoring-config ConfigMap"
   oc apply -f $SCRIPTS_DIR/cluster-monitoring-config.yaml
+  echo "====> Getting Deployment Model from Flow Collector"
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
-  if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-    echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
-    oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
+  if [[ -z $DEPLOYMENT_MODEL ]]; then
+    echo "====> Could not get Deployment Model"
   else
-    echo "====> Creating flowlogs-pipeline Service and ServiceMonitor"
-    oc apply -f $SCRIPTS_DIR/service-monitor.yaml
+    if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
+      echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
+      oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
+    else
+      echo "====> Creating flowlogs-pipeline Service and ServiceMonitor"
+      oc apply -f $SCRIPTS_DIR/service-monitor.yaml
+    fi
   fi
 }
 
 setup_dittybopper_template() {
   echo "====> Checking NetObserv installation..."
-  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[-2].value}' -A)
+  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[3].value}' -A)
   if [[ $IS_DOWNSTREAM == "true" ]]; then
     echo "===> Downstream installation was detected - no custom Dittybopper template is needed"
   else
@@ -237,13 +249,17 @@ setup_dittybopper_template() {
 delete_s3() {
   echo "====> Getting S3 Bucket Name"
   S3_BUCKET_NAME=$(/bin/bash -c 'oc extract cm/lokistack-config -n netobserv --keys=config.yaml --confirm --to=/tmp | xargs -I {} egrep bucketnames {} | cut -d: -f 2 | xargs echo -n')
-  echo "====> Got $S3_BUCKET_NAME"
-  echo "====> Deleting AWS S3 Bucket"
-  while :; do
-    aws s3 rb s3://$S3_BUCKET_NAME --force && break
-    sleep 1
-  done
-  echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
+  if [[ -z $S3_BUCKET_NAME ]]; then
+    echo "====> Could not get S3 Bucket Name"
+  else
+    echo "====> Got $S3_BUCKET_NAME"
+    echo "====> Deleting AWS S3 Bucket"
+    while :; do
+      aws s3 rb s3://$S3_BUCKET_NAME --force && break
+      sleep 1
+    done
+    echo "====> AWS S3 Bucket $S3_BUCKET_NAME deleted"
+  fi
 }
 
 delete_lokistack() {
@@ -257,10 +273,10 @@ delete_kafka() {
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
   if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
-    oc delete kafka/kafka-cluster -n netobserv
-    oc delete kafkaTopic/network-flows -n netobserv
+    oc delete --ignore-not-found kafka/kafka-cluster -n netobserv
+    oc delete --ignore-not-found kafkaTopic/network-flows -n netobserv
     oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
-    oc delete csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
+    oc delete --ignore-not-found csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
   fi
 }
 
@@ -270,16 +286,15 @@ delete_flowcollector() {
   oc delete --ignore-not-found flowcollector/cluster
 }
 
-delete_netobserv() {
+delete_netobserv_operator() {
   echo "====> Deleting all NetObserv resources"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-official-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-internal-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-operatorhub-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-source-subscription.yaml
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
-  oc delete crd/flowcollectors.flows.netobserv.io
+  oc delete --ignore-not-found crd/flowcollectors.flows.netobserv.io
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
-  oc delete project netobserv
   echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
   oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
   oc delete --ignore-not-found catalogsource/qe-unreleased-testing -n openshift-marketplace
@@ -289,7 +304,7 @@ delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
   oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
-  oc delete csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
+  oc delete --ignore-not-found csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 
 nukeobserv() {
@@ -298,6 +313,8 @@ nukeobserv() {
   delete_lokistack
   delete_kafka
   delete_flowcollector
-  delete_netobserv
+  delete_netobserv_operator
   delete_loki_operator
+  # seperate step as multiple different operators use this namespace
+  oc delete project netobserv
 }

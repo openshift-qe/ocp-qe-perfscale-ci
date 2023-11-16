@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-LOKI_BUCKET_NAME=${1:-netobserv-loki-ocpqe-perf}
+LOKI_BUCKET_NAME=${1:-netobserv-ocpqe-default}
 NAMESPACE="netobserv"
 SECRETNAME="s3-secret"
 AWS_DEFAULT_REGION="us-east-2"

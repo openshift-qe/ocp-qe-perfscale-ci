@@ -2,9 +2,9 @@
 The purpose of the scripts in this directory is to measure [netobserv](https://github.com/netobserv/network-observability-operator) metrics performance.
 
 Multiple workloads are run to generate traffic for the cluster:
-1. node-density-heavy
-2. router-perf
-3. cluster-density
+1. [node-density-heavy](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56616)
+2. [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618)
+3. [cluster-density-v2](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56617)
 
 ## Prerequisites
 1. Create an OCP4 cluster
@@ -17,7 +17,8 @@ kube:admin
 4. If you're doing an installation, make sure you set the following env variables
 ```bash
 $ export INSTALLATION_SOURCE # Should be 'Official', 'Internal', 'OperatorHub' or 'Source'
-$ export IMAGE               # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
+$ export UPSTREAM_IMAGE      # only needed if deploying 'Source' and testing a premerge image
+$ export DOWNSTREAM_IMAGE    # only needed if deploying 'Internal' NetObserv Operator OR 'Unreleased' Loki Operator
 $ export MAJOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export MINOR_VERSION       # only needed if deploying 'Internal' and using aosqe-index image
 $ export LOKI_OPERATOR       # will use 'Released' if not set otherwise
@@ -29,16 +30,16 @@ It is recommended to use Loki Operator to create a LokiStack for Network Observa
 
 To create LokiStack manually, the following steps can be performed:
 1. Create a Loki Operator subscription with `$ oc apply -f loki/loki-<version>-subscription.yaml` to install Loki Operator. Loki Operator controller pod should be running in `openshift-operators-redhat` namespace.
-2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-loki-ocpqe-perf` S3 bucket.
+2. Create an AWS secret for S3 bucket to be used for LokiStack using the `$ ./deploy-loki-aws-secret.sh` script. By default, it is setup to use `netobserv-ocpqe-default` S3 bucket.
 3. Multiple sizes of LokiStack are supported and configs are added here. Depending upon the LokiStack size, high-end machine types might be required for the cluster:
     * lokistack-1x-exsmall.yaml - Extra-small t-shirt size LokiStack.
         - Requirements: Can be run on `t2.micro` machines.
         - Use case: For demos, development and feature testing. Should NOT be used for testing.
     * lokistack-1x-small.yaml - Small t-shirt size LokiStack
-        - Requirements: `m5.4xlarge` machines.
+        - Requirements: `m6i.4xlarge` machines.
         - Use case: Standard performance/scale testing.
     * lokistack-1x-medium.yaml - Medium t-shirt size LokiStack
-        - Requirements: `m5.8xlarge` machines.
+        - Requirements: `m6i.8xlarge` machines.
         - Use case: Large-scale performance/scale testing.
     Depending upon your cluster size and use case, run `$ oc apply -f <lokistack yaml manifest>`
 4. LokiStack should be created under `netobserv` namespace
@@ -50,13 +51,15 @@ There are four sources from which you can install the operator which are detaile
 The latest officially-released version of the downstream operator. It is hosted on the [Red Hat Catalog](https://catalog.redhat.com/software/containers/network-observability/network-observability-operator-bundle) and is the productized version of the operator available to Red Hat customers.
 
 #### Internal
-Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$IMAGE` env variable mentioned in the 'Prerequisites' section).
+Continuous internal bundles are created via the CPaaS system and hosted internally on [Brew](https://brewweb.engineering.redhat.com/brew/search?terms=network-observability.*&type=build&match=regexp) - these internal bundles can be added to an index image such as the `aosqe-index` image built by the [index-build](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/index-build/) Jenkins jobs or used directly via hardcoding the IIB identifier in a CatalogSource as the image source (this is the value of the `$DOWNSTREAM_IMAGE` env variable mentioned in the 'Prerequisites' section).
 
 #### OperatorHub
 The latest officially-released version of the upstream operator. It is hosted on [OperatorHub](https://operatorhub.io/operator/netobserv-operator) and is the community version of the operator available to all.
 
 #### Source
-GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `vmain` tag is used to track the Github `main` branch.
+GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `main` tag is used to track the Github `main` branch.
+
+If you want to install a premerge image that is present on quay.io instead of the `main` image, you can do so by setting the `$UPSTREAM_IMAGE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note this only works for premerge testing of the Operator image, not component images such as eBPF or FLP.
 
 ### Setting up FLP service and creating service-monitor
 Note this is only nessessary if you're running an upstream version of the operator.
@@ -64,7 +67,9 @@ Note this is only nessessary if you're running an upstream version of the operat
 Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
 
 ### Updating common parameters of flowcollector
-You can update common parameters of flowcollector with the following commands:
+Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta2_flowcollector.yaml`
+
+You can update common parameters of flowcollector individually with the following commands:
 - **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
 - **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
@@ -103,15 +108,9 @@ MAX_WAIT_TIMEOUT=10m
 ```
 
 ## Network Observability Prometheus and Elasticsearch tool (NOPE)
-The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for sharing.
+The Network Observability Prometheus and Elasticsearch tool, or NOPE, is a Python program that is used for collecting and sharing performance data for a given OpenShift cluster running the Network Observability Operator, using Prometheus range queries for collection and Elasticsearch servers for storage. It also has run modes for uploading local JSON files to Elasticsearch as well as setting and fetching baselines for given workloads.
 
-Queries are sourced from the `netobserv_prometheus_queries.yaml` file within the `scripts/queries/` directory by default - check out that file to see what data the NOPE tool is collecting. Note this can be overriden with the `--yaml-file` flag to run other queries from within other files.
-
-Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information. You can also tie a run to a Jira ticket if applicable using the `--jira` flag. 
-
-If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
-
-### Running the NOPE tool
+### Prerequisties
 1. Ensure you have Python 3.9+ and Pip installed (verify with `python --version` and `pip --version`)
 2. Install requirements with `pip install -r scripts/requirements.txt`
 3. If you wish to upload to Elasticsearch, set the following environmental variables:
@@ -123,10 +122,18 @@ $ export ES_PASSWORD=<elasticsearch password>
 
 To see all command line options available for the NOPE tool, you can run it with the `--help` argument.
 
-Note that if you are running the NOPE tool in Upload mode by passing the `--upload-file` flag all other flags will be ignored. You do not need to be connected to an OpenShift cluster if you are running in Upload mode.
+### Standard Mode
+Prometheus queries are sourced from the `netobserv_prometheus_queries.yaml` file within the `scripts/queries/` directory by default - check out that file to see what data the NOPE tool is collecting. Note this can be overriden with the `--yaml-file` flag to run other queries from within other files.
 
-### Mr. Sandman
-Sometimes, the only way to get data such as UUID and workload timestamp information is directly from the workload job runs. If you find yourself in need of this but don't want to manually pour through logs, you can let Mr. Sandman give it a shot by running `./scripts/sandman.py --file <path/to/out/file>`
+Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information. You can also tie a run to a Jira ticket if applicable using the `--jira` flag. 
+
+If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
+
+### Upload Mode
+Data that has been dumped to a JSON file, either due to an issue with Elasticsearch of done explicitly, can be uploaded to Elasticsearch later using the NOPE tool's Upload mode. Note that the specified JSON file must be in the `data/` directory. Also, you do not need to be connected to an OpenShift cluster if you are running in Upload mode.
+
+### Baseline Mode
+The NOPE tool can also be used for fetching and uploading baselines on a workload-by-workload basis by running it in Baseline mode. Fetching is based on workloads and ISO timestamps - for a given workload, the NOPE tool will fetch the latest baseline present on the specified Elasticsearch server and dump the UUID of that baseline to a `baseline.json` file in the `data/` directory. Uploading is based on UUID - the NOPE tool will gather data about the test run on the specified UUID and create a new baseline document in Elasticsearch. Note you do not need to be connected to an OpenShift cluster if you are running in Baseline mode.
 
 ## Fetching metrics using Touchstone 
 NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_statistics_config.json` file in the `queries/` directory under `scripts/`

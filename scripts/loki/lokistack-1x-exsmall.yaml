@@ -10,6 +10,8 @@ spec:
         ingestionBurstSize: 100
         ingestionRate: 500
         maxGlobalStreamsPerTenant: 100000
+        perStreamRateLimit: 9
+        perStreamRateLimitBurst: 45
   tenants:
     mode: openshift-network
   managementState: Managed
