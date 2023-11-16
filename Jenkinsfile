@@ -132,8 +132,35 @@ pipeline {
             name: 'OPERATOR_PREMERGE_OVERRIDE',
             defaultValue: '',
             description: '''
-                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rathar than using the main branch<br/>
-                These SHA hashes can be found in PRs after adding the label '/ok-to-test'<br/>
+                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rather than using the main branch<br/>
+                These SHA hashes can be found in PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'FLP_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific FLP premerge image to use rather than using the operator defined image<br/>
+                These SHA hashes can be found in FLP PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'EBPF_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific eBPF premerge image to use rather than using the operator defined image<br/>
+                These SHA hashes can be found in eBPF PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'PLUGIN_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific ConsolePlugin premerge image rather than using the operator defined image<br/>
+                These SHA hashes can be found in ConsolePlugin PR's after adding the label '/ok-to-test'<br/>
                 e.g. <b>e2bdef6</b>
             '''
         )
@@ -518,9 +545,39 @@ pipeline {
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
                     """)
+                    if (params.EBPF_PREMERGE_OVERRIDE != '') {
+                        env.EBPF_PREMERGE_IMAGE = "quay.io/netobserv/netobserv-ebpf-agent:${EBPF_PREMERGE_OVERRIDE}"
+                        netobservEBPFPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "ebpf" $EBPF_PREMERGE_IMAGE
+                        """)
+                    }
+                    if (params.FLP_PREMERGE_OVERRIDE != '') {
+                        env.FLP_PREMERGE_IMAGE = "quay.io/netobserv/flowlogs-pipeline:${FLP_PREMERGE_OVERRIDE}"
+                        netobservFLPPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "flp" $FLP_PREMERGE_IMAGE
+                        """)
+                    }
+                    if (params.PLUGIN_PREMERGE_OVERRIDE != '') {
+                        env.PLUGIN_PREMERGE_IMAGE = "quay.io/netobserv/network-observability-console-plugin:${PLUGIN_PREMERGE_OVERRIDE}"
+                        netobservPluginPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "plugin" $PLUGIN_PREMERGE_IMAGE
+                        """) 
+                    }
                     // fail pipeline if installation failed
                     if (netobservReturnCode.toInteger() != 0) {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
+                    }
+                    if (netobservEBPFPatchReturnCode.toInteger() != 0) {
+                        error("Network Observability eBPF image patch ${params.EBPF_PREMERGE_OVERRIDE} failed :(")
+                    }
+                    if (netobservFLPPatchReturnCode.toInteger() != 0) {
+                        error("Network Observability FLP image patch ${params.FLP_PREMERGE_OVERRIDE} failed :(")
+                    }
+                    if (netobservPluginPatchReturnCode.toInteger() != 0) {
+                        error("Network Observability Plugin image patch ${params.PLUGIN_PREMERGE_OVERRIDE} failed :(")
                     }
                     // otherwise continue and display controller, FLP, and eBPF pods running in cluster
                     else {
