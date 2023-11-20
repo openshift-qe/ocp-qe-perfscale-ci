@@ -59,7 +59,9 @@ The latest officially-released version of the upstream operator. It is hosted on
 #### Source
 GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `main` tag is used to track the Github `main` branch.
 
-If you want to install a premerge image that is present on quay.io instead of the `main` image, you can do so by setting the `$UPSTREAM_IMAGE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note this only works for premerge testing of the Operator image, not component images such as eBPF or FLP.
+#### Pre-merge images
+If you want to install a premerge operator image that is present on quay.io instead of the `main` image, you can do so by setting the `$OPERATOR_PREMERGE_OVERRIDE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note please select source installation method for using pre-merge images of operator
+If you want to install the operator with pre-merge component images instead of the operator defined images, you can do so by setting the `$EBPF_PREMERGE_OVERRIDE`, `$FLP_PREMERGE_OVERRIDE`, `$PLUGIN_PREMERGE_OVERRIDE` variables for EBPF, FLP, Plugin respectively to the SHA hash of the premerge image, e.g. `e2bdef6`
 
 ### Setting up FLP service and creating service-monitor
 Note this is only nessessary if you're running an upstream version of the operator.

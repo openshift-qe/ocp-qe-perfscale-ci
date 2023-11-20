@@ -62,6 +62,37 @@ deploy_netobserv() {
   oc wait --timeout=1200s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
 }
 
+patch_netobserv() {
+  COMPONENT=$1
+  IMAGE=$2
+  CSV=$(oc get csv -n openshift-netobserv-operator | egrep -i "net.*observ" | awk '{print $1}')
+  if [[ -z "$COMPONENT" || -z "$IMAGE" ]]; then
+    echo "Specify COMPONENT and IMAGE to be patched to existing CSV deployed"
+    exit 1
+  fi
+
+  if [[ "$COMPONENT" == "ebpf" ]]; then
+    echo "====> Patching eBPF image"
+    PATCH="[{\"op\": \"replace\", \"path\": \"/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/0/value\", \"value\": \"$IMAGE\"}]"
+  elif [[ "$COMPONENT" == "flp" ]]; then
+    echo "====> Patching FLP image"
+    PATCH="[{\"op\": \"replace\", \"path\": \"/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/1/value\", \"value\": \"$IMAGE\"}]"
+  elif [[ "$COMPONENT" == "plugin" ]]; then
+    echo "====> Patching Plugin image"
+    PATCH="[{\"op\": \"replace\", \"path\": \"/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/2/value\", \"value\": \"$IMAGE\"}]"
+  else
+    echo "Use component ebpf, flp, plugin, operator as component to patch or to have metrics populated for upstream installation to cluster prometheus"
+    exit 1
+  fi
+
+  oc patch csv/$CSV -n openshift-netobserv-operator --type='json' -p="$PATCH"
+
+  if [[ $? != 0 ]]; then
+    echo "failed to patch $COMPONENT with $IMAGE"
+    exit 1
+  fi
+}
+
 deploy_lokistack() {
   echo "====> Deploying LokiStack"
   echo "====> Creating NetObserv Project (if it does not already exist)"
