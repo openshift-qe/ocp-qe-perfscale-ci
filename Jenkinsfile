@@ -10,13 +10,17 @@ if (userId) {
 }
 
 pipeline {
+
+    // job runs on specified agent
     agent { label params.JENKINS_AGENT_LABEL }
 
+    // set timeout and enable coloring in console output
     options {
         timeout(time: 6, unit: 'HOURS')
         ansiColor('xterm')
     }
 
+    // job parameters
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
@@ -545,12 +549,20 @@ pipeline {
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                         deploy_netobserv
                     """)
+                    // fail pipeline if installation failed
+                    if (netobservReturnCode.toInteger() != 0) {
+                        error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
+                    }
+                    // patch in premerge images if specified, fail pipeline if patching fails on any component
                     if (params.EBPF_PREMERGE_OVERRIDE != '') {
                         env.EBPF_PREMERGE_IMAGE = "quay.io/netobserv/netobserv-ebpf-agent:${EBPF_PREMERGE_OVERRIDE}"
                         netobservEBPFPatchReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             patch_netobserv "ebpf" $EBPF_PREMERGE_IMAGE
                         """)
+                        if (netobservEBPFPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability eBPF image patch ${params.EBPF_PREMERGE_OVERRIDE} failed :(")
+                        }
                     }
                     if (params.FLP_PREMERGE_OVERRIDE != '') {
                         env.FLP_PREMERGE_IMAGE = "quay.io/netobserv/flowlogs-pipeline:${FLP_PREMERGE_OVERRIDE}"
@@ -558,28 +570,21 @@ pipeline {
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             patch_netobserv "flp" $FLP_PREMERGE_IMAGE
                         """)
+                        if (netobservFLPPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability FLP image patch ${params.FLP_PREMERGE_OVERRIDE} failed :(")
+                        }
                     }
                     if (params.PLUGIN_PREMERGE_OVERRIDE != '') {
                         env.PLUGIN_PREMERGE_IMAGE = "quay.io/netobserv/network-observability-console-plugin:${PLUGIN_PREMERGE_OVERRIDE}"
                         netobservPluginPatchReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             patch_netobserv "plugin" $PLUGIN_PREMERGE_IMAGE
-                        """) 
+                        """)
+                        if (netobservPluginPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability Plugin image patch ${params.PLUGIN_PREMERGE_OVERRIDE} failed :(")
+                        }
                     }
-                    // fail pipeline if installation failed
-                    if (netobservReturnCode.toInteger() != 0) {
-                        error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
-                    }
-                    if (netobservEBPFPatchReturnCode.toInteger() != 0) {
-                        error("Network Observability eBPF image patch ${params.EBPF_PREMERGE_OVERRIDE} failed :(")
-                    }
-                    if (netobservFLPPatchReturnCode.toInteger() != 0) {
-                        error("Network Observability FLP image patch ${params.FLP_PREMERGE_OVERRIDE} failed :(")
-                    }
-                    if (netobservPluginPatchReturnCode.toInteger() != 0) {
-                        error("Network Observability Plugin image patch ${params.PLUGIN_PREMERGE_OVERRIDE} failed :(")
-                    }
-                    // otherwise continue and display controller, FLP, and eBPF pods running in cluster
+                    // if installation and patching succeeds, continue and display controller, FLP, and eBPF pods running in cluster
                     else {
                         println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
                         sh(returnStatus: true, script: '''
