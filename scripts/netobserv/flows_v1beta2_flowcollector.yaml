@@ -99,7 +99,6 @@ spec:
     mode: LokiStack
     lokiStack:
       name: lokistack
-      namespace: netobserv
     batchWait: 1s
     batchSize: 10485760
     minBackoff: 1s
