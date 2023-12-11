@@ -21,7 +21,7 @@ counter=0
 for api_doc in ${API_URL_LIST}; do
   echo "api doc $api_doc"
   # export API_URL="https://raw.githubusercontent.com/paigerube14/ocp-qe-perfscale-ci/ssml/apidocs/$api_doc"
-  if [[ "$apipath" == *"/"* ]]; then
+  if [[ "$api_doc" == *"/"* ]]; then
     export API_URL="$BASE_API_URL/openapi/v3/apis/$api_doc"
   else   # e.g. 'v1'
     export API_URL="$BASE_API_URL/openapi/v3/api/$api_doc"
