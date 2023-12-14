@@ -28,6 +28,12 @@ pipeline {
   agent none
 
   parameters {
+
+        string(
+          name: "UUID", 
+          defaultValue: "", 
+          description: 'UUID of current run to do comparison on'
+        )
         string(
           name: "COMPARISON_CONFIG_PARAM",
           defaultValue: "podLatency.json nodeMasters.json nodeWorkers.json etcd.json crio.json kubelet.json",
@@ -71,16 +77,6 @@ pipeline {
         )
         string(
           name: 'E2E_BENCHMARKING_REPO_BRANCH', 
-          defaultValue:'master', 
-          description:'You can change this to point to a branch on your fork if needed.'
-        )
-        string(
-          name: 'BENCHMARKING_COMPARISON_REPO', 
-          defaultValue:'https://github.com/paigerube14/benchmark-comparison.git', 
-          description:'You can change this to point to your fork if needed.'
-        )
-        string(
-          name: 'BENCHMARKING_COMPARISON_REPO_BRANCH', 
           defaultValue:'master', 
           description:'You can change this to point to a branch on your fork if needed.'
         )
@@ -154,7 +150,6 @@ pipeline {
                     python3.9 --version
                     python3.9 -m pip install virtualenv
                     python3.9 -m virtualenv venv3
-                    pip install -r requirements.txt
                     source venv3/bin/activate
                     python --version
                     env
