@@ -122,19 +122,6 @@ pipeline {
             ],
             userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]]
         ])
-        checkout([
-            $class: 'GitSCM',
-            branches: [[name: params.BENCHMARKING_COMPARISON_REPO_BRANCH ]],
-            doGenerateSubmoduleConfigurations: false,
-            extensions: [
-                [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
-                [$class: 'PruneStaleBranch'],
-                [$class: 'CleanCheckout'],
-                [$class: 'IgnoreNotifyCommit'],
-                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'comparison']
-            ],
-            userRemoteConfigs: [[url: params.BENCHMARKING_COMPARISON_REPO ]]
-        ])
         
         script{
             withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
