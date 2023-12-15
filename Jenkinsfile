@@ -35,6 +35,11 @@ pipeline {
           description: 'UUID of current run to do comparison on'
         )
         string(
+          name: "BASELINE_UUID", 
+          defaultValue: "", 
+          description: 'Set a baseline uuid to use for comparison, if blank will find baseline uuid for profile, workload and worker node count to then compare'
+        )
+        string(
           name: "COMPARISON_CONFIG_PARAM",
           defaultValue: "podLatency.json nodeMasters.json nodeWorkers.json etcd.json crio.json kubelet.json",
           description: '''JSON config files of what data to output into a Google Sheet<br/>
@@ -140,6 +145,9 @@ pipeline {
                     source venv3/bin/activate
                     python --version
                     env
+                    if [[ ( -z "$BASELINE_UUID" ) && ( -n $TOLERANCY_RULES_PARAM ) ]]; then
+                      export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
+                    fi
                     cd e2e-benchmarking/utils/compare/
                     pip install -r requirements.txt
                     python3.9 read_files.py
