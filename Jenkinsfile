@@ -135,6 +135,9 @@ pipeline {
                     cd e2e-benchmarking/utils/compare/
                     pip install -r requirements.txt
                     python3.9 read_files.py
+                    folder_name=$(ls -t -d /tmp/*/ | head -1)
+                    file_loc=$folder_name"*"
+                    cp $file_loc .
 
                 ''')
 
@@ -142,9 +145,9 @@ pipeline {
                     currentBuild.result = "FAILURE"
                 }
                 archiveArtifacts(
-                    artifacts: 'e2e-benchmarking/utils/results/*',
-                    allowEmptyArchive: true,
-                    fingerprint: true
+                        artifacts: 'e2e-benchmarking/utils/compare/comparison.csv',
+                        allowEmptyArchive: true,
+                        fingerprint: true
                 )
           }
         }
