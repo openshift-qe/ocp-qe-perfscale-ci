@@ -39,22 +39,6 @@ pipeline {
           defaultValue: "", 
           description: 'Set a baseline uuid to use for comparison, if blank will find baseline uuid for profile, workload and worker node count to then compare'
         )
-        string(
-          name: "COMPARISON_CONFIG_PARAM",
-          defaultValue: "podLatency.json nodeMasters.json nodeWorkers.json etcd.json crio.json kubelet.json",
-          description: '''JSON config files of what data to output into a Google Sheet<br/>
-          For kube-burner-ocp workloads use "podLatency.json nodeMasters-ocp.json nodeAggWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json"<br/>
-          For k8s-netperf use "k8s-touchstone.json"<br/>
-          For ingress-perf use "ingress.json"'''
-        )
-        string(
-          name: "TOLERANCY_RULES_PARAM",
-          defaultValue: "pod-latency-tolerancy-rules.yaml master-tolerancy.yaml worker-tolerancy.yaml etcd-tolerancy.yaml crio-tolerancy.yaml kubelet-tolerancy.yaml",
-          description: '''JSON config files of what data to output into a Google Sheet<br/>
-          For kube-burner-ocp workloads use: "pod-latency-tolerancy-rules.yaml master-tolerancy-ocp.yaml worker-agg-tolerancy-ocp.yaml etcd-tolerancy-ocp.yaml crio-tolerancy-ocp.yaml kubelet-tolerancy-ocp.yaml"<br/>
-          For k8s-netperf use "k8s-tolerancy.yaml"<br/>
-          For ingress-perf use "ingress-tolerancy.yaml"'''
-        )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
@@ -145,7 +129,7 @@ pipeline {
                     source venv3/bin/activate
                     python --version
                     env
-                    if [[ ( -z "$BASELINE_UUID" ) && ( -n $TOLERANCY_RULES_PARAM ) ]]; then
+                    if [[ ( -z "$BASELINE_UUID" ) ]]; then
                       export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
                     fi
                     cd e2e-benchmarking/utils/compare/
