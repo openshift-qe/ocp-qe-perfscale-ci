@@ -129,9 +129,7 @@ pipeline {
                     source venv3/bin/activate
                     python --version
                     env
-                    if [[ ( -z "$BASELINE_UUID" ) ]]; then
-                      export BASELINE_UUID=$(python find_baseline_uuid.py --workload $WORKLOAD)
-                    fi
+
                     cd e2e-benchmarking/utils/compare/
                     pip install -r requirements.txt
                     python3.9 read_files.py
