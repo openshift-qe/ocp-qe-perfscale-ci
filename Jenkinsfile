@@ -61,12 +61,12 @@ pipeline {
         )
         string(
           name: 'E2E_BENCHMARKING_REPO', 
-          defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', 
+          defaultValue:'https://github.com/paigerube14/e2e-benchmarking', 
           description:'You can change this to point to your fork if needed.'
         )
         string(
           name: 'E2E_BENCHMARKING_REPO_BRANCH', 
-          defaultValue:'master', 
+          defaultValue:'new_compare', 
           description:'You can change this to point to a branch on your fork if needed.'
         )
     }
