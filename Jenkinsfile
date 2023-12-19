@@ -61,12 +61,12 @@ pipeline {
         )
         string(
           name: 'E2E_BENCHMARKING_REPO', 
-          defaultValue:'https://github.com/cloud-bulldozer/e2e-benchmarking', 
+          defaultValue:'https://github.com/paigerube14/e2e-benchmarking', 
           description:'You can change this to point to your fork if needed.'
         )
         string(
           name: 'E2E_BENCHMARKING_REPO_BRANCH', 
-          defaultValue:'master', 
+          defaultValue:'new_compare', 
           description:'You can change this to point to a branch on your fork if needed.'
         )
     }
@@ -122,15 +122,15 @@ pipeline {
 
                     export ES_SERVER="https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
 
-                    ls 
+                    
                     python3.9 --version
                     python3.9 -m pip install virtualenv
                     python3.9 -m virtualenv venv3
                     source venv3/bin/activate
                     python --version
                     env
-
-                    cd e2e-benchmarking/utils/compare/
+                    ls
+                    cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
                     python3.9 read_files.py
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
