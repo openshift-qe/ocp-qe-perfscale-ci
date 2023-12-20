@@ -43,7 +43,7 @@ def get_graphana():
     uuid = os.getenv("UUID")
     workload = find_workload_type( uuid)
     uuid_str = "&var-uuid=" + uuid
-    if baseline_uuid != "":
+    if baseline_uuid != "" and baseline_uuid is not None:
         for baseline in baseline_uuid.split(","):
             uuid_str += "&var-uuid=" + baseline
 
