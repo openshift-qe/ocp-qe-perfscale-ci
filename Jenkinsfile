@@ -504,9 +504,7 @@ pipeline{
                             string(name: 'CI_PROFILES_URL', value: CI_PROFILES_URL),string(name: 'CI_PROFILES_REPO_BRANCH', value: CI_PROFILES_REPO_BRANCH),
                             string(name: 'OCP_PREFIX', value: OCP_PREFIX),string(name: 'OCP_VERSION', value: OCP_VERSION),
                             string(name: 'CI_PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SCALE_SIZE', value: PROFILE_SCALE_SIZE),
-                            string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),string(name: "ARCH_TYPE", value: set_arch_type),
-                            string(name: 'NETWORK_TYPE', value: NETWORK_TYPE),string(name: 'INSTALL_TYPE', value: INSTALL_TYPE),
-                            string(name: 'MASTER_COUNT', value: MASTER_COUNT),string(name: "WORKER_COUNT", value: WORKER_COUNT)
+                            string(name: "ARCH_TYPE", value: set_arch_type)
                         ]
                         def build_num = ""
                         if (install.description?.trim()) {
