@@ -455,8 +455,7 @@ pipeline{
                         ]]
                     ]
                 script{
-                    def install_type_custom = params.INSTALL_TYPE
-                    def custom_cloud_type = params.CLOUD_TYPE
+
                     def custom_jenkins_label = JENKINS_AGENT_LABEL
                     if (params.SCALE_UP.toInteger() > 0 ) {
                         global_scale_num = params.SCALE_UP.toInteger()
@@ -491,11 +490,7 @@ pipeline{
                                 <b>Profile Size:</b> ${params.PROFILE_SCALE_SIZE} <br/>
                             """
 
-                        } else {
-                            currentBuild.description = """
-                                <b>Create Cluster: </b> ${params.INSTALL_TYPE} on ${params.CLOUD_TYPE}-${params.NETWORK_TYPE} <br/>
-                            """
-                        }
+                        } 
                         def set_arch_type = "x86_64"
                         if (params.ARCH_TYPE != "") {
                           set_arch_type = params.ARCH_TYPE
@@ -503,7 +498,6 @@ pipeline{
                         else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
                           set_arch_type = "aarch64"
                         }
-        
 
                         install = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-builder/', parameters: [
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
