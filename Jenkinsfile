@@ -128,16 +128,17 @@ pipeline {
                     source venv3/bin/activate
                     python --version
 
+                    pip install elasticsearch==7.13.4
+                    python get_graphana_link.py
+
+                    
                     cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
                     python3.9 read_files.py
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
                     file_loc=$folder_name"*"
                     cp $file_loc .
-                    cd ../../../
-                    ls
-
-                    python get_graphana_link.py
+                    
 
                 ''')
 
