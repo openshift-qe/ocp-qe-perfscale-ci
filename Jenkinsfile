@@ -28,7 +28,6 @@ pipeline {
   agent none
 
   parameters {
-
         string(
           name: "UUID", 
           defaultValue: "", 
@@ -38,6 +37,16 @@ pipeline {
           name: "BASELINE_UUID", 
           defaultValue: "", 
           description: 'Set a baseline uuid to use for comparison, if blank will find baseline uuid for profile, workload and worker node count to then compare'
+        )
+        booleanParam(
+          name: "PREVIOUS_VERSION", 
+          defaultValue: false,
+          description: "If you want to compare the current UUID's data to any <ocp-version>-1  release data"
+        )
+        string(
+          name: "TIME_RANGE", 
+          defaultValue: "2 w", 
+          description: 'Set of time to look back at to find any comparable results'
         )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
@@ -128,14 +137,18 @@ pipeline {
                     python3.9 -m virtualenv venv3
                     source venv3/bin/activate
                     python --version
-                    env
-                    ls
+
+                    pip install elasticsearch==7.13.4
+                    python get_graphana_link.py
+
+                    
                     cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
                     python3.9 read_files.py
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
                     file_loc=$folder_name"*"
                     cp $file_loc .
+                    
 
                 ''')
 
