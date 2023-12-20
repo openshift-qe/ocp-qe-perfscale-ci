@@ -103,33 +103,6 @@ pipeline{
           font-family: 'Orienta', sans-serif;
         """
       )
-      choice(
-        choices: ['','aws', 'azure', 'gcp', 'osp', 'alicloud', 'ibmcloud', 'vsphere', 'ash'], 
-        name: 'CLOUD_TYPE',
-        description: '''Cloud type (As seen on https://gitlab.cee.redhat.com/aosqe/flexy-templates/-/tree/master/functionality-testing/aos-4_9, after ""-on-") <br/>
-          Will be ignored if BUILD_NUMBER is set'''
-        )
-      choice(
-        choices: ['','ovn', 'sdn'], 
-        name: 'NETWORK_TYPE', 
-        description: 'Network type, will be ignored if BUILD_NUMBER is set'
-      )
-      choice(
-        choices: ['','ipi', 'upi', 'sno'], 
-        name: 'INSTALL_TYPE', 
-        description: '''Type of installation (set to SNO for sno cluster type),  <br/>
-          will be ignored if BUILD_NUMBER is set'''
-      )
-      string(
-        name: 'MASTER_COUNT', 
-        defaultValue: '3', 
-        description: 'Number of master nodes in your cluster to create.'
-      )
-      string(
-        name: "WORKER_COUNT", 
-        defaultValue: '3', 
-        description: 'Number of worker nodes in your cluster to create.'
-      )
         separator(name: "SCALE_UP_JOB_INFO", sectionHeader: "Scale Up Job Options", sectionHeaderStyle: """
 				font-size: 18px;
 				font-weight: bold;
@@ -150,6 +123,16 @@ pipeline{
         description:
         '''If value is set to anything greater than 0, cluster will be scaled down after the execution of the workload is complete,<br>
         if the build fails, scale down may not happen, user should review and decide if cluster is ready for scale down or re-run the job on same cluster.'''
+      )
+      string(
+        name: 'RHEL_SCALE_UP', 
+        defaultValue: '0', 
+        description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
+      )
+      string(
+        name: 'RHEL_INSTANCE_SIZE', 
+        defaultValue: 'm5.2xlarge', 
+        description: 'If value is set to anything greater than 0, cluster will be scaled up before executing the workload.'
       )
       separator(
         name: "SCALE_CI_JOB_INFO", 
@@ -606,6 +589,102 @@ pipeline{
                }
             }
         }
+
+        stage("Rhel scale up nodes") {
+          agent { label params['JENKINS_AGENT_LABEL'] }
+          when {
+                expression { build_string != "DEFAULT" && status == "PASS" && params.RHEL_SCALE_UP.toInteger() > 0 }
+            }
+          steps{
+            copyArtifacts(
+                filter: '',
+                fingerprintArtifacts: true,
+                projectName: 'ocp-common/Flexy-install',
+                selector: specific(build_string),
+                target: 'flexy-artifacts'
+            )
+            script {
+                buildinfo = readYaml file: "flexy-artifacts/BUILDINFO.yml"
+                currentBuild.displayName = "${currentBuild.displayName}-${build_string}"
+                currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${build_string}</a>"
+                buildinfo.params.each { env.setProperty(it.key, it.value) }
+            }
+            checkout changelog: false,
+                  poll: false,
+                  scm: [
+                      $class: 'GitSCM',
+                      branches: [[name: "master"]],
+                      doGenerateSubmoduleConfigurations: false,
+                      extensions: [
+                          [$class: 'CloneOption', noTags: true, reference: '', shallow: true],
+                          [$class: 'PruneStaleBranch'],
+                          [$class: 'CleanCheckout'],
+                          [$class: 'IgnoreNotifyCommit'],
+                          [$class: 'RelativeTargetDirectory', relativeTargetDir: 'scaleup']
+                      ],
+                      submoduleCfg: [],
+                      userRemoteConfigs: [[
+                          name: 'origin',
+                          refspec: "+refs/heads/master:refs/remotes/origin/master",
+                          url: "https://gitlab.cee.redhat.com/aosqe/v4-scaleup.git"
+                      ]]
+                  ]
+            script{
+              if ( params.RHEL_SCALE_UP.toInteger() > 0 ) {
+                
+                RETURNSTDOUT = sh(returnStdout: true, script: '''
+                mkdir -p ~/.kube
+                cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                oc get clusterversion -o jsonpath='{.items[*].status.desired.version}'
+                ''')
+                println("return status $RETURNSTDOUT")
+                  RETURNSTDOUT = RETURNSTDOUT.toString().split('\n')[-1]
+                  MAJOR_VERSION = RETURNSTDOUT.split("\\.")[0]
+                  MINOR_VERSION = RETURNSTDOUT.split("\\.")[1]
+                  scale_divide = params.RHEL_SCALE_UP.toInteger() / 30
+                  println("scale divide $scale_divide")
+                  for (int i=0; i < scale_divide; i ++) {
+                  
+                  if ( i % 30 > 0 ){
+                    rhel_scale_num = params.RHEL_SCALE_UP.toInteger() - ( i * 30 )
+                  }else {
+                    rhel_scale_num = 30 
+                  }
+                  version="aos-$MAJOR_VERSION"
+                  version += "_"
+                  version += "$MINOR_VERSION"
+                  scale_data = readYaml(file: "scaleup/ocp4-rhel-scaleup/$version/default_map.yaml")
+                  scale_data.aws.each { env.setProperty(it.key, it.value) }
+
+
+                  scale_config = '''
+RHEL_WORKER_PREFIX: rhel''' + i + '''\n
+cluster_domain: qe.devcluster.openshift.com
+aws:
+  profile: default
+  instance_size: m5.2xlarge
+  root_volume_size: "120"
+  ssh_user: ec2-user
+'''
+
+                        
+                    RHEL_MAJOR_OS = 8
+                    scale_config += "  RHEL_INSTANCE_SIZE: " + params.RHEL_INSTANCE_SIZE + "\n  image_8: " + env.image_8
+                    println("scale config $scale_config")
+                    install = build job: 'ocp4-rhel-scaleup', parameters: [
+                          text(name: "EXTRA_VARS", value: "${scale_config}"),string(name: 'JENKINS_AGENT_LABEL', value: "ansible-core"),
+                          string(name: 'FLEXY_BUILD_NUMBER', value: "${build_string}"),string(name: 'RHEL_WORKER_COUNT', value: rhel_scale_num.toString()),
+                          string(name: 'RHEL_MAJOR_OS', value: "8"),
+                          string(name: "SCALEUP_REPO", value: "https://gitlab.cee.redhat.com/aosqe/v4-scaleup.git"),
+                          string(name: "SCALEUP_BRANCH", value: "master")
+                      ]
+              }
+
+          }
+          }
+        }
+        }
+
         stage("Scale Up Cluster") {
            agent { label params['JENKINS_AGENT_LABEL'] }
             when {
