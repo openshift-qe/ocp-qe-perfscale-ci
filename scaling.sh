@@ -77,7 +77,9 @@ function scaleDownMachines() {
         fi
     done
 }
-current_worker_count=$(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | wc -l | xargs)
+
+#Rhel scaled nodes should not be included in the count for thiss scaling type
+current_worker_count=$(oc get nodes --no-headers -l node-role.kubernetes.io/worker -o wide | grep "CoreOS" | grep -v "NotReady\\|SchedulingDisabled" | wc -l | xargs)
 echo "current worker count $current_worker_count"
 echo "worker scale count $WORKER_COUNT"
 if [[ $current_worker_count -ne $WORKER_COUNT ]]; then
