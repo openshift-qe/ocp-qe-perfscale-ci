@@ -38,6 +38,16 @@ pipeline {
           defaultValue: "", 
           description: 'Set a baseline uuid to use for comparison, if blank will find baseline uuid for profile, workload and worker node count to then compare'
         )
+        booleanParam(
+          name: "PREVIOUS_VERSION", 
+          defaultValue: false,
+          description: "If you want to compare the current UUID's data to any <ocp-version>-1  release data"
+        )
+        string(
+          name: "TIME_RANGE", 
+          defaultValue: "2 w", 
+          description: 'Set of time to look back at to find any comparable results'
+        )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
                Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
                e.g.<br>
