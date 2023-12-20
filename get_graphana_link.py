@@ -12,7 +12,7 @@ def find_workload_type( current_run_uuid):
     index = "perf_scale_ci*"
     
     hits = update_es_uuid.es_search(search_params, index=index)
-    print('hits ' + str(hits))
+    #print('hits ' + str(hits))
     if len(hits) > 0:
         workload_type = hits[0]['_source']['benchmark']
     else: 
@@ -28,11 +28,9 @@ def find_workload_type_sub( current_run_uuid):
 
     workload_index_map = { "kube-burner":"ripsaw-kube-burner" ,"ingress-perf":"ingress-perf*", "network-perf-v2":"k8s-netperf","router-perf":"router-test-results",
                           "network-perf":"ripsaw-uperf",}
-    print('map set')
     for k, v in workload_index_map.items(): 
-        print("find v in index" + str(v))
         hits = update_es_uuid.es_search(search_params, index=v)
-        print('hits extra' + str(hits))
+        #print('hits extra' + str(hits))
         if len(hits) > 0:
             return k
     return "Unknown"
