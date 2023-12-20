@@ -127,10 +127,6 @@ pipeline {
                     python3.9 -m virtualenv venv3
                     source venv3/bin/activate
                     python --version
-                    env
-                    ls
-
-                    python get_graphana_link.py
 
                     cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
@@ -138,6 +134,10 @@ pipeline {
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
                     file_loc=$folder_name"*"
                     cp $file_loc .
+                    cd ../../../
+                    ls
+
+                    python get_graphana_link.py
 
                 ''')
 
