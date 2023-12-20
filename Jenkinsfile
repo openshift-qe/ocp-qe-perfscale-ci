@@ -28,7 +28,6 @@ pipeline {
   agent none
 
   parameters {
-
         string(
           name: "UUID", 
           defaultValue: "", 
@@ -130,6 +129,9 @@ pipeline {
                     python --version
                     env
                     ls
+
+                    python get_graphana_link.py
+
                     cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
                     python3.9 read_files.py
