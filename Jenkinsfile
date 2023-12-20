@@ -455,8 +455,7 @@ pipeline{
                         ]]
                     ]
                 script{
-                    def install_type_custom = params.INSTALL_TYPE
-                    def custom_cloud_type = params.CLOUD_TYPE
+
                     def custom_jenkins_label = JENKINS_AGENT_LABEL
                     if (params.SCALE_UP.toInteger() > 0 ) {
                         global_scale_num = params.SCALE_UP.toInteger()
@@ -491,11 +490,7 @@ pipeline{
                                 <b>Profile Size:</b> ${params.PROFILE_SCALE_SIZE} <br/>
                             """
 
-                        } else {
-                            currentBuild.description = """
-                                <b>Create Cluster: </b> ${params.INSTALL_TYPE} on ${params.CLOUD_TYPE}-${params.NETWORK_TYPE} <br/>
-                            """
-                        }
+                        } 
                         def set_arch_type = "x86_64"
                         if (params.ARCH_TYPE != "") {
                           set_arch_type = params.ARCH_TYPE
@@ -503,16 +498,13 @@ pipeline{
                         else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
                           set_arch_type = "aarch64"
                         }
-        
 
                         install = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-builder/', parameters: [
                             text(name: "ENV_VARS", value: ENV_VARS),string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
                             string(name: 'CI_PROFILES_URL', value: CI_PROFILES_URL),string(name: 'CI_PROFILES_REPO_BRANCH', value: CI_PROFILES_REPO_BRANCH),
                             string(name: 'OCP_PREFIX', value: OCP_PREFIX),string(name: 'OCP_VERSION', value: OCP_VERSION),
                             string(name: 'CI_PROFILE', value: CI_PROFILE),string(name: 'PROFILE_SCALE_SIZE', value: PROFILE_SCALE_SIZE),
-                            string( name: 'CLOUD_TYPE', value: CLOUD_TYPE),string(name: "ARCH_TYPE", value: set_arch_type),
-                            string(name: 'NETWORK_TYPE', value: NETWORK_TYPE),string(name: 'INSTALL_TYPE', value: INSTALL_TYPE),
-                            string(name: 'MASTER_COUNT', value: MASTER_COUNT),string(name: "WORKER_COUNT", value: WORKER_COUNT)
+                            string(name: "ARCH_TYPE", value: set_arch_type)
                         ]
                         def build_num = ""
                         if (install.description?.trim()) {
