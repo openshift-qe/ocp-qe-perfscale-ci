@@ -9,7 +9,7 @@ function waitForReady() {
     set +x
     local retries=0
     local attempts=140
-    while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
+    while [[ $(oc get nodes --no-headers -l node-role.kubernetes.io/worker  -o wide | grep "CoreOS"| grep -v "NotReady\\|SchedulingDisabled" | grep worker -c) != $1 ]]; do
         log "Following nodes are currently present, waiting for desired count $1 to be met."
         log "Machinesets:"
         oc get machinesets -A
@@ -19,7 +19,7 @@ function waitForReady() {
         sleep 60
         ((retries += 1))
         if [[ "${retries}" -gt ${attempts} ]]; then
-            for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker | egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
+            for node in $(oc get nodes --no-headers -l node-role.kubernetes.io/worker  -o wide | grep "CoreOS"| egrep -e "NotReady|SchedulingDisabled" | awk '{print $1}'); do
                 oc describe node $node
             done
 
@@ -77,7 +77,9 @@ function scaleDownMachines() {
         fi
     done
 }
-current_worker_count=$(oc get nodes --no-headers -l node-role.kubernetes.io/worker | grep -v "NotReady\\|SchedulingDisabled" | wc -l | xargs)
+
+#Rhel scaled nodes should not be included in the count for thiss scaling type
+current_worker_count=$(oc get nodes --no-headers -l node-role.kubernetes.io/worker -o wide | grep "CoreOS" | grep -v "NotReady\\|SchedulingDisabled" | wc -l | xargs)
 echo "current worker count $current_worker_count"
 echo "worker scale count $WORKER_COUNT"
 if [[ $current_worker_count -ne $WORKER_COUNT ]]; then
