@@ -225,8 +225,8 @@ deploy_kafka() {
   sleep 60
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n netobserv
 
-  echo "====> Update flowcollector to use KAFKA deploymentModel"
-  oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "KAFKA"}]"
+  echo "====> Update flowcollector to use Kafka deploymentModel"
+  oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "Kafka"}]"
 
   echo "====> Update flowcollector replicas"
   if [[ -z $FLP_KAFKA_REPLICAS ]]; then
@@ -251,7 +251,7 @@ populate_netobserv_metrics() {
   if [[ -z $DEPLOYMENT_MODEL ]]; then
     echo "====> Could not get Deployment Model"
   else
-    if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
+    if [[ $DEPLOYMENT_MODEL == "Kafka" ]]; then
       echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
       oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
     else
@@ -303,7 +303,7 @@ delete_kafka() {
   echo "====> Getting Deployment Model"
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
-  if [[ $DEPLOYMENT_MODEL == "KAFKA" ]]; then
+  if [[ $DEPLOYMENT_MODEL == "Kafka" ]]; then
     oc delete --ignore-not-found kafka/kafka-cluster -n netobserv
     oc delete --ignore-not-found kafkaTopic/network-flows -n netobserv
     oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
