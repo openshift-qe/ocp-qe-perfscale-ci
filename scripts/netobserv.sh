@@ -36,9 +36,6 @@ deploy_netobserv() {
   echo "====> Checking if LokiStack prerequisite has been satisfied"
   oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
-  echo "====> Adding RBACs for authToken FORWARD"
-  oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD.yaml
-
   echo "====> Creating openshift-netobserv-operator namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   echo "====> Creating NetObserv subscription"
@@ -235,9 +232,6 @@ deploy_kafka() {
     FLP_KAFKA_REPLICAS=3
   fi
   oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
-
-  echo "====> Update ClusterRoleBinding ServiceAccount from flowlogs-pipeline to flowlogs-pipeline-transformer"
-  oc apply -f $SCRIPTS_DIR/netobserv/clusterRoleBinding-FORWARD-kafka.yaml
 
   echo "====> Waiting for Flow Collector to reload with new FLP pods..."
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
