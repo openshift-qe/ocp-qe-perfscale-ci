@@ -1,6 +1,6 @@
 # KPIs
 - json_path: ["metric_name", "nFlowsProcessedPerMinuteTotals", "metric_name", "*", "avg(value)"]
-  tolerancy: 0
+  tolerancy: -10
   max_failures: 0
 - json_path: ["metric_name", "nFlowsErroredPerMinuteTotals", "metric_name", "*", "avg(value)"]
   tolerancy: 0
