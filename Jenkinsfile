@@ -805,37 +805,19 @@ pipeline {
                     target: 'workload-artifacts'
                 )
                 script {
-                    // run Mr. Sandman
-                    sandmanReturnCode = sh(returnStatus: true, script: """
-                        python3.9 --version
-                        python3.9 -m pip install virtualenv
-                        python3.9 -m virtualenv venv3
-                        source venv3/bin/activate
-                        python --version
-                        wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
-                        python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out --exit
-                    """)
-                    // fail pipeline if Mr. Sandman run failed, continue otherwise
-                    if (sandmanReturnCode.toInteger() != 0) {
-                        error('Mr. Sandman tool failed :(')
-                    }
-                    else {
-                        println('Successfully ran Mr. Sandman tool :)')
-                    }
-                    // set new env vars from Mr. Sandman and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/workload.json")
+                    // set new env vars from workload 'index_data' JSON file and update build description fields
+                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/workloads/**/index_data.json")
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                    // STARTTIME_STRING is string rep of start time
-                    currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
-                    // ENDTIME_STRING is string rep of end time
-                    currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
-                    // STARTTIME_TIMESTAMP is unix timestamp of start time
-                    currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
-                    // ENDTIME_TIMESTAMP is unix timestamp of end time
-                    currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
+                    // STARTDATE is string rep of start time
+                    currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
+                    // ENDDATE is string rep of end time
+                    currentBuild.description += "<b>ENDDATE:</b> ${env.ENDDATE}<br/>"
+                    // STARTDATEUNIXTIMESTAMP is unix timestamp of start time
+                    currentBuild.description += "<b>STARTDATEUNIXTIMESTAMP:</b> ${env.STARTDATEUNIXTIMESTAMP}<br/>"
+                    // ENDDATEUNIXTIMESTAMP is unix timestamp of end time
+                    currentBuild.description += "<b>ENDDATEUNIXTIMESTAMP:</b> ${env.ENDDATEUNIXTIMESTAMP}<br/>"
                 }
             }
         }
@@ -847,7 +829,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
                         }
