@@ -425,6 +425,14 @@ pipeline {
                 // login to Flexy cluster and set AWS credentials in Shell env for pipeline execution
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
+                        // set USER variable to be included in AWS bucket name and determine baseline upload permissions
+                        if (userId) {
+                            env.USER = userId
+                        }
+                        else {
+                            env.USER = 'auto'
+                        }
+                        println("USER identified as ${env.USER}")
                         buildInfo = readYaml(file: 'flexy-artifacts/BUILDINFO.yml')
                         buildInfo.params.each { env.setProperty(it.key, it.value) }
                         installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
@@ -497,13 +505,6 @@ pipeline {
                     // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
                     if (params.LOKI_OPERATOR == 'Unreleased') {
                         env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
-                    }
-                    // set USER variable to be included in AWS bucket name
-                    if (userId) {
-                        env.USER = userId
-                    }
-                    else {
-                        env.USER = 'auto'
                     }
                     // attempt installation of Loki Operator from selected source
                     println("Installing ${params.LOKI_OPERATOR} version of Loki Operator...")
@@ -960,7 +961,7 @@ pipeline {
                                 else {
                                     println('New statistics were within tolerable range of baseline statistics :)')
                                     currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                    if BASELINE_UPDATE_USERS.contains(env.USER) {
+                                    if (BASELINE_UPDATE_USERS.contains(env.USER)) {
                                         println('Uploading new baseline...')
                                         NOPE_ARGS = ''
                                         if (params.NOPE_DEBUG == true) {
