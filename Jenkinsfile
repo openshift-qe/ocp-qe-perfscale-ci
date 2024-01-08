@@ -237,11 +237,13 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf'],
+            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf', 'ingress-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                Note that all options excluding "router-perf" and "None" will trigger "kube-burner-ocp" job<br/>
-                "router-perf" will trigger "router-perf" job and "None" will run no workload<br/>
+                "cluster-density" and "node-density" options will trigger "kube-burner-ocp" job<br/>
+                "router-perf" will trigger "router-perf" job<br/>
+                "ingress-perf" will trigger "ingress-perf" job<br/>
+                "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
         )
@@ -249,7 +251,7 @@ pipeline {
             name: 'VARIABLE',
             defaultValue: '1000',
             description: '''
-                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a> workload</b>.<br/>
+                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a></b> or <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workloads</b>.<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>node-density-heavy</a>: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br/>
                 Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
@@ -755,6 +757,17 @@ pipeline {
                             booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
                             string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
+                        ]
+                    }
+                    else if (params.WORKLOAD == 'ingress-perf') {
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
+                        workloadJob = build job: env.JENKINS_JOB, parameters: [
+                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                            booleanParam(name: 'MUST_GATHER', value: true),
+                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                            booleanParam(name: 'GEN_CSV', value: false)
                         ]
                     }
                     else {
