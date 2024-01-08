@@ -2,6 +2,7 @@
 
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
+BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
 
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
@@ -977,22 +978,25 @@ pipeline {
                                 else {
                                     println('New statistics were within tolerable range of baseline statistics :)')
                                     currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                    NOPE_ARGS = ''
-                                    if (params.NOPE_DEBUG == true) {
-                                        NOPE_ARGS += ' --debug'
-                                    }
-                                    NOPE_ARGS += ' baseline --upload $UUID'
-                                    uploadReturnCode = sh(returnStatus: true, script: """
-                                        source venv3/bin/activate
-                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
-                                    """)
-                                    if (uploadReturnCode.toInteger() != 0) {
-                                        unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
-                                        currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
-                                    }
-                                    else {
-                                        println('Successfully uploaded new baseline to Elasticsearch :)')
-                                        currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                    if BASELINE_UPDATE_USERS.contains(env.USER) {
+                                        println('Uploading new baseline...')
+                                        NOPE_ARGS = ''
+                                        if (params.NOPE_DEBUG == true) {
+                                            NOPE_ARGS += ' --debug'
+                                        }
+                                        NOPE_ARGS += ' baseline --upload $UUID'
+                                        uploadReturnCode = sh(returnStatus: true, script: """
+                                            source venv3/bin/activate
+                                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                        """)
+                                        if (uploadReturnCode.toInteger() != 0) {
+                                            unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                            currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                        }
+                                        else {
+                                            println('Successfully uploaded new baseline to Elasticsearch :)')
+                                            currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                        }
                                     }
                                 }
                             }
