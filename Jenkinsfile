@@ -738,7 +738,7 @@ pipeline {
                 }
             }
         }
-        stage('Run Workload and Mr. Sandman') {
+        stage('Run Workload') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
@@ -746,7 +746,7 @@ pipeline {
                 script {
                     // set build name and remove previous artifacts
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
-                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/workloads/**/*.json")
+                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
                     // build workload job based off selected workload
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
@@ -803,11 +803,12 @@ pipeline {
                     fingerprintArtifacts: true, 
                     projectName: env.JENKINS_JOB,
                     selector: specific(env.JENKINS_BUILD),
-                    target: 'workload-artifacts'
+                    target: 'workload-artifacts',
+                    flatten: true
                 )
                 script {
                     // set new env vars from workload 'index_data' JSON file and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/workloads/**/*.json")
+                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/index_data.json")
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
