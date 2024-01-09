@@ -807,7 +807,7 @@ pipeline {
                 )
                 script {
                     // set new env vars from workload 'index_data' JSON file and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/workloads/${params.WORKLOAD}/index_data.json")
+                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/workloads/*/index_data.json")
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
