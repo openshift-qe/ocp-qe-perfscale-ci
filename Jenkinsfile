@@ -906,6 +906,7 @@ pipeline {
                             println('Successfully ran Touchstone tool :)')
                             // do tolerancy rules check if specified
                             if (params.RUN_BASELINE_COMPARISON) {
+                                env.BASELINE_UUID = ''
                                 // use baseline override if specified
                                 if (params.BASELINE_UUID_OVERRIDE != '') {
                                     env.BASELINE_UUID = params.BASELINE_UUID_OVERRIDE
@@ -924,62 +925,64 @@ pipeline {
                                     if (fetchReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
                                     }
-                                    else {                             
+                                    else {
                                         baselineInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/baseline.json")
                                         baselineInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                                     }
                                 }
-                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
                                 currentBuild.description += "<b>BASELINE_UUID:</b> ${env.BASELINE_UUID}<br/>"
-                                // set additional vars for tolerancy rules check
-                                env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
-                                env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
-                                // COMPARISON_CONFIG is changed here to only focus on specific statistics
-                                env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
-                                // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
-                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                baselineReturnCode = sh(returnStatus: true, script: """
-                                    cd $WORKSPACE/e2e-benchmarking/utils
-                                    rm -rf /tmp/**/*.csv
-                                    rm -rf *.csv
-                                    source compare.sh
-                                    run_benchmark_comparison
-                                """)
-                                // mark pipeline as unstable if Touchstone failed, continue otherwise
-                                if (baselineReturnCode.toInteger() != 0) {
-                                    unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
-                                    currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
-                                    // rerun Touchstone to generate a JSON for debugging
-                                    env.GEN_JSON = true
-                                    env.GEN_CSV = false
-                                    jsonReturnCode = sh(returnStatus: true, script: """
+                                if (env.BASELINE_UUID != '') {
+                                    println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
+                                    // set additional vars for tolerancy rules check
+                                    env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
+                                    env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
+                                    // COMPARISON_CONFIG is changed here to only focus on specific statistics
+                                    env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
+                                    // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
+                                    env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                                    baselineReturnCode = sh(returnStatus: true, script: """
                                         cd $WORKSPACE/e2e-benchmarking/utils
+                                        rm -rf /tmp/**/*.csv
+                                        rm -rf *.csv
                                         source compare.sh
                                         run_benchmark_comparison
                                     """)
-                                    println('Generated debug JSON for tolerancy analysis :)')
-                                }
-                                else {
-                                    println('New statistics were within tolerable range of baseline statistics :)')
-                                    currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                    if (BASELINE_UPDATE_USERS.contains(env.USER)) {
-                                        println('Uploading new baseline...')
-                                        NOPE_ARGS = ''
-                                        if (params.NOPE_DEBUG == true) {
-                                            NOPE_ARGS += ' --debug'
-                                        }
-                                        NOPE_ARGS += ' baseline --upload $UUID'
-                                        uploadReturnCode = sh(returnStatus: true, script: """
-                                            source venv3/bin/activate
-                                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                    // mark pipeline as unstable if Touchstone failed, continue otherwise
+                                    if (baselineReturnCode.toInteger() != 0) {
+                                        unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
+                                        currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
+                                        // rerun Touchstone to generate a JSON for debugging
+                                        env.GEN_JSON = true
+                                        env.GEN_CSV = false
+                                        jsonReturnCode = sh(returnStatus: true, script: """
+                                            cd $WORKSPACE/e2e-benchmarking/utils
+                                            source compare.sh
+                                            run_benchmark_comparison
                                         """)
-                                        if (uploadReturnCode.toInteger() != 0) {
-                                            unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
-                                            currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
-                                        }
-                                        else {
-                                            println('Successfully uploaded new baseline to Elasticsearch :)')
-                                            currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                        println('Generated debug JSON for tolerancy analysis :)')
+                                    }
+                                    else {
+                                        println('New statistics were within tolerable range of baseline statistics :)')
+                                        currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
+                                        if (BASELINE_UPDATE_USERS.contains(env.USER)) {
+                                            println("User ${env.USER} is member of BASELINE_UPDATE_USERS group: ${BASELINE_UPDATE_USERS} - uploading new baseline...")
+                                            NOPE_ARGS = ''
+                                            if (params.NOPE_DEBUG == true) {
+                                                NOPE_ARGS += ' --debug'
+                                            }
+                                            NOPE_ARGS += ' baseline --upload $UUID'
+                                            uploadReturnCode = sh(returnStatus: true, script: """
+                                                source venv3/bin/activate
+                                                python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                            """)
+                                            if (uploadReturnCode.toInteger() != 0) {
+                                                unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                                currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                            }
+                                            else {
+                                                println('Successfully uploaded new baseline to Elasticsearch :)')
+                                                currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                            }
                                         }
                                     }
                                 }
