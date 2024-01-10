@@ -3,8 +3,10 @@ The purpose of the scripts in this directory is to measure [netobserv](https://g
 
 Multiple workloads are run to generate traffic for the cluster:
 1. [node-density-heavy](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56616)
-2. [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618)
+2. [ingress-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-70716)
 3. [cluster-density-v2](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56617)
+
+Note that [ingress-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-70716) replaced the [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618) test case we used for 1.5 and below
 
 ## Prerequisites
 1. Create an OCP4 cluster

@@ -2,6 +2,7 @@
 
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
+BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
 
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
@@ -237,11 +238,13 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf'],
+            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf', 'ingress-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                Note that all options excluding "router-perf" and "None" will trigger "kube-burner-ocp" job<br/>
-                "router-perf" will trigger "router-perf" job and "None" will run no workload<br/>
+                "cluster-density" and "node-density" options will trigger "kube-burner-ocp" job<br/>
+                "router-perf" will trigger "router-perf" job<br/>
+                "ingress-perf" will trigger "ingress-perf" job<br/>
+                "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
         )
@@ -249,7 +252,7 @@ pipeline {
             name: 'VARIABLE',
             defaultValue: '1000',
             description: '''
-                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a> workload</b>.<br/>
+                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a></b> or <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workloads</b>.<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>node-density-heavy</a>: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br/>
                 Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
@@ -422,6 +425,14 @@ pipeline {
                 // login to Flexy cluster and set AWS credentials in Shell env for pipeline execution
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
+                        // set USER variable to be included in AWS bucket name and determine baseline upload permissions
+                        if (userId) {
+                            env.USER = userId
+                        }
+                        else {
+                            env.USER = 'auto'
+                        }
+                        println("USER identified as ${env.USER}")
                         buildInfo = readYaml(file: 'flexy-artifacts/BUILDINFO.yml')
                         buildInfo.params.each { env.setProperty(it.key, it.value) }
                         installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
@@ -494,13 +505,6 @@ pipeline {
                     // if an 'Unreleased' installation, use aosqe-index image for unreleased CatalogSource image
                     if (params.LOKI_OPERATOR == 'Unreleased') {
                         env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
-                    }
-                    // set USER variable to be included in AWS bucket name
-                    if (userId) {
-                        env.USER = userId
-                    }
-                    else {
-                        env.USER = 'auto'
                     }
                     // attempt installation of Loki Operator from selected source
                     println("Installing ${params.LOKI_OPERATOR} version of Loki Operator...")
@@ -734,7 +738,7 @@ pipeline {
                 }
             }
         }
-        stage('Run Workload and Mr. Sandman') {
+        stage('Run Workload') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
@@ -742,7 +746,7 @@ pipeline {
                 script {
                     // set build name and remove previous artifacts
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
-                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/workloads/**/*.out")
+                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
                     // build workload job based off selected workload
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
@@ -755,6 +759,17 @@ pipeline {
                             booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
                             string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
+                        ]
+                    }
+                    else if (params.WORKLOAD == 'ingress-perf') {
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
+                        workloadJob = build job: env.JENKINS_JOB, parameters: [
+                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                            booleanParam(name: 'MUST_GATHER', value: true),
+                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                            booleanParam(name: 'GEN_CSV', value: false)
                         ]
                     }
                     else {
@@ -788,40 +803,23 @@ pipeline {
                     fingerprintArtifacts: true, 
                     projectName: env.JENKINS_JOB,
                     selector: specific(env.JENKINS_BUILD),
-                    target: 'workload-artifacts'
+                    target: 'workload-artifacts',
+                    flatten: true
                 )
                 script {
-                    // run Mr. Sandman
-                    sandmanReturnCode = sh(returnStatus: true, script: """
-                        python3.9 --version
-                        python3.9 -m pip install virtualenv
-                        python3.9 -m virtualenv venv3
-                        source venv3/bin/activate
-                        python --version
-                        wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
-                        python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out --exit
-                    """)
-                    // fail pipeline if Mr. Sandman run failed, continue otherwise
-                    if (sandmanReturnCode.toInteger() != 0) {
-                        error('Mr. Sandman tool failed :(')
-                    }
-                    else {
-                        println('Successfully ran Mr. Sandman tool :)')
-                    }
-                    // set new env vars from Mr. Sandman and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/workload.json")
+                    // set new env vars from workload 'index_data' JSON file and update build description fields
+                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/index_data.json")
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                    // STARTTIME_STRING is string rep of start time
-                    currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
-                    // ENDTIME_STRING is string rep of end time
-                    currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
-                    // STARTTIME_TIMESTAMP is unix timestamp of start time
-                    currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
-                    // ENDTIME_TIMESTAMP is unix timestamp of end time
-                    currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
+                    // STARTDATE is string rep of start time
+                    currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
+                    // ENDDATE is string rep of end time
+                    currentBuild.description += "<b>ENDDATE:</b> ${env.ENDDATE}<br/>"
+                    // STARTDATEUNIXTIMESTAMP is unix timestamp of start time
+                    currentBuild.description += "<b>STARTDATEUNIXTIMESTAMP:</b> ${env.STARTDATEUNIXTIMESTAMP}<br/>"
+                    // ENDDATEUNIXTIMESTAMP is unix timestamp of end time
+                    currentBuild.description += "<b>ENDDATEUNIXTIMESTAMP:</b> ${env.ENDDATEUNIXTIMESTAMP}<br/>"
                 }
             }
         }
@@ -833,7 +831,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
                         }
@@ -908,6 +906,7 @@ pipeline {
                             println('Successfully ran Touchstone tool :)')
                             // do tolerancy rules check if specified
                             if (params.RUN_BASELINE_COMPARISON) {
+                                env.BASELINE_UUID = ''
                                 // use baseline override if specified
                                 if (params.BASELINE_UUID_OVERRIDE != '') {
                                     env.BASELINE_UUID = params.BASELINE_UUID_OVERRIDE
@@ -926,60 +925,65 @@ pipeline {
                                     if (fetchReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
                                     }
-                                    else {                             
+                                    else {
                                         baselineInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/baseline.json")
                                         baselineInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                                     }
                                 }
-                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
                                 currentBuild.description += "<b>BASELINE_UUID:</b> ${env.BASELINE_UUID}<br/>"
-                                // set additional vars for tolerancy rules check
-                                env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
-                                env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
-                                // COMPARISON_CONFIG is changed here to only focus on specific statistics
-                                env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
-                                // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
-                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                baselineReturnCode = sh(returnStatus: true, script: """
-                                    cd $WORKSPACE/e2e-benchmarking/utils
-                                    rm -rf /tmp/**/*.csv
-                                    rm -rf *.csv
-                                    source compare.sh
-                                    run_benchmark_comparison
-                                """)
-                                // mark pipeline as unstable if Touchstone failed, continue otherwise
-                                if (baselineReturnCode.toInteger() != 0) {
-                                    unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
-                                    currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
-                                    // rerun Touchstone to generate a JSON for debugging
-                                    env.GEN_JSON = true
-                                    env.GEN_CSV = false
-                                    jsonReturnCode = sh(returnStatus: true, script: """
+                                if (env.BASELINE_UUID != '') {
+                                    println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
+                                    // set additional vars for tolerancy rules check
+                                    env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
+                                    env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
+                                    // COMPARISON_CONFIG is changed here to only focus on specific statistics
+                                    env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
+                                    // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
+                                    env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                                    baselineReturnCode = sh(returnStatus: true, script: """
                                         cd $WORKSPACE/e2e-benchmarking/utils
+                                        rm -rf /tmp/**/*.csv
+                                        rm -rf *.csv
                                         source compare.sh
                                         run_benchmark_comparison
                                     """)
-                                    println('Generated debug JSON for tolerancy analysis :)')
-                                }
-                                else {
-                                    println('New statistics were within tolerable range of baseline statistics :)')
-                                    currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                    NOPE_ARGS = ''
-                                    if (params.NOPE_DEBUG == true) {
-                                        NOPE_ARGS += ' --debug'
-                                    }
-                                    NOPE_ARGS += ' baseline --upload $UUID'
-                                    uploadReturnCode = sh(returnStatus: true, script: """
-                                        source venv3/bin/activate
-                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
-                                    """)
-                                    if (uploadReturnCode.toInteger() != 0) {
-                                        unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
-                                        currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                    // mark pipeline as unstable if Touchstone failed, continue otherwise
+                                    if (baselineReturnCode.toInteger() != 0) {
+                                        unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
+                                        currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
+                                        // rerun Touchstone to generate a JSON for debugging
+                                        env.GEN_JSON = true
+                                        env.GEN_CSV = false
+                                        jsonReturnCode = sh(returnStatus: true, script: """
+                                            cd $WORKSPACE/e2e-benchmarking/utils
+                                            source compare.sh
+                                            run_benchmark_comparison
+                                        """)
+                                        println('Generated debug JSON for tolerancy analysis :)')
                                     }
                                     else {
-                                        println('Successfully uploaded new baseline to Elasticsearch :)')
-                                        currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                        println('New statistics were within tolerable range of baseline statistics :)')
+                                        currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
+                                        if (BASELINE_UPDATE_USERS.contains(env.USER)) {
+                                            println("User ${env.USER} is member of BASELINE_UPDATE_USERS group: ${BASELINE_UPDATE_USERS} - uploading new baseline...")
+                                            NOPE_ARGS = ''
+                                            if (params.NOPE_DEBUG == true) {
+                                                NOPE_ARGS += ' --debug'
+                                            }
+                                            NOPE_ARGS += ' baseline --upload $UUID'
+                                            uploadReturnCode = sh(returnStatus: true, script: """
+                                                source venv3/bin/activate
+                                                python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                            """)
+                                            if (uploadReturnCode.toInteger() != 0) {
+                                                unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                                currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                            }
+                                            else {
+                                                println('Successfully uploaded new baseline to Elasticsearch :)')
+                                                currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -47,7 +47,7 @@ JENKINS_JOB = None
 JENKINS_BUILD = None
 JENKINS_SERVER = None
 UUID = None
-SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'cluster-density', 'cluster-density-v2']
+SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'ingress-perf', 'cluster-density', 'cluster-density-v2']
 
 # elasticsearch constants
 ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com'
