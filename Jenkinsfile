@@ -314,8 +314,20 @@ pipeline {
                             ! grep "Benchmark comparison failed" ingress_router.out
                             '''
                         )
+                        sh(returnStatus: true, script: '''
+                        ls /tmp
+                        folder_name=$(ls -t -d /tmp/*/ | head -1)
+                        file_loc=$folder_name"*"
+                        cd workloads/router-perf-v2
+                        cp $file_loc .
+                        ''')
                         archiveArtifacts(
                             artifacts: 'workloads/router-perf-v2/ingress_router.out',
+                            allowEmptyArchive: true,
+                            fingerprint: true
+                        )
+                        archiveArtifacts(
+                            artifacts: 'workloads/router-perf-v2/index_data.json',
                             allowEmptyArchive: true,
                             fingerprint: true
                         )
