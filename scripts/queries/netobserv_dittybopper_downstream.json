@@ -123,9 +123,11 @@
           "datasource": {
             "uid": "$Datasource"
           },
+          "editorMode": "code",
           "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m]))",
           "interval": "",
           "legendFormat": "Flows dropped/s",
+          "range": true,
           "refId": "C"
         },
         {
@@ -279,7 +281,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PF55DCC5EC58ABF5A"
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -290,7 +292,7 @@
         "y": 9
       },
       "hiddenSeries": false,
-      "id": 54,
+      "id": 67,
       "legend": {
         "alignAsTable": true,
         "avg": true,
@@ -322,18 +324,31 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "PF55DCC5EC58ABF5A"
+            "uid": "$Datasource"
           },
-          "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_loki_dropped_entries_total{pod=~\"$PodPrefix\"}[1m])*60) by (pod)",
           "interval": "",
-          "legendFormat": "Node Ingress/s",
+          "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m])*60)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Total flows",
+          "range": true,
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Node traffic received per second",
+      "title": "Flows dropped per minute",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -347,13 +362,13 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:179",
-          "format": "binBps",
+          "$$hashKey": "object:1163",
+          "format": "short",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:180",
+          "$$hashKey": "object:1164",
           "format": "short",
           "logBase": 1,
           "show": true
@@ -1467,8 +1482,99 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
+        "y": 69
+      },
+      "hiddenSeries": false,
+      "id": 54,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
+          "interval": "",
+          "legendFormat": "Node Ingress/s",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Node traffic received per second",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:179",
+          "format": "binBps",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:180",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
         "y": 69
       },
       "hiddenSeries": false,
@@ -1562,6 +1668,91 @@
         "y": 77
       },
       "hiddenSeries": false,
+      "id": 64,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "expr": "sum(rate(loki_distributor_bytes_received_total[1m]))",
+          "interval": "",
+          "legendFormat": "Bytes/s",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Loki Data Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:209",
+          "format": "binBps",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:210",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "uid": "$Datasource"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 77
+      },
+      "hiddenSeries": false,
       "id": 10,
       "legend": {
         "alignAsTable": true,
@@ -1625,91 +1816,6 @@
         },
         {
           "$$hashKey": "object:509",
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$Datasource"
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 77
-      },
-      "hiddenSeries": false,
-      "id": 64,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "9.4.3",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$Datasource"
-          },
-          "expr": "sum(rate(loki_distributor_bytes_received_total[1m]))",
-          "interval": "",
-          "legendFormat": "Bytes/s",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Loki Data Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:209",
-          "format": "binBps",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:210",
           "format": "short",
           "logBase": 1,
           "show": true
