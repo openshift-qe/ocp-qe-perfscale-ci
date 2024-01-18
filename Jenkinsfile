@@ -83,6 +83,9 @@ pipeline {
   stages {
 
     stage('Run Benchmark Comparison'){
+      when {
+            expression { params.UUID != "" }
+        }
       agent { label params['JENKINS_AGENT_LABEL'] }
       steps{
 
@@ -122,7 +125,9 @@ pipeline {
         ])
         
         script{
-            withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
+            env.EMAIL_ID_FOR_RESULTS_SHEET = "${userId}@redhat.com"
+            withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
+            file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
                 RETURNSTATUS = sh(returnStatus: true, script: '''
                     # Get ENV VARS Supplied by the user to this job and store in .env_override
                     echo "$ENV_VARS" > .env_override
@@ -145,11 +150,33 @@ pipeline {
                     cd e2e-benchmarking/utils/compare
                     pip install -r requirements.txt
                     python3.9 read_files.py
+
+                  ''')
+                  sh(returnStatus: true, script: '''
+                    # Get ENV VARS Supplied by the user to this job and store in .env_override
+                    echo "$ENV_VARS" > .env_override
+                    # Export those env vars so they could be used by CI Job
+                    set -a && source .env_override && set +a
+                    cp $GSHEET_KEY_LOCATION $WORKSPACE/.gsheet.json
+                    export GSHEET_KEY_LOCATION=$WORKSPACE/.gsheet.json
+                    env
+                    export EMAIL_ID_FOR_RESULTS_SHEET=$EMAIL_ID_FOR_RESULTS_SHEET
+                    cd e2e-benchmarking/utils/compare
+                   
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
                     file_loc=$folder_name"*"
-                    cp $file_loc .
-                    
 
+                    # see if csv is in file loc
+                     if [[ $file_loc == *".csv" ]]; then
+                      echo "found csv"
+
+                      cp $file_loc .
+                      ls
+                      cd ..
+                      source common.sh
+                      python --version
+                      gen_spreadsheet_helper comparison ${file_loc} prubenda@redhat.com ${GSHEET_KEY_LOCATION}
+                    fi
                 ''')
 
                 if (RETURNSTATUS.toInteger() != 0) {
