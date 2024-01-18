@@ -101,7 +101,7 @@ pipeline {
         )
         string(
           name: 'KRAKEN_HUB_REPO',
-          defaultValue:'https://github.com/redhat-chaos/krkn-hub',
+          defaultValue:'https://github.com/krkn-chaos/krkn-hub',
           description:'You can change this to point to your fork if needed.'
         )
         string(
