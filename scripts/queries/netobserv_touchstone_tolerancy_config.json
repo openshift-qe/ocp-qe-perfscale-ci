@@ -46,14 +46,7 @@
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
+                        "max"
                     ]
                 }
             },
@@ -66,14 +59,7 @@
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
+                        "max"
                     ]
                 }
             },
@@ -86,14 +72,7 @@
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
+                        "max"
                     ]
                 }
             },
@@ -106,14 +85,7 @@
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
+                        "max"
                     ]
                 }
             },
@@ -126,14 +98,7 @@
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
+                        "max"
                     ]
                 }
             }
