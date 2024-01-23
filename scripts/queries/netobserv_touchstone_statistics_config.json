@@ -36,6 +36,108 @@
                 ]
             }
         },
+        "ripsaw-kube-burner": [
+            {
+                "filter": {
+                    "metricName.keyword": "namespaceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "podStatusCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "deploymentCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "replicaSetCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "serviceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            }
+        ],
         "prod-netobserv-datapoints": [
             {
                 "filter": {
