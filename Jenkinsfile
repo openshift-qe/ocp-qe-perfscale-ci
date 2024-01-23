@@ -8,6 +8,8 @@ BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
     currentBuild.displayName = userId
+} else {
+    currentBuild.displayName = 'auto'
 }
 
 pipeline {

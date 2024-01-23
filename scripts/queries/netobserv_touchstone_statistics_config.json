@@ -36,6 +36,73 @@
                 ]
             }
         },
+        "ripsaw-kube-burner": [
+            {
+                "filter": {
+                    "metricName.keyword": "namespaceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "podStatusCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "deploymentCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "replicaSetCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "serviceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            }
+        ],
         "prod-netobserv-datapoints": [
             {
                 "filter": {
