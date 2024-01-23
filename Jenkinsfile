@@ -305,7 +305,7 @@ pipeline {
                         file_loc=$folder_name"*"
                         cd workloads/kube-burner-ocp-wrapper
                         cp $file_loc .
-                    ''')
+                        ''')
                     archiveArtifacts(
                         artifacts: 'workloads/kube-burner-ocp-wrapper/kube-burner-ocp.out',
                         allowEmptyArchive: true,
