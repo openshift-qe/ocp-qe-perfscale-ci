@@ -298,13 +298,14 @@ pipeline {
                         fi
                         export GC=${CLEANUP}
                         ./run.sh |& tee "kube-burner-ocp.out"
+                        ''')
+                        sh(returnStatus: true, script: '''
                         ls /tmp
                         folder_name=$(ls -t -d /tmp/*/ | head -1)
                         file_loc=$folder_name"*"
+                        cd workloads/kube-burner-ocp-wrapper
                         cp $file_loc .
-
-
-                    ''')
+                        ''')
                     archiveArtifacts(
                         artifacts: 'workloads/kube-burner-ocp-wrapper/kube-burner-ocp.out',
                         allowEmptyArchive: true,
