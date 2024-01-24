@@ -46,7 +46,6 @@ spec:
       status: Disabled
     imagePullPolicy: IfNotPresent
     logLevel: debug
-    port: 9001
     portNaming:
       enable: true
       portNames:
@@ -69,7 +68,6 @@ spec:
     - filter:
         dst_kind: Service
       name: Services network
-    register: true
     replicas: 1
     resources:
       limits:
@@ -77,6 +75,9 @@ spec:
       requests:
         cpu: 100m
         memory: 50Mi
+    advanced:
+      port: 9001
+      register: true
   deploymentModel: Direct
   exporters: []
   kafka:
@@ -99,17 +100,15 @@ spec:
     mode: LokiStack
     lokiStack:
       name: lokistack
-    batchWait: 1s
-    batchSize: 10485760
-    minBackoff: 1s
-    maxBackoff: 5s
     maxRetries: 2
+    advanced:
+      writeBatchWait: 1s
+      writeBatchSize: 10485760
+      writeMinBackoff: 1s
+      writeMaxBackoff: 5s
   namespace: netobserv
   processor:
     debug: {}
-    dropUnusedFields: true
-    enableKubeProbes: true
-    healthPort: 8080
     imagePullPolicy: IfNotPresent
     kafkaConsumerAutoscaler:
       maxReplicas: 0
@@ -127,10 +126,14 @@ spec:
         port: 9102
         tls:
           type: Disabled
-    port: 2055
     resources:
       limits:
         memory: 800Mi
       requests:
         cpu: 100m
         memory: 100Mi
+    advanced:
+      port: 2055
+      healthPort: 8080
+      dropUnusedFields: true
+      enableKubeProbes: true
