@@ -100,9 +100,9 @@ spec:
     lokiStack:
       name: lokistack
     maxRetries: 2
+    writeBatchWait: 1s
+    writeBatchSize: 10485760
     advanced:
-      writeBatchWait: 1s
-      writeBatchSize: 10485760
       writeMinBackoff: 1s
       writeMaxBackoff: 5s
   namespace: netobserv
