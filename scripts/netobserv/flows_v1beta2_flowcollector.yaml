@@ -8,7 +8,6 @@ spec:
     ebpf:
       cacheActiveTimeout: 5s
       cacheMaxFlows: 100000
-      debug: {}
       excludeInterfaces:
       - lo
       imagePullPolicy: IfNotPresent
@@ -108,7 +107,6 @@ spec:
       writeMaxBackoff: 5s
   namespace: netobserv
   processor:
-    debug: {}
     imagePullPolicy: IfNotPresent
     kafkaConsumerAutoscaler:
       maxReplicas: 0
