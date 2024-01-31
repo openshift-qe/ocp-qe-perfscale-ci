@@ -45,7 +45,7 @@ pipeline {
         )
         string(
           name: "TIME_RANGE", 
-          defaultValue: "2 w", 
+          defaultValue: "4 m", 
           description: 'Set of time to look back at to find any comparable results'
         )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
