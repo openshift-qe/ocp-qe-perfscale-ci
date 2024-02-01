@@ -164,9 +164,10 @@ pipeline {
                     cd e2e-benchmarking/utils/compare
                    
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
+                    
                     file_loc=$folder_name"*"
-
-                    # see if csv is in file loc
+                    echo "file loc $file_loc"
+                     # see if csv is in file loc
                      if [[ $file_loc == *".csv" ]]; then
                       echo "found csv"
 
