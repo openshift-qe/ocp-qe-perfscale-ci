@@ -175,6 +175,9 @@ pipeline {
                       ls
                       cd ..
                       source common.sh
+                      
+
+                      source venv3/bin/activate
                       python --version
                       gen_spreadsheet_helper comparison ${file_loc} prubenda@redhat.com ${GSHEET_KEY_LOCATION}
                     fi
