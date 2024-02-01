@@ -171,7 +171,7 @@ pipeline {
                      if [[ $file_loc == *".csv" ]]; then
                       echo "found csv"
 
-                      cp $file_loc .
+                      cp $folder_name/$file_loc .
                       ls
                       cd ..
                       source common.sh
