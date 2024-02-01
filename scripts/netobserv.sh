@@ -111,7 +111,7 @@ deploy_lokistack() {
   fi
 
   echo "====> Generate S3_BUCKET_NAME"
-  RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 12 | head -n 1 || true)
+  RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 6 | head -n 1 || true)
   if [[ $WORKLOAD == "None" ]] || [[ -z $WORKLOAD ]]; then
     export S3_BUCKET_NAME="netobserv-ocpqe-$USER-$RAND_SUFFIX"
   else
