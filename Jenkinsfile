@@ -45,7 +45,7 @@ pipeline {
         )
         string(
           name: "TIME_RANGE", 
-          defaultValue: "2 w", 
+          defaultValue: "4 m", 
           description: 'Set of time to look back at to find any comparable results'
         )
         text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
@@ -164,17 +164,22 @@ pipeline {
                     cd e2e-benchmarking/utils/compare
                    
                     folder_name=$(ls -t -d /tmp/*/ | head -1)
-                    file_loc=$folder_name"*"
-
-                    # see if csv is in file loc
+                    
+                    file_loc=$(ls $folder_name)
+                    echo "file loc $file_loc"
+                     # see if csv is in file loc
                      if [[ $file_loc == *".csv" ]]; then
                       echo "found csv"
 
-                      cp $file_loc .
+                      cp $folder_name/$file_loc .
                       ls
                       cd ..
-                      source common.sh
+                      
+                      python3.9 -m pip install virtualenv
+                      python3.9 -m virtualenv venv3
+                      source venv3/bin/activate
                       python --version
+                      source common.sh
                       gen_spreadsheet_helper comparison ${file_loc} prubenda@redhat.com ${GSHEET_KEY_LOCATION}
                     fi
                 ''')
