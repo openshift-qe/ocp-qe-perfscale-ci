@@ -74,7 +74,7 @@ Navigate to the `scripts/` directory of this repository and run `$ populate_neto
 Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta2_flowcollector.yaml`
 
 You can update common parameters of flowcollector individually with the following commands:
-- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": <value>}]"`
 - **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
@@ -98,7 +98,7 @@ Dittybopper allows for live viewing of the following metrics:
 To install Dittybopper, follow the steps below:
 1. If you're using the upstream operator, navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
 2. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_upstream.json` if you're using the upstream operator, otherwise run `$ ./deploy.sh -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_downstream.json` if you're using the downstream operator
+3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_upstream.json` if you're using the upstream operator, otherwise run `$ ./deploy.sh -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json` if you're using the downstream operator
 4. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
 
 ## Testing with Scale CI

@@ -943,6 +943,11 @@ pipeline {
                                     // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                                     env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
                                     baselineReturnCode = sh(returnStatus: true, script: """
+                                        python3.9 --version
+                                        python3.9 -m pip install virtualenv
+                                        python3.9 -m virtualenv venv3
+                                        source venv3/bin/activate
+                                        python --version
                                         cd $WORKSPACE/e2e-benchmarking/utils
                                         rm -rf /tmp/**/*.csv
                                         rm -rf *.csv
@@ -957,6 +962,11 @@ pipeline {
                                         env.GEN_JSON = true
                                         env.GEN_CSV = false
                                         jsonReturnCode = sh(returnStatus: true, script: """
+                                            python3.9 --version
+                                            python3.9 -m pip install virtualenv
+                                            python3.9 -m virtualenv venv3
+                                            source venv3/bin/activate
+                                            python --version
                                             cd $WORKSPACE/e2e-benchmarking/utils
                                             source compare.sh
                                             run_benchmark_comparison
