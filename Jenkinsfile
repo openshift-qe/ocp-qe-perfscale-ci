@@ -289,6 +289,16 @@ pipeline {
             defaultValue: false,
             description: 'Check cluster health status after workload runs'
         )
+        string(
+            name: 'E2E_BENCHMARKING_REPO',
+            defaultValue: 'https://github.com/cloud-bulldozer/e2e-benchmarking',
+            description: 'You can change this to point to your fork if needed'
+        )
+        string(
+            name: 'E2E_BENCHMARKING_REPO_BRANCH',
+            defaultValue: 'master',
+            description: 'You can change this to point to a branch on your fork if needed.'
+        )
         separator(
             name: 'NOPE_TOUCHSTONE_CONFIG_OPTIONS',
             sectionHeader: 'NOPE and Touchstone Configuration Options',
@@ -760,7 +770,9 @@ pipeline {
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
-                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
+                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
                         ]
                     }
                     else if (params.WORKLOAD == 'ingress-perf') {
@@ -771,7 +783,9 @@ pipeline {
                             booleanParam(name: 'MUST_GATHER', value: true),
                             string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false)
+                            booleanParam(name: 'GEN_CSV', value: false),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
                         ]
                     }
                     else {
@@ -786,7 +800,9 @@ pipeline {
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
                             booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL)
+                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
                         ]
                     }
                     // fail pipeline if workload failed

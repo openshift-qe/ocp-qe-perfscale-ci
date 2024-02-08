@@ -44,7 +44,7 @@ spec:
       minReplicas: 1
       status: Disabled
     imagePullPolicy: IfNotPresent
-    logLevel: debug
+    logLevel: info
     portNaming:
       enable: true
       portNames:
