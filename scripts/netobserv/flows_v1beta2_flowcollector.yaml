@@ -11,7 +11,6 @@ spec:
       excludeInterfaces:
       - lo
       imagePullPolicy: IfNotPresent
-      kafkaBatchSize: 10485760
       logLevel: info
       resources:
         limits:
@@ -44,7 +43,7 @@ spec:
       minReplicas: 1
       status: Disabled
     imagePullPolicy: IfNotPresent
-    logLevel: debug
+    logLevel: info
     portNaming:
       enable: true
       portNames:
