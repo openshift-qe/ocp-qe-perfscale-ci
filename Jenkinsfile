@@ -988,7 +988,7 @@ pipeline {
                                             copyArtifacts(
                                                 fingerprintArtifacts: true,
                                                 projectName: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather',
-                                                selector: specific(scaleJob.mustGatherJob()),
+                                                selector: specific(mustGatherJob.getNumber()),
                                             )
                                         }
                                         // rerun Touchstone to generate a JSON for debugging
