@@ -47,6 +47,10 @@ deploy_netobserv() {
     sleep 1
   done
 
+  echo "====> Patch CSV so that DOWNSTREAM_DEPLOYMENT is set to 'true'"
+  CSV=$(oc get csv -n openshift-netobserv-operator | egrep -i "net.*observ" | awk '{print $1}')
+  oc patch csv/$CSV -n openshift-netobserv-operator --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/3/value", "value": 'true'}]"
+
   echo "====> Creating Flow Collector"
   oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
 
@@ -82,7 +86,7 @@ patch_netobserv() {
     exit 1
   fi
 
-  oc patch csv/$CSV -n openshift-netobserv-operator --type='json' -p="$PATCH"
+  oc patch csv/$CSV -n openshift-netobserv-operator --type=json -p="$PATCH"
 
   if [[ $? != 0 ]]; then
     echo "failed to patch $COMPONENT with $IMAGE"
@@ -235,40 +239,6 @@ deploy_kafka() {
 
   echo "====> Waiting for Flow Collector to reload with new FLP pods..."
   oc wait --timeout=180s --for=condition=ready flowcollector/cluster
-}
-
-populate_netobserv_metrics() {
-  echo "====> Creating cluster-monitoring-config ConfigMap"
-  oc apply -f $SCRIPTS_DIR/cluster-monitoring-config.yaml
-  echo "====> Getting Deployment Model from Flow Collector"
-  DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
-  if [[ -z $DEPLOYMENT_MODEL ]]; then
-    echo "====> Could not get Deployment Model"
-  else
-    if [[ $DEPLOYMENT_MODEL == "Kafka" ]]; then
-      echo "====> Creating flowlogs-pipeline-transformer Service and ServiceMonitor"
-      oc apply -f $SCRIPTS_DIR/service-monitor-kafka.yaml
-    else
-      echo "====> Creating flowlogs-pipeline Service and ServiceMonitor"
-      oc apply -f $SCRIPTS_DIR/service-monitor.yaml
-    fi
-  fi
-}
-
-setup_dittybopper_template() {
-  echo "====> Checking NetObserv installation..."
-  IS_DOWNSTREAM=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[3].value}' -A)
-  if [[ $IS_DOWNSTREAM == "true" ]]; then
-    echo "===> Downstream installation was detected - no custom Dittybopper template is needed"
-  else
-    echo "====> Setting up dittybopper template"
-    sleep 30
-    oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/component=controller
-    oc wait --timeout=120s --for=condition=ready pod -n openshift-user-workload-monitoring -l app.kubernetes.io/managed-by=prometheus-operator
-    export PROMETHEUS_USER_WORKLOAD_BEARER=$(oc sa get-token prometheus-user-workload -n openshift-user-workload-monitoring || oc sa new-token prometheus-user-workload -n openshift-user-workload-monitoring)
-    export THANOS_URL=https://$(oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host')
-    envsubst "$PROMETHEUS_USER_WORKLOAD_BEARER $THANOS_URL" <$SCRIPTS_DIR/netobserv/netobserv-dittybopper.yaml.template >$SCRIPTS_DIR/netobserv/netobserv-dittybopper.yaml
-  fi
 }
 
 delete_s3() {

@@ -27,7 +27,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc414',
+            defaultValue: 'oc415',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -617,9 +617,8 @@ pipeline {
                 script {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
-                    env.IS_DOWNSTREAM = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[3].value}' -A").trim()
                     if (env.RELEASE != '') {
-                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
+                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
                     }
                     // attempt updating common parameters of NetObserv and flowcollector where specified
                     println('Updating common parameters of NetObserv and flowcollector where specified...')
@@ -692,28 +691,6 @@ pipeline {
                 }
             }
         }
-        stage('Setup FLP service and service-monitor') {
-            when {
-                expression { env.IS_DOWNSTREAM == 'false' }
-            }
-            steps {
-                script {
-                    // attempt setup of FLP service and creation of service-monitor
-                    println('Setting up FLP service and creating service-monitor...')
-                    metricsReturnCode = sh(returnStatus: true, script:  """
-                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        populate_netobserv_metrics
-                    """)
-                    // fail pipeline if setup failed, continue otherwise
-                    if (metricsReturnCode.toInteger() != 0) {
-                        error('Setting up FLP service and creating service-monitor failed :(')
-                    }
-                    else {
-                        println('Successfully set up FLP service and created service-monitor :)')
-                    }
-                }
-            }
-        }
         stage('Install Dittybopper') {
             when {
                 expression { params.INSTALL_DITTYBOPPER == true }
@@ -727,17 +704,10 @@ pipeline {
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'performance-dashboards']]
                 ])
                 script {
-                    // if an upstream installation, use custom Dittybopper template
-                    if (env.IS_DOWNSTREAM == 'false') {
-                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_upstream.json"
-                    }
-                    else {
-                        DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json"
-                    }
+                    DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper.json"
                     // attempt installation of dittybopper
                     dittybopperReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        setup_dittybopper_template
                         . $WORKSPACE/performance-dashboards/dittybopper/deploy.sh $DITTYBOPPER_PARAMS
                     """)
                     // fail pipeline if installation failed, continue otherwise

@@ -1613,9 +1613,11 @@
             "type": "prometheus",
             "uid": "PF55DCC5EC58ABF5A"
           },
-          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\"}[5m]))",
+          "editorMode": "code",
+          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", persistentvolumeclaim=~\".*kafka.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -1742,6 +1744,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$Datasource"
       },
       "fill": 1,
@@ -1787,9 +1790,11 @@
           "datasource": {
             "uid": "$Datasource"
           },
+          "editorMode": "code",
           "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", persistentvolumeclaim=~\".*loki.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -1915,7 +1920,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "NetObserv Downstream Metrics",
+  "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
   "version": 1,
   "weekStart": ""
