@@ -112,6 +112,11 @@ pipeline {
           '''
       )
       string(
+          name: "PROFILE_TYPE",
+          defaultValue: "both",
+          description: "Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'"
+      )
+      string(
           name: "COMPARISON_CONFIG",
           defaultValue: "podLatency.json nodeMasters-ocp.json nodeWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json",
           description: 'JSON config files of what data to output into a Google Sheet'
@@ -126,6 +131,7 @@ pipeline {
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
       )
+      
       string(
           name: 'EMAIL_ID_OVERRIDE',
           defaultValue: '',
