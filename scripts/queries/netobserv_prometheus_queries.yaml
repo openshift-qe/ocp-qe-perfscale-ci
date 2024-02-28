@@ -107,7 +107,7 @@
 #################
 
 # Kafka PVC usage averaging over 5 mins period
-- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv"}[5m]))
+- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*kafka.*"}[5m]))
   metricName: kafkaStorageUsage
 
 # total CPU usage by all kafka pods

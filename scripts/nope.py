@@ -669,17 +669,10 @@ if __name__ == '__main__':
     logging.info(f"THANOS_URL: {THANOS_URL}")
 
     # get token from cluster
-    IS_DOWNSTREAM = subprocess.run(['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[0].env[3].value}"', '-A'], capture_output=True, text=True).stdout
-    if IS_DOWNSTREAM == '"true"':
-        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
-        # try deprecated method in case first attempt fails
-        if TOKEN == '':
-            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
-    else:
-        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
-        # try deprecated method in case first attempt fails
-        if TOKEN == '':
-            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
+    TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
+    # try deprecated method in case first attempt fails
+    if TOKEN == '':
+        TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
 
     # log token or exit if no token could be found
     if TOKEN == '':
