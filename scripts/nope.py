@@ -106,7 +106,7 @@ def process_query(metric_name, query, raw_data):
     return clean_data
 
 
-def run_query(query):
+def run_query(metric_name, query):
     ''' takes in a Prometheus query
         executes a range query based on global constants
         returns the JSON data delivered by Prometheus or an exception if the query fails
@@ -125,7 +125,7 @@ def run_query(query):
     # make request and return data
     data = requests.get(endpoint, headers=headers, params=params, verify=False)
     if data.status_code != 200:
-        raise Exception(f"Query to fetch Prometheus data failed: {data.reason}") 
+        raise Exception(f"metricName '{metric_name}' with query '{query}'to fetch Prometheus data failed due to: {data.status_code} {data.reason}") 
     return data.json()
 
 
@@ -494,7 +494,7 @@ def main():
     for entry in QUERIES:
         metric_name = entry['metricName']
         query = entry['query']
-        raw_data = run_query(query)
+        raw_data = run_query(metric_name, query)
         clean_data = process_query(metric_name, query, raw_data)
         RESULTS["data"].extend(clean_data)
 

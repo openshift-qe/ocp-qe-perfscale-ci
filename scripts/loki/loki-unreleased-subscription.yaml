@@ -6,5 +6,5 @@ metadata:
 spec:
   channel: stable
   name: loki-operator
-  source: qe-unreleased-testing
+  source: netobserv-downstream-testing
   sourceNamespace: openshift-marketplace

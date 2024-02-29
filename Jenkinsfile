@@ -97,12 +97,13 @@ pipeline {
         )
         choice(
             name: 'LOKISTACK_SIZE',
-            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            choices: ['1x.demo', '1x.extra-small', '1x.small', '1x.medium'],
             description: '''
-                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
-                1x.extra-small - Nodes size < m6i.4xlarge<br/>
-                1x.small - Nodes size >= m6i.4xlarge<br/>
-                1x.medium - Nodes size >= m6i.8xlarge<br/>
+                Depending on size of cluster, use following guidance to choose LokiStack size:<br/>
+                1x.demo - 3 nodes<br/>
+                1x.extra-small - 10 nodes<br/>
+                1x.small - 25 or 65 nodes<br/>
+                1x.medium - 120 nodes<br/>
             '''
         )
         separator(
@@ -359,7 +360,8 @@ pipeline {
             defaultValue: '',
             description: '''
                 Override baseline UUID to compare this run to<br/>
-                Note you will still need to check the box above to run the comparison
+                Note you will still need to check the box above to run the comparison<br/>
+                Using this override will casue the job to not automatically update the Elasticsearch baseline even is the comparsion is a success
             '''
         )
         separator(
@@ -979,7 +981,8 @@ pipeline {
                                     else {
                                         println('New statistics were within tolerable range of baseline statistics :)')
                                         currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                        if (BASELINE_UPDATE_USERS.contains(env.USER)) {
+                                        // only update Elasticsearch baseline if user has permissions and override isn't used
+                                        if (BASELINE_UPDATE_USERS.contains(env.USER) && (BASELINE_UUID_OVERRIDE == ''))  {
                                             println("User ${env.USER} is member of BASELINE_UPDATE_USERS group: ${BASELINE_UPDATE_USERS} - uploading new baseline...")
                                             NOPE_ARGS = ''
                                             if (params.NOPE_DEBUG == true) {

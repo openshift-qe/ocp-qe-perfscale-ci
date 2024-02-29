@@ -15,14 +15,14 @@ deploy_netobserv() {
   elif [[ $INSTALLATION_SOURCE == "Internal" ]]; then
     echo "Using 'Internal' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=netobserv-internal-subscription.yaml
-    deploy_unreleased_catalogsource
+    deploy_downstream_catalogsource
   elif [[ $INSTALLATION_SOURCE == "OperatorHub" ]]; then
     echo "Using 'OperatorHub' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=netobserv-operatorhub-subscription.yaml
   elif [[ $INSTALLATION_SOURCE == "Source" ]]; then
     echo "Using 'Source' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=netobserv-source-subscription.yaml
-    deploy_main_catalogsource
+    deploy_upstream_catalogsource
   else
     echo "'$INSTALLATION_SOURCE' is not a valid value for INSTALLATION_SOURCE"
     echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
@@ -32,9 +32,6 @@ deploy_netobserv() {
 
   echo "====> Creating NetObserv Project (if it does not already exist)"
   oc new-project netobserv || true
-
-  echo "====> Checking if LokiStack prerequisite has been satisfied"
-  oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
   echo "====> Creating openshift-netobserv-operator namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
@@ -54,13 +51,13 @@ deploy_netobserv() {
   echo "====> Creating Flow Collector"
   oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
 
-  echo "====> Waiting for flowlogs-pipeline pods to be ready"
+  echo "====> Waiting for eBPF pods to be ready"
   while :; do
-    oc get daemonset flowlogs-pipeline -n netobserv && break
+    oc get daemonset netobserv-ebpf-agent -n netobserv-privileged && break
     sleep 1
   done
   sleep 60
-  oc wait --timeout=1200s --for=condition=ready pod -l app=flowlogs-pipeline -n netobserv
+  oc wait --timeout=1200s --for=condition=ready pod -l app=netobserv-ebpf-agent -n netobserv-privileged
 }
 
 patch_netobserv() {
@@ -102,11 +99,11 @@ deploy_lokistack() {
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
 
-  echo "====> Creating qe-unreleased-testing CatalogSource (if applicable) and Loki Operator Subscription"
+  echo "====> Creating netobserv-downstream-testing CatalogSource (if applicable) and Loki Operator Subscription"
   if [[ $LOKI_OPERATOR == "Released" ]]; then
     oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
-    deploy_unreleased_catalogsource
+    deploy_downstream_catalogsource
     oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
   else
     echo "====> No Loki Operator config was found - using 'Released'"
@@ -152,13 +149,13 @@ deploy_lokistack() {
   echo "====> Creating LokiStack"
   oc apply -f $TMP_LOKICONFIG
   sleep 30
-  oc wait --timeout=300s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
+  oc wait --timeout=600s --for=condition=ready pod -l app.kubernetes.io/name=lokistack -n netobserv
 
   echo "====> Configuring Loki rate limit alert"
   oc apply -f $SCRIPTS_DIR/loki/loki-ratelimit-alert.yaml
 }
 
-deploy_unreleased_catalogsource() {
+deploy_downstream_catalogsource() {
   echo "====> Creating brew-registry ImageContentSourcePolicy"
   oc apply -f $SCRIPTS_DIR/icsp.yaml
 
@@ -171,17 +168,17 @@ deploy_unreleased_catalogsource() {
     echo "====> Using image $DOWNSTREAM_IMAGE for CatalogSource"
   fi
 
-  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/qe-unreleased-catalogsource.yaml
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-downstream-testing.yaml
   TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
   envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
 
-  echo "====> Creating qe-unreleased-testing CatalogSource"
+  echo "====> Creating netobserv-downstream-testing CatalogSource"
   oc apply -f $TMP_CATALOGCONFIG
   sleep 30
-  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=qe-unreleased-testing -n openshift-marketplace
+  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-downstream-testing -n openshift-marketplace
 }
 
-deploy_main_catalogsource() {
+deploy_upstream_catalogsource() {
   echo "====> Determining CatalogSource config"
   if [[ -z $UPSTREAM_IMAGE ]]; then
     echo "====> No image config was found - using main"
@@ -191,14 +188,14 @@ deploy_main_catalogsource() {
     echo "====> Using image $UPSTREAM_IMAGE for CatalogSource"
   fi
 
-  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-main-catalogsource.yaml
+  CatalogSource_CONFIG=$SCRIPTS_DIR/catalogsources/netobserv-upstream-testing.yaml
   TMP_CATALOGCONFIG=/tmp/catalogconfig.yaml
   envsubst <$CatalogSource_CONFIG >$TMP_CATALOGCONFIG
 
-  echo "====> Creating netobserv-main-testing CatalogSource from the main bundle"
+  echo "====> Creating netobserv-upstream-testing CatalogSource from the main bundle"
   oc apply -f $TMP_CATALOGCONFIG
   sleep 30
-  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-main-testing -n openshift-marketplace
+  oc wait --timeout=180s --for=condition=ready pod -l olm.catalogSource=netobserv-upstream-testing -n openshift-marketplace
 }
 
 deploy_kafka() {
@@ -290,9 +287,9 @@ delete_netobserv_operator() {
   oc delete --ignore-not-found csv -l operators.coreos.com/netobserv-operator.openshift-netobserv-operator= -n openshift-netobserv-operator
   oc delete --ignore-not-found crd/flowcollectors.flows.netobserv.io
   oc delete --ignore-not-found -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
-  echo "====> Deleting netobserv-main-testing and qe-unreleased-testing CatalogSource (if applicable)"
-  oc delete --ignore-not-found catalogsource/netobserv-main-testing -n openshift-marketplace
-  oc delete --ignore-not-found catalogsource/qe-unreleased-testing -n openshift-marketplace
+  echo "====> Deleting netobserv-upstream-testing and netobserv-downstream-testing CatalogSource (if applicable)"
+  oc delete --ignore-not-found catalogsource/netobserv-upstream-testing -n openshift-marketplace
+  oc delete --ignore-not-found catalogsource/netobserv-downstream-testing -n openshift-marketplace
 }
 
 delete_loki_operator() {

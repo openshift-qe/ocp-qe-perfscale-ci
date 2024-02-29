@@ -135,17 +135,41 @@
             "uid": "$Datasource"
           },
           "editorMode": "code",
-          "expr": "sum(rate(netobserv_ingest_errors[1m])) OR on() vector(0)",
+          "expr": "(sum(rate(netobserv_agent_errors_total[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_ingest_errors[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_encode_prom_errors[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_loki_batch_retries_total[1m])) OR on() vector(0))",
           "hide": false,
           "interval": "",
           "legendFormat": "Flows errored/s",
           "range": true,
           "refId": "D"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_namespace_flows_total{SrcK8S_Namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Workload flows generated/s",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_namespace_flows_total{SrcK8S_Namespace!~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Other flows generated/s",
+          "range": true,
+          "refId": "F"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Flows processed/written/dropped/errored per second",
+      "title": "Flow Rates",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -181,6 +205,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$Datasource"
       },
       "fill": 1,
@@ -196,13 +221,11 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": false,
-        "max": false,
+        "current": true,
+        "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
-        "sort": "avg",
-        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -226,25 +249,30 @@
           "datasource": {
             "uid": "$Datasource"
           },
-          "expr": "sum(rate(netobserv_ingest_flows_processed{pod=~\"$PodPrefix\"}[1m])*60) by (pod)",
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_workload_ingress_bytes_total{SrcK8S_Namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\", DstK8S_OwnerType=\"Deployment\"}[1m])) OR on() vector(0)",
+          "hide": false,
           "interval": "",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
+          "legendFormat": "Workload bytes sent to NetObserv/s",
+          "range": true,
+          "refId": "B"
         },
         {
           "datasource": {
             "uid": "$Datasource"
           },
-          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60)",
+          "editorMode": "code",
+          "expr": "sum(rate(container_network_receive_bytes_total{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\", cluster=\"\", namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
           "hide": false,
           "interval": "",
-          "legendFormat": "Total flows",
-          "refId": "B"
+          "legendFormat": "Workload bytes sent elsewhere/s",
+          "range": true,
+          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Flows processed per minute",
+      "title": "Workload Traffic",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -296,13 +324,11 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": false,
-        "max": false,
+        "current": true,
+        "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
-        "sort": "avg",
-        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -332,23 +358,11 @@
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "uid": "$Datasource"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m])*60)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Total flows",
-          "range": true,
-          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "Flows dropped per minute",
+      "title": "Flow Drops Per Pod",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -457,9 +471,11 @@
             "type": "prometheus",
             "uid": "PF55DCC5EC58ABF5A"
           },
+          "editorMode": "code",
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"})",
           "interval": "",
           "legendFormat": "eBPF",
+          "range": true,
           "refId": "A"
         },
         {
@@ -551,6 +567,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$Datasource"
       },
       "fill": 1,
@@ -596,9 +613,11 @@
           "datasource": {
             "uid": "$Datasource"
           },
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\"}",
+          "editorMode": "code",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -1522,9 +1541,11 @@
             "type": "prometheus",
             "uid": "PF55DCC5EC58ABF5A"
           },
+          "editorMode": "code",
           "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
           "interval": "",
           "legendFormat": "Node Ingress/s",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -1919,9 +1940,9 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "",
+  "timezone": "utc",
   "title": "NetObserv Metrics",
   "uid": "hmI9De_nz",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
