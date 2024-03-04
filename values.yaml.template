@@ -69,10 +69,18 @@ rapidastConfig: |
                     # alternative: 
                     # apiFile: "/home/rapidast/config/ocp-openapi-v2-1.23.5+3afdacb.json"
                     # apiFile: "/opt/rapidast/config/ocp-openapi-v3-fixed.json"
+            results: "/zap/results"
 
+            volumes:
+                - "/zap/results:/zap/results:Z"   # for Linux
             passiveScan:
                 # optional list of passive rules to disable
                 disabledRules: "2,10015,10027,10096,10024"
+            
+            miscOptions:
+                enableUI: False
+                updateAddons: False
+                memMaxHeap: "6144m"
 
             activeScan:
                 # If no policy is chosen, a default ("API-scan-minimal") will be selected
