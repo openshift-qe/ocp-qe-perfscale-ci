@@ -55,10 +55,11 @@ for api_doc in ${API_URL_LIST}; do
   oc logs $rapidast_pod -n default >> results/$folder_api_name/pod_logs.out
 
   ./results.sh rapidast-pvc results/$folder_api_name
+  ls results 
 
   phase=$(oc get $rapidast_pod -o jsonpath='{.status.phase}')
-  helm uninstall rapidast 
-  oc delete pvc rapidast-pvc
+  # helm uninstall rapidast 
+  # oc delete pvc rapidast-pvc
   (( counter++ ))
 done
 
