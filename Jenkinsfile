@@ -38,14 +38,14 @@ pipeline {
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: "DAST_IMAGE", defaultValue: "quay.io/redhatproductsecurity/rapidast", description: 'Image to use as the base for running zap.')
-        string(name: "DAST_IMAGE_TAG", defaultValue: "latest", description: 'Image tag to use as the base for running zap.')
+        string(name: "DAST_IMAGE_TAG", defaultValue: "2.4.0", description: 'Image tag to use as the base for running zap.')
         string(name: 'DAST_TOOL_URL', defaultValue: 'https://github.com/RedHatProductSecurity/rapidast.git', description: 'Rapidast tool github url .')
         string(name: 'DAST_TOOL_BRANCH', defaultValue: 'development', description: 'Rapdiast tool github barnch to checkout.')
         string(name: 'API_URL_LIST', defaultValue: 'admissionregistration.k8s.io/v1', description: 
         '''List of api files to scan against.
         Api docs you can find using <b>kubectl api-versions</b>''')
         string(name: 'POLICY_FILE', defaultValue: 'API-scan-minimal', description: 'List of policies to check apis against.')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc415',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
