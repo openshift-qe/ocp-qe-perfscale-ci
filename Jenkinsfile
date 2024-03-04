@@ -312,6 +312,7 @@ pipeline {
                         folder_name=$(ls -t -d /tmp/*/ | head -1)
                         file_loc=$folder_name"*"
                         cd workloads/kube-burner-ocp-wrapper
+                        ls
                         cp $file_loc .
                         ''')
                     archiveArtifacts(
