@@ -47,4 +47,4 @@ kubectl apply -f $TMP_DIR/$RANDOM_NAME
 rm $TMP_DIR/$RANDOM_NAME
 kubectl wait --for=condition=Ready pod/$RANDOM_NAME
 kubectl cp $RANDOM_NAME:/zap/results $RESULTS_DIR
-#kubectl delete pod $RANDOM_NAME
+kubectl delete pod $RANDOM_NAME

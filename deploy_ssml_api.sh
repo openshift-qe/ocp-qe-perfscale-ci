@@ -59,8 +59,8 @@ for api_doc in ${API_URL_LIST}; do
   ls results/$folder_api_name
 
   phase=$(oc get $rapidast_pod -o jsonpath='{.status.phase}')
-  # helm uninstall rapidast 
-  # oc delete pvc rapidast-pvc
+  helm uninstall rapidast 
+  oc delete pvc rapidast-pvc
   (( counter++ ))
 done
 
