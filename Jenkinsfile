@@ -105,7 +105,7 @@ pipeline {
       )
       choice(
           name: "PROFILE_TYPE",
-          choices: ["both","reporting","regular"]
+          choices: ["both","reporting","regular"],
           defaultValue: "both",
           description: '''
           Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
