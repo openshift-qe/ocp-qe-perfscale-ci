@@ -103,6 +103,14 @@ pipeline {
           Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
           '''
       )
+      choice(
+          name: "PROFILE_TYPE",
+          choices: ["both","reporting","regular"],
+          description: '''
+          Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
+          See <a href=https://github.com/kube-burner/kube-burner-ocp?tab=readme-ov-file#metrics-profile-type>profile type</a> for more details about profiles
+          '''
+      )
       string(
           name: "COMPARISON_CONFIG",
           defaultValue: "podLatency.json nodeMasters-ocp.json nodeWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json",
@@ -297,6 +305,8 @@ pipeline {
                             export EXTRA_FLAGS="$EXTRA_FLAGS --pods-per-node=$VARIABLE"
                         fi
                         export GC=${CLEANUP}
+
+                        export EXTRA_FLAGS+=" --gc-metrics=true --profile-type=$PROFILE_TYPE"
                         ./run.sh |& tee "kube-burner-ocp.out"
                         ''')
                         sh(returnStatus: true, script: '''
@@ -304,6 +314,7 @@ pipeline {
                         folder_name=$(ls -t -d /tmp/*/ | head -1)
                         file_loc=$folder_name"*"
                         cd workloads/kube-burner-ocp-wrapper
+                        ls
                         cp $file_loc .
                         ''')
                     archiveArtifacts(
@@ -331,18 +342,6 @@ pipeline {
                     }
                 }
             }
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: 'main' ]],
-                userRemoteConfigs: [[url: "https://github.com/openshift-qe/ocp-qe-perfscale-ci" ]],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'helpful_scripts']]
-            ])
-            copyArtifacts(
-                fingerprintArtifacts: true, 
-                projectName: JOB_NAME,
-                selector: specific(JENKINS_JOB_NUMBER),
-                target: 'workload-artifacts'
-            )
         }
     }
     stage("Create google sheet") {
