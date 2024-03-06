@@ -103,10 +103,14 @@ pipeline {
           Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
           '''
       )
-      string(
+      choice(
           name: "PROFILE_TYPE",
+          choices: ["both","reporting","regular"]
           defaultValue: "both",
-          description: "Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'"
+          description: '''
+          Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
+          See <a href=https://github.com/kube-burner/kube-burner-ocp?tab=readme-ov-file#metrics-profile-type>profile type</a> for more details about profiles
+          '''
       )
       string(
           name: "COMPARISON_CONFIG",
@@ -123,7 +127,6 @@ pipeline {
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
       )
-      
       string(
           name: 'EMAIL_ID_OVERRIDE',
           defaultValue: '',
