@@ -49,18 +49,20 @@ for api_doc in ${API_URL_LIST}; do
     sleep 5
     
   done
-
+  pwd 
+  
   cp $dast_tool_path/helm/chart/value_test.yaml results/$folder_api_name/value.yaml
 
   oc logs $rapidast_pod -n default >> results/$folder_api_name/pod_logs.out
   chmod +x $dast_tool_path/helm/results.sh
+
   ./results.sh rapidast-pvc results/$folder_api_name
   ls results 
   ls results/$folder_api_name
 
   phase=$(oc get $rapidast_pod -o jsonpath='{.status.phase}')
-  helm uninstall rapidast 
-  oc delete pvc rapidast-pvc
+  # helm uninstall rapidast 
+  # oc delete pvc rapidast-pvc
   (( counter++ ))
 done
 
