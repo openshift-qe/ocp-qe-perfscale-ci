@@ -38,7 +38,7 @@ pipeline {
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: "DAST_IMAGE", defaultValue: "quay.io/redhatproductsecurity/rapidast", description: 'Image to use as the base for running zap.')
-        string(name: "DAST_IMAGE_TAG", defaultValue: "2.4.0", description: 'Image tag to use as the base for running zap.')
+        string(name: "DAST_IMAGE_TAG", defaultValue: "latest", description: 'Image tag to use as the base for running zap.')
         string(name: 'DAST_TOOL_URL', defaultValue: 'https://github.com/RedHatProductSecurity/rapidast.git', description: 'Rapidast tool github url .')
         string(name: 'DAST_TOOL_BRANCH', defaultValue: 'development', description: 'Rapdiast tool github barnch to checkout.')
         string(name: 'API_URL_LIST', defaultValue: 'admissionregistration.k8s.io/v1', description: 
@@ -145,16 +145,16 @@ pipeline {
      }
    }
   }
-  // post {
-  //     always {
-  //         script {
-  //                     build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
-  //                     parameters: [
-  //                         string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "ssml"),
-  //                         text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),
-  //                         string(name: 'RESULT', value:currentBuild.currentResult)
-  //                     ], propagate: false
-  //         }
-  //     }
-  // }
+  post {
+      always {
+          script {
+                      build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/post-to-slack',
+                      parameters: [
+                          string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), string(name: 'WORKLOAD', value: "ssml"),
+                          text(name: "BUILD_URL", value: env.BUILD_URL), string(name: 'BUILD_ID', value: currentBuild.number.toString()),
+                          string(name: 'RESULT', value:currentBuild.currentResult)
+                      ], propagate: false
+          }
+      }
+  }
 }

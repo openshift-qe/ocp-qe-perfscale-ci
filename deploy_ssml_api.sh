@@ -30,7 +30,6 @@ for api_doc in ${API_URL_LIST}; do
   echo "api url: $API_URL"
   #edit rapidast config file
   envsubst < values.yaml.template > $dast_tool_path/helm/chart/value_test.yaml
-  #cp _helpers.tpl $dast_tool_path/helm/chart/templates/_helpers.tpl
   helm install rapidast $dast_tool_path/helm/chart -f $dast_tool_path/helm/chart/value_test.yaml
 
   # wait for pod to be completed or error
@@ -62,8 +61,8 @@ for api_doc in ${API_URL_LIST}; do
   ls results/$folder_api_name
 
   phase=$(oc get $rapidast_pod -o jsonpath='{.status.phase}')
-  # helm uninstall rapidast 
-  # oc delete pvc rapidast-pvc
+  helm uninstall rapidast 
+  oc delete pvc rapidast-pvc
   (( counter++ ))
 done
 
