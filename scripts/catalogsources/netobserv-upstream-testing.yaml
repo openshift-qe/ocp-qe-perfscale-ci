@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: netobserv-upstream-testing
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: ${UPSTREAM_IMAGE}
+  displayName: NetObserv Upstream Testing
+  publisher: NetObserv QE
+  updateStrategy:
+    registryPoll:
+      interval: 1m

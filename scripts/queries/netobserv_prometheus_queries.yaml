@@ -2,19 +2,51 @@
 # KPI metrics #
 ###############
 
-# Total flows processed per minute
+# total flows processed
+- query: sum(netobserv_ingest_flows_processed)
+  metricName: nFlowsProcessedTotals
+
+# total flows processed per minute
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60)
   metricName: nFlowsProcessedPerMinuteTotals
 
-# Total flows errored per minute
-- query: sum(rate(netobserv_ingest_errors[1m])*60)
+# total flows processed from workload namespaces
+- query: sum(netobserv_namespace_flows_total{SrcK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*"})
+  metricName: nWorkloadFlowsProcessedTotals
+
+# total flows processed from workload namespaces per minute
+- query: sum(rate(netobserv_namespace_flows_total{SrcK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*"}[1m])*60)
+  metricName: nWorkloadFlowsProcessedPerMinuteTotals
+
+# total bytes processed from workload namespaces by netobserv
+- query: sum(rate(netobserv_workload_ingress_bytes_total{SrcK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*", DstK8S_OwnerType="Deployment"}[1m])*60)
+  metricName: nWorkloadBytesProcessedPerMinuteNetobserv
+
+# total bytes processed from workload namespaces by cadvisor / other means
+- query: sum(rate(container_network_receive_bytes_total{job="kubelet", metrics_path="/metrics/cadvisor", cluster="", namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*"}[1m])*60)
+  metricName: nWorkloadBytesProcessedPerMinuteCadvisor
+
+# total flows errored
+- query:
+    (sum(increase(netobserv_agent_errors_total[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_ingest_errors[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_encode_prom_errors[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_loki_batch_retries_total[1m])) OR on() vector(0))
+  metricName: nFlowsErroredTotals
+
+# total flows errored per minute
+- query:
+    (sum(rate(netobserv_agent_errors_total[1m])*60) OR on() vector(0))
+    + (sum(rate(netobserv_ingest_errors[1m])*60) OR on() vector(0))
+    + (sum(rate(netobserv_encode_prom_errors[1m])*60) OR on() vector(0))
+    + (sum(rate(netobserv_loki_batch_retries_total[1m])*60) OR on() vector(0))
   metricName: nFlowsErroredPerMinuteTotals
 
-# Flows processed by ingester per minute aggregated by FLP pods
+# flows processed by ingester per minute aggregated by FLP pods
 - query: sum(rate(netobserv_ingest_flows_processed[1m])*60) by (pod)
   metricName: nFlowsProcessedPerMinute
 
-# Flows errored by ingester per minute aggregated by FLP pods
+# flows errored by ingester per minute aggregated by FLP pods
 - query: sum(rate(netobserv_ingest_errors[1m])*60) by (pod)
   metricName: nFlowsErroredPerMinute
 
@@ -26,11 +58,11 @@
 - query: pod:container_cpu_usage:sum{namespace=~"netobserv|netobserv-privileged|openshift-netobserv-operator"}
   metricName: cpuUsage
 
-# netobserv pods memory usage (RSS)
+# netobserv pods memory usage (RSS) - eBPF is omitted here as that is collected below
 - query: sum(container_memory_rss{namespace=~"netobserv|openshift-netobserv-operator", container=""}) by (container, pod, namespace, node)
   metricName: memoryUsageRSS
 
-# netobserv pods memory usage (Working Set)
+# netobserv pods memory usage (Working Set) - eBPF is omitted here as that is collected below
 - query: sum(container_memory_working_set_bytes{namespace=~"netobserv|openshift-netobserv-operator", container=""}) by (container, pod, namespace, node)
   metricName: memoryUsageWorkingSet
 
@@ -39,7 +71,7 @@
 ################
 
 # total CPU usage by eBPF
-- query: sum(pod:container_cpu_usage:sum{namespace="netobserv-privileged", pod=~"netobserv-ebpf.*"})
+- query: sum(pod:container_cpu_usage:sum{namespace="netobserv-privileged"})
   metricName: cpuEBPFTotals
 
 # total RSS by all eBPF pods
@@ -62,15 +94,15 @@
 # FLP metrics #
 ###############
 
-# total CPU usage by FLP
+# total CPU usage by FLP - per pod is not included here as that is collected above
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"flowlogs.*"})
   metricName: cpuFLPTotals
 
-# total RSS by all FLP pods
+# total RSS by all FLP pods - per pod is not included here as that is collected above
 - query: sum(container_memory_rss{namespace="netobserv", container="", pod=~"flowlogs.*"})
   metricName: rssFLPTotals
 
-# total working set memory by all FLP pods
+# total working set memory by all FLP pods - per pod is not included here as that is collected above
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", container="", pod=~"flowlogs.*"})
   metricName: workingsetFLPTotals
 
@@ -78,15 +110,15 @@
 # Loki metrics #
 ################
 
-# total CPU usage by all loki pods
+# total CPU usage by all loki pods - per pod is not included here as that is collected above
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"loki.*"})
   metricName: cpuLokiTotals
 
-# total RSS by all loki pods
+# total RSS by all loki pods - per pod is not included here as that is collected above
 - query: sum(container_memory_rss{namespace="netobserv", pod=~"loki.*", container=""})
   metricName: rssLokiTotals
 
-# total working set memory by all loki pods
+# total working set memory by all loki pods - per pod is not included here as that is collected above
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", pod=~"loki.*", container=""})
   metricName: workingsetLokiTotals
 
@@ -94,13 +126,21 @@
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*loki.*"}[5m]))
   metricName: lokiStorageUsage
 
-# loki records written per minute
+# total loki records written
 - query: sum(netobserv_loki_sent_entries_total)
   metricName: lokiRecordsWritten
+
+# loki records written per minute
+- query: sum(rate(netobserv_loki_sent_entries_total[1m])*60)
+  metricName: lokiRecordsWrittenPerMinute
 
 # total records dropped while sending to Loki (inverse of netobserv_loki_sent_entries_total)
 - query: sum(netobserv_loki_dropped_entries_total)
   metricName: lokiRecordsDropped
+
+# total records dropped while sending to Loki per minute (inverse of netobserv_loki_sent_entries_total)
+- query: sum(rate(netobserv_loki_dropped_entries_total[1m])*60)
+  metricName: lokiRecordsDroppedPerMinute
 
 #################
 # Kafka metrics #
@@ -110,14 +150,14 @@
 - query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*kafka.*"}[5m]))
   metricName: kafkaStorageUsage
 
-# total CPU usage by all kafka pods
+# total CPU usage by all kafka pods - per pod is not included here as that is collected above
 - query: sum(pod:container_cpu_usage:sum{namespace="netobserv", pod=~"kafka.*"})
   metricName: cpuKafkaTotals
 
-# total RSS by all kafka pods
+# total RSS by all kafka pods - per pod is not included here as that is collected above
 - query: sum(container_memory_rss{namespace="netobserv", container="", pod=~"kafka.*"})
   metricName: rssKafkaTotals
 
-# total working set memory by all Kafka pods
+# total working set memory by all Kafka pods - per pod is not included here as that is collected above
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", container="", pod=~"kafka.*"})
   metricName: workingsetKafkaTotals

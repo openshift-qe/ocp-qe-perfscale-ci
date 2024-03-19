@@ -1,11 +1,14 @@
 # KPIs
+- json_path: ["metric_name", "nFlowsProcessedTotals", "metric_name", "*", "max(value)"]
+  tolerancy: -10
+  max_failures: 0
 - json_path: ["metric_name", "nFlowsProcessedPerMinuteTotals", "metric_name", "*", "avg(value)"]
   tolerancy: -10
   max_failures: 0
-- json_path: ["metric_name", "nFlowsErroredPerMinuteTotals", "metric_name", "*", "avg(value)"]
-  tolerancy: 0
+- json_path: ["metric_name", "lokiRecordsWritten", "metric_name", "*", "max(value)"]
+  tolerancy: 2
   max_failures: 0
-- json_path: ["metric_name", "lokiRecordsDropped", "metric_name", "*", "avg(value)"]
+- json_path: ["metric_name", "lokiRecordsWrittenPerMinute", "metric_name", "*", "avg(value)"]
   tolerancy: 2
   max_failures: 0
 # CPU totals
