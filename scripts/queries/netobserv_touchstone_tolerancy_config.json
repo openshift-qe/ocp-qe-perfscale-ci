@@ -139,6 +139,39 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "nFlowsErroredTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "nFlowsErroredPerMinuteTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "lokiRecordsWritten"
                 },
                 "buckets": [
@@ -153,6 +186,39 @@
             {
                 "filter": {
                     "metric_name.keyword": "lokiRecordsWrittenPerMinute"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsDropped"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsDroppedPerMinute"
                 },
                 "buckets": [
                     "metric_name.keyword"
