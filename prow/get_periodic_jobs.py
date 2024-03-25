@@ -16,13 +16,13 @@ def invoke(command):
         print("Failed to run %s" % (command))
     return output
 
-def add_new_worksheet(row): 
+def add_new_worksheet(row,sheet_loc): 
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive",
     ]
     credentials = ServiceAccountCredentials.from_json_keyfile_name(
-        "/Users/prubenda/.secrets/perf_sheet_service_account.json", scope
+       sheet_loc, scope
     )
     
     gc = gspread.authorize(credentials)
@@ -209,14 +209,17 @@ def test_profile(folder_path, fileName):
         final_row.append(row)
     return final_row
 
+
+#Edit google sheet secret location
+sheet_loc = "/Users/prubenda/.secrets/perf_sheet_service_account.json"
+
+
 final_csv = "periodic.csv"
-# invoke("rm -rf release_master")
-# invoke("mkdir release_master")
-# invoke("cd release_master; git clone https://github.com/openshift/release.git")
-#folder_path="./release_master/release/ci-operator/config/openshift-qe/ocp-qe-perfscale-ci"
+invoke("rm -rf release_master")
+invoke("mkdir release_master")
+invoke("cd release_master; git clone https://github.com/openshift/release.git")
+folder_path="./release_master/release/ci-operator/config/openshift-qe/ocp-qe-perfscale-ci"
 
-
-folder_path="/Users/prubenda/PycharmProjects/release/ci-operator/config/openshift-qe/ocp-qe-perfscale-ci"
 file_names = invoke("ls " + folder_path)
 
 p = 0
@@ -230,4 +233,4 @@ for file_name in file_names.split():
         all_rows.extend(file_name_rows)
 
 write_csv(all_rows)
-add_new_worksheet(all_rows)
+add_new_worksheet(all_rows, sheet_loc)
