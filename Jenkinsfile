@@ -2,25 +2,32 @@
 
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
+BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
 
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
 if (userId) {
     currentBuild.displayName = userId
+} else {
+    currentBuild.displayName = 'auto'
 }
 
 pipeline {
+
+    // job runs on specified agent
     agent { label params.JENKINS_AGENT_LABEL }
 
+    // set timeout and enable coloring in console output
     options {
         timeout(time: 6, unit: 'HOURS')
         ansiColor('xterm')
     }
 
+    // job parameters
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc414',
+            defaultValue: 'oc415',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -90,12 +97,13 @@ pipeline {
         )
         choice(
             name: 'LOKISTACK_SIZE',
-            choices: ['1x.extra-small', '1x.small', '1x.medium'],
+            choices: ['1x.demo', '1x.extra-small', '1x.small', '1x.medium'],
             description: '''
-                Depending on size of cluster nodes, use following guidance to choose LokiStack size:<br/>
-                1x.extra-small - Nodes size < m6i.4xlarge<br/>
-                1x.small - Nodes size >= m6i.4xlarge<br/>
-                1x.medium - Nodes size >= m6i.8xlarge<br/>
+                Depending on size of cluster, use following guidance to choose LokiStack size:<br/>
+                1x.demo - 3 nodes<br/>
+                1x.extra-small - 10 nodes<br/>
+                1x.small - 25 or 65 nodes<br/>
+                1x.medium - 120 nodes<br/>
             '''
         )
         separator(
@@ -132,8 +140,35 @@ pipeline {
             name: 'OPERATOR_PREMERGE_OVERRIDE',
             defaultValue: '',
             description: '''
-                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rathar than using the main branch<br/>
-                These SHA hashes can be found in PRs after adding the label '/ok-to-test'<br/>
+                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rather than using the main branch<br/>
+                These SHA hashes can be found in PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'FLP_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific FLP premerge image to use rather than using the operator defined image<br/>
+                These SHA hashes can be found in FLP PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'EBPF_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific eBPF premerge image to use rather than using the operator defined image<br/>
+                These SHA hashes can be found in eBPF PR's after adding the label '/ok-to-test'<br/>
+                e.g. <b>e2bdef6</b>
+            '''
+        )
+        string(
+            name: 'PLUGIN_PREMERGE_OVERRIDE',
+            defaultValue: '',
+            description: '''
+                You can specify here a specific ConsolePlugin premerge image rather than using the operator defined image<br/>
+                These SHA hashes can be found in ConsolePlugin PR's after adding the label '/ok-to-test'<br/>
                 e.g. <b>e2bdef6</b>
             '''
         )
@@ -206,11 +241,13 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf'],
+            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf', 'ingress-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                Note that all options excluding "router-perf" and "None" will trigger "kube-burner-ocp" job<br/>
-                "router-perf" will trigger "router-perf" job and "None" will run no workload<br/>
+                "cluster-density" and "node-density" options will trigger "kube-burner-ocp" job<br/>
+                "router-perf" will trigger "router-perf" job<br/>
+                "ingress-perf" will trigger "ingress-perf" job<br/>
+                "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
         )
@@ -218,7 +255,7 @@ pipeline {
             name: 'VARIABLE',
             defaultValue: '1000',
             description: '''
-                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a> workload</b>.<br/>
+                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a></b> or <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workloads</b>.<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>node-density-heavy</a>: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br/>
                 Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
@@ -252,6 +289,16 @@ pipeline {
             name: 'CERBERUS_CHECK',
             defaultValue: false,
             description: 'Check cluster health status after workload runs'
+        )
+        string(
+            name: 'E2E_BENCHMARKING_REPO',
+            defaultValue: 'https://github.com/cloud-bulldozer/e2e-benchmarking',
+            description: 'You can change this to point to your fork if needed'
+        )
+        string(
+            name: 'E2E_BENCHMARKING_REPO_BRANCH',
+            defaultValue: 'master',
+            description: 'You can change this to point to a branch on your fork if needed.'
         )
         separator(
             name: 'NOPE_TOUCHSTONE_CONFIG_OPTIONS',
@@ -313,7 +360,8 @@ pipeline {
             defaultValue: '',
             description: '''
                 Override baseline UUID to compare this run to<br/>
-                Note you will still need to check the box above to run the comparison
+                Note you will still need to check the box above to run the comparison<br/>
+                Using this override will casue the job to not automatically update the Elasticsearch baseline even is the comparsion is a success
             '''
         )
         separator(
@@ -391,6 +439,14 @@ pipeline {
                 // login to Flexy cluster and set AWS credentials in Shell env for pipeline execution
                 withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
                     script {
+                        // set USER variable to be included in AWS bucket name and determine baseline upload permissions
+                        if (userId) {
+                            env.USER = userId
+                        }
+                        else {
+                            env.USER = 'auto'
+                        }
+                        println("USER identified as ${env.USER}")
                         buildInfo = readYaml(file: 'flexy-artifacts/BUILDINFO.yml')
                         buildInfo.params.each { env.setProperty(it.key, it.value) }
                         installData = readYaml(file: 'flexy-artifacts/workdir/install-dir/cluster_info.yaml')
@@ -464,13 +520,6 @@ pipeline {
                     if (params.LOKI_OPERATOR == 'Unreleased') {
                         env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
                     }
-                    // set USER variable to be included in AWS bucket name
-                    if (userId) {
-                        env.USER = userId
-                    }
-                    else {
-                        env.USER = 'auto'
-                    }
                     // attempt installation of Loki Operator from selected source
                     println("Installing ${params.LOKI_OPERATOR} version of Loki Operator...")
                     lokiReturnCode = sh(returnStatus: true, script: """
@@ -522,7 +571,38 @@ pipeline {
                     if (netobservReturnCode.toInteger() != 0) {
                         error("Network Observability installation from ${params.INSTALLATION_SOURCE} failed :(")
                     }
-                    // otherwise continue and display controller, FLP, and eBPF pods running in cluster
+                    // patch in premerge images if specified, fail pipeline if patching fails on any component
+                    if (params.EBPF_PREMERGE_OVERRIDE != '') {
+                        env.EBPF_PREMERGE_IMAGE = "quay.io/netobserv/netobserv-ebpf-agent:${EBPF_PREMERGE_OVERRIDE}"
+                        netobservEBPFPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "ebpf" $EBPF_PREMERGE_IMAGE
+                        """)
+                        if (netobservEBPFPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability eBPF image patch ${params.EBPF_PREMERGE_OVERRIDE} failed :(")
+                        }
+                    }
+                    if (params.FLP_PREMERGE_OVERRIDE != '') {
+                        env.FLP_PREMERGE_IMAGE = "quay.io/netobserv/flowlogs-pipeline:${FLP_PREMERGE_OVERRIDE}"
+                        netobservFLPPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "flp" $FLP_PREMERGE_IMAGE
+                        """)
+                        if (netobservFLPPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability FLP image patch ${params.FLP_PREMERGE_OVERRIDE} failed :(")
+                        }
+                    }
+                    if (params.PLUGIN_PREMERGE_OVERRIDE != '') {
+                        env.PLUGIN_PREMERGE_IMAGE = "quay.io/netobserv/network-observability-console-plugin:${PLUGIN_PREMERGE_OVERRIDE}"
+                        netobservPluginPatchReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            patch_netobserv "plugin" $PLUGIN_PREMERGE_IMAGE
+                        """)
+                        if (netobservPluginPatchReturnCode.toInteger() != 0) {
+                            error("Network Observability Plugin image patch ${params.PLUGIN_PREMERGE_OVERRIDE} failed :(")
+                        }
+                    }
+                    // if installation and patching succeeds, continue and display controller, FLP, and eBPF pods running in cluster
                     else {
                         println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
                         sh(returnStatus: true, script: '''
@@ -539,9 +619,8 @@ pipeline {
                 script {
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
-                    env.IS_DOWNSTREAM = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[0].env[3].value}' -A").trim()
                     if (env.RELEASE != '') {
-                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b> (downstream: <b>${env.IS_DOWNSTREAM}</b>)<br/>"
+                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
                     }
                     // attempt updating common parameters of NetObserv and flowcollector where specified
                     println('Updating common parameters of NetObserv and flowcollector where specified...')
@@ -614,28 +693,6 @@ pipeline {
                 }
             }
         }
-        stage('Setup FLP service and service-monitor') {
-            when {
-                expression { env.IS_DOWNSTREAM == 'false' }
-            }
-            steps {
-                script {
-                    // attempt setup of FLP service and creation of service-monitor
-                    println('Setting up FLP service and creating service-monitor...')
-                    metricsReturnCode = sh(returnStatus: true, script:  """
-                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        populate_netobserv_metrics
-                    """)
-                    // fail pipeline if setup failed, continue otherwise
-                    if (metricsReturnCode.toInteger() != 0) {
-                        error('Setting up FLP service and creating service-monitor failed :(')
-                    }
-                    else {
-                        println('Successfully set up FLP service and created service-monitor :)')
-                    }
-                }
-            }
-        }
         stage('Install Dittybopper') {
             when {
                 expression { params.INSTALL_DITTYBOPPER == true }
@@ -649,17 +706,10 @@ pipeline {
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'performance-dashboards']]
                 ])
                 script {
-                    // if an upstream installation, use custom Dittybopper template
-                    if (env.IS_DOWNSTREAM == 'false') {
-                        DITTYBOPPER_PARAMS = "-t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_upstream.json"
-                    }
-                    else {
-                        DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper_downstream.json"
-                    }
+                    DITTYBOPPER_PARAMS = "-i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper.json"
                     // attempt installation of dittybopper
                     dittybopperReturnCode = sh(returnStatus: true, script: """
                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                        setup_dittybopper_template
                         . $WORKSPACE/performance-dashboards/dittybopper/deploy.sh $DITTYBOPPER_PARAMS
                     """)
                     // fail pipeline if installation failed, continue otherwise
@@ -672,7 +722,7 @@ pipeline {
                 }
             }
         }
-        stage('Run Workload and Mr. Sandman') {
+        stage('Run Workload') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
@@ -680,7 +730,7 @@ pipeline {
                 script {
                     // set build name and remove previous artifacts
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
-                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/workloads/**/*.out")
+                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
                     // build workload job based off selected workload
                     if (params.WORKLOAD == 'router-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
@@ -692,7 +742,22 @@ pipeline {
                             string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
                             booleanParam(name: 'GEN_CSV', value: false),
                             string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
-                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX)
+                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
+                        ]
+                    }
+                    else if (params.WORKLOAD == 'ingress-perf') {
+                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
+                        workloadJob = build job: env.JENKINS_JOB, parameters: [
+                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                            booleanParam(name: 'MUST_GATHER', value: true),
+                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                            booleanParam(name: 'GEN_CSV', value: false),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
                         ]
                     }
                     else {
@@ -707,7 +772,9 @@ pipeline {
                             string(name: 'VARIABLE', value: params.VARIABLE), 
                             string(name: 'NODE_COUNT', value: params.NODE_COUNT),
                             booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL)
+                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
                         ]
                     }
                     // fail pipeline if workload failed
@@ -726,40 +793,23 @@ pipeline {
                     fingerprintArtifacts: true, 
                     projectName: env.JENKINS_JOB,
                     selector: specific(env.JENKINS_BUILD),
-                    target: 'workload-artifacts'
+                    target: 'workload-artifacts',
+                    flatten: true
                 )
                 script {
-                    // run Mr. Sandman
-                    sandmanReturnCode = sh(returnStatus: true, script: """
-                        python3.9 --version
-                        python3.9 -m pip install virtualenv
-                        python3.9 -m virtualenv venv3
-                        source venv3/bin/activate
-                        python --version
-                        wget -P $WORKSPACE/ocp-qe-perfscale-ci/scripts https://raw.githubusercontent.com/openshift-qe/ocp-qe-perfscale-ci/main/scripts/sandman.py
-                        python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/sandman.py --file $WORKSPACE/workload-artifacts/workloads/**/*.out --exit
-                    """)
-                    // fail pipeline if Mr. Sandman run failed, continue otherwise
-                    if (sandmanReturnCode.toInteger() != 0) {
-                        error('Mr. Sandman tool failed :(')
-                    }
-                    else {
-                        println('Successfully ran Mr. Sandman tool :)')
-                    }
-                    // set new env vars from Mr. Sandman and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/workload.json")
+                    // set new env vars from workload 'index_data' JSON file and update build description fields
+                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/index_data.json")
                     workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                     // UUID
                     currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                    // STARTTIME_STRING is string rep of start time
-                    currentBuild.description += "<b>STARTTIME_STRING:</b> ${env.STARTTIME_STRING}<br/>"
-                    // ENDTIME_STRING is string rep of end time
-                    currentBuild.description += "<b>ENDTIME_STRING:</b> ${env.ENDTIME_STRING}<br/>"
-                    // STARTTIME_TIMESTAMP is unix timestamp of start time
-                    currentBuild.description += "<b>STARTTIME_TIMESTAMP:</b> ${env.STARTTIME_TIMESTAMP}<br/>"
-                    // ENDTIME_TIMESTAMP is unix timestamp of end time
-                    currentBuild.description += "<b>ENDTIME_TIMESTAMP:</b> ${env.ENDTIME_TIMESTAMP}<br/>"
+                    // STARTDATE is string rep of start time
+                    currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
+                    // ENDDATE is string rep of end time
+                    currentBuild.description += "<b>ENDDATE:</b> ${env.ENDDATE}<br/>"
+                    // STARTDATEUNIXTIMESTAMP is unix timestamp of start time
+                    currentBuild.description += "<b>STARTDATEUNIXTIMESTAMP:</b> ${env.STARTDATEUNIXTIMESTAMP}<br/>"
+                    // ENDDATEUNIXTIMESTAMP is unix timestamp of end time
+                    currentBuild.description += "<b>ENDDATEUNIXTIMESTAMP:</b> ${env.ENDDATEUNIXTIMESTAMP}<br/>"
                 }
             }
         }
@@ -771,7 +821,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = '--starttime $STARTTIME_TIMESTAMP --endtime $ENDTIME_TIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
                         if (params.NOPE_DUMP == true) {
                             NOPE_ARGS += " --dump"
                         }
@@ -846,6 +896,7 @@ pipeline {
                             println('Successfully ran Touchstone tool :)')
                             // do tolerancy rules check if specified
                             if (params.RUN_BASELINE_COMPARISON) {
+                                env.BASELINE_UUID = ''
                                 // use baseline override if specified
                                 if (params.BASELINE_UUID_OVERRIDE != '') {
                                     env.BASELINE_UUID = params.BASELINE_UUID_OVERRIDE
@@ -864,60 +915,93 @@ pipeline {
                                     if (fetchReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
                                     }
-                                    else {                             
+                                    else {
                                         baselineInfo = readJSON(file: "$WORKSPACE/ocp-qe-perfscale-ci/data/baseline.json")
                                         baselineInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
                                     }
                                 }
-                                println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
                                 currentBuild.description += "<b>BASELINE_UUID:</b> ${env.BASELINE_UUID}<br/>"
-                                // set additional vars for tolerancy rules check
-                                env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
-                                env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
-                                // COMPARISON_CONFIG is changed here to only focus on specific statistics
-                                env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
-                                // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
-                                env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                baselineReturnCode = sh(returnStatus: true, script: """
-                                    cd $WORKSPACE/e2e-benchmarking/utils
-                                    rm -rf /tmp/**/*.csv
-                                    rm -rf *.csv
-                                    source compare.sh
-                                    run_benchmark_comparison
-                                """)
-                                // mark pipeline as unstable if Touchstone failed, continue otherwise
-                                if (baselineReturnCode.toInteger() != 0) {
-                                    unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
-                                    currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
-                                    // rerun Touchstone to generate a JSON for debugging
-                                    env.GEN_JSON = true
-                                    env.GEN_CSV = false
-                                    jsonReturnCode = sh(returnStatus: true, script: """
+                                if (env.BASELINE_UUID != '') {
+                                    println("Running automatic comparison between new UUID ${env.UUID} with provided baseline UUID ${env.BASELINE_UUID}...")
+                                    // set additional vars for tolerancy rules check
+                                    env.TOLERANCE_LOC = "$WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/"
+                                    env.TOLERANCY_RULES = "netobserv_touchstone_tolerancy_rules.yaml"
+                                    // COMPARISON_CONFIG is changed here to only focus on specific statistics
+                                    env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
+                                    // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
+                                    env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+                                    baselineReturnCode = sh(returnStatus: true, script: """
+                                        python3.9 --version
+                                        python3.9 -m pip install virtualenv
+                                        python3.9 -m virtualenv venv3
+                                        source venv3/bin/activate
+                                        python --version
                                         cd $WORKSPACE/e2e-benchmarking/utils
+                                        rm -rf /tmp/**/*.csv
+                                        rm -rf *.csv
                                         source compare.sh
                                         run_benchmark_comparison
                                     """)
-                                    println('Generated debug JSON for tolerancy analysis :)')
-                                }
-                                else {
-                                    println('New statistics were within tolerable range of baseline statistics :)')
-                                    currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
-                                    NOPE_ARGS = ''
-                                    if (params.NOPE_DEBUG == true) {
-                                        NOPE_ARGS += ' --debug'
-                                    }
-                                    NOPE_ARGS += ' baseline --upload $UUID'
-                                    uploadReturnCode = sh(returnStatus: true, script: """
-                                        source venv3/bin/activate
-                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
-                                    """)
-                                    if (uploadReturnCode.toInteger() != 0) {
-                                        unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
-                                        currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                    // mark pipeline as unstable if Touchstone failed, continue otherwise
+                                    if (baselineReturnCode.toInteger() != 0) {
+                                        unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
+                                        currentBuild.description += "Baseline Comparison: <b>FAILED</b><br/>"
+                                        // collect must-gather
+                                        mustGatherJob = build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather', parameters: [
+                                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                                        ]
+                                        if (mustGatherJob.result != 'SUCCESS') {
+                                            println('must-gather job failed :(')
+                                        }
+                                        else {
+                                            println("Successfully ran must-gather job :)")
+                                            copyArtifacts(
+                                                fingerprintArtifacts: true,
+                                                projectName: 'scale-ci/e2e-benchmarking-multibranch-pipeline/must-gather',
+                                                selector: specific("${mustGatherJob.getNumber()}"),
+                                            )
+                                        }
+                                        // rerun Touchstone to generate a JSON for debugging
+                                        env.GEN_JSON = true
+                                        env.GEN_CSV = false
+                                        jsonReturnCode = sh(returnStatus: true, script: """
+                                            python3.9 --version
+                                            python3.9 -m pip install virtualenv
+                                            python3.9 -m virtualenv venv3
+                                            source venv3/bin/activate
+                                            python --version
+                                            cd $WORKSPACE/e2e-benchmarking/utils
+                                            source compare.sh
+                                            run_benchmark_comparison
+                                        """)
+                                        println('Generated debug JSON for tolerancy analysis :)')
                                     }
                                     else {
-                                        println('Successfully uploaded new baseline to Elasticsearch :)')
-                                        currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                        println('New statistics were within tolerable range of baseline statistics :)')
+                                        currentBuild.description += "Baseline Comparison: <b>SUCCESS</b><br/>"
+                                        // only update Elasticsearch baseline if user has permissions and override isn't used
+                                        if (BASELINE_UPDATE_USERS.contains(env.USER) && (BASELINE_UUID_OVERRIDE == ''))  {
+                                            println("User ${env.USER} is member of BASELINE_UPDATE_USERS group: ${BASELINE_UPDATE_USERS} - uploading new baseline...")
+                                            NOPE_ARGS = ''
+                                            if (params.NOPE_DEBUG == true) {
+                                                NOPE_ARGS += ' --debug'
+                                            }
+                                            NOPE_ARGS += ' baseline --upload $UUID'
+                                            uploadReturnCode = sh(returnStatus: true, script: """
+                                                source venv3/bin/activate
+                                                python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                            """)
+                                            if (uploadReturnCode.toInteger() != 0) {
+                                                unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
+                                                currentBuild.description += "New Baseline Upload: <b>FAILED</b><br/>"
+                                            }
+                                            else {
+                                                println('Successfully uploaded new baseline to Elasticsearch :)')
+                                                currentBuild.description += "New Baseline Upload: <b>SUCCESS</b><br/>"
+                                            }
+                                        }
                                     }
                                 }
                             }

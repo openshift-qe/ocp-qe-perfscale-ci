@@ -36,7 +36,87 @@
                 ]
             }
         },
+        "ripsaw-kube-burner": [
+            {
+                "filter": {
+                    "metricName.keyword": "namespaceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "podStatusCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "deploymentCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "replicaSetCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metricName.keyword": "serviceCount"
+                },
+                "buckets": [
+                    "metricName.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            }
+        ],
         "prod-netobserv-datapoints": [
+            {
+                "filter": {
+                    "metric_name.keyword": "nFlowsProcessedTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
             {
                 "filter": {
                     "metric_name.keyword": "nFlowsProcessedPerMinuteTotals"
@@ -59,7 +139,86 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "nFlowsErroredTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "nFlowsErroredPerMinuteTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsWritten"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsWrittenPerMinute"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsDropped"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "lokiRecordsDroppedPerMinute"
                 },
                 "buckets": [
                     "metric_name.keyword"

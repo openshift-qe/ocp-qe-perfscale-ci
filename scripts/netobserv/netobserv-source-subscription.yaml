@@ -8,5 +8,5 @@ metadata:
 spec:
   channel: latest
   name: netobserv-operator
-  source: netobserv-main-testing
+  source: netobserv-upstream-testing
   sourceNamespace: openshift-marketplace 

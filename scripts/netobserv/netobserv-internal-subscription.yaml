@@ -8,5 +8,5 @@ metadata:
 spec:
   channel: stable
   name: netobserv-operator
-  source: qe-unreleased-testing
+  source: netobserv-downstream-testing
   sourceNamespace: openshift-marketplace 

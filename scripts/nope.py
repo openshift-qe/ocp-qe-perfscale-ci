@@ -47,7 +47,7 @@ JENKINS_JOB = None
 JENKINS_BUILD = None
 JENKINS_SERVER = None
 UUID = None
-SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'cluster-density', 'cluster-density-v2']
+SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'ingress-perf', 'cluster-density', 'cluster-density-v2']
 
 # elasticsearch constants
 ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com'
@@ -106,7 +106,7 @@ def process_query(metric_name, query, raw_data):
     return clean_data
 
 
-def run_query(query):
+def run_query(metric_name, query):
     ''' takes in a Prometheus query
         executes a range query based on global constants
         returns the JSON data delivered by Prometheus or an exception if the query fails
@@ -125,7 +125,7 @@ def run_query(query):
     # make request and return data
     data = requests.get(endpoint, headers=headers, params=params, verify=False)
     if data.status_code != 200:
-        raise Exception(f"Query to fetch Prometheus data failed: {data.reason}") 
+        raise Exception(f"metricName '{metric_name}' with query '{query}'to fetch Prometheus data failed due to: {data.status_code} {data.reason}") 
     return data.json()
 
 
@@ -494,7 +494,7 @@ def main():
     for entry in QUERIES:
         metric_name = entry['metricName']
         query = entry['query']
-        raw_data = run_query(query)
+        raw_data = run_query(metric_name, query)
         clean_data = process_query(metric_name, query, raw_data)
         RESULTS["data"].extend(clean_data)
 
@@ -669,17 +669,10 @@ if __name__ == '__main__':
     logging.info(f"THANOS_URL: {THANOS_URL}")
 
     # get token from cluster
-    IS_DOWNSTREAM = subprocess.run(['oc', 'get', 'pods', '-l', 'app=netobserv-operator', '-o', 'jsonpath="{.items[*].spec.containers[0].env[3].value}"', '-A'], capture_output=True, text=True).stdout
-    if IS_DOWNSTREAM == '"true"':
-        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
-        # try deprecated method in case first attempt fails
-        if TOKEN == '':
-            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
-    else:
-        TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-user-workload', '-n', 'openshift-user-workload-monitoring'], capture_output=True, text=True).stdout
-        # try deprecated method in case first attempt fails
-        if TOKEN == '':
-            TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
+    TOKEN = subprocess.run(['oc', 'create', 'token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
+    # try deprecated method in case first attempt fails
+    if TOKEN == '':
+        TOKEN = subprocess.run(['oc', 'sa', 'new-token', 'prometheus-k8s', '-n', 'openshift-monitoring'], capture_output=True, text=True).stdout
 
     # log token or exit if no token could be found
     if TOKEN == '':

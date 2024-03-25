@@ -3,8 +3,10 @@ The purpose of the scripts in this directory is to measure [netobserv](https://g
 
 Multiple workloads are run to generate traffic for the cluster:
 1. [node-density-heavy](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56616)
-2. [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618)
+2. [ingress-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-70716)
 3. [cluster-density-v2](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56617)
+
+Note that [ingress-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-70716) replaced the [router-perf](https://polarion.engineering.redhat.com/polarion/#/project/OSE/workitem?id=OCP-56618) test case we used for 1.5 and below
 
 ## Prerequisites
 1. Create an OCP4 cluster
@@ -59,18 +61,15 @@ The latest officially-released version of the upstream operator. It is hosted on
 #### Source
 GitHub Actions is used to [build and push images from the upstream operator repository](https://github.com/netobserv/network-observability-operator/actions) to [quay.io](https://quay.io/repository/netobserv/network-observability-operator-catalog?tab=tags) where the `main` tag is used to track the Github `main` branch.
 
-If you want to install a premerge image that is present on quay.io instead of the `main` image, you can do so by setting the `$UPSTREAM_IMAGE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note this only works for premerge testing of the Operator image, not component images such as eBPF or FLP.
-
-### Setting up FLP service and creating service-monitor
-Note this is only nessessary if you're running an upstream version of the operator.
-
-Navigate to the `scripts/` directory of this repository and run `$ populate_netobserv_metrics`
+#### Pre-merge images
+If you want to install a premerge operator image that is present on quay.io instead of the `main` image, you can do so by setting the `$OPERATOR_PREMERGE_OVERRIDE` variable to the SHA hash of the premerge image, e.g. `e2bdef6` - note please select source installation method for using pre-merge images of operator
+If you want to install the operator with pre-merge component images instead of the operator defined images, you can do so by setting the `$EBPF_PREMERGE_OVERRIDE`, `$FLP_PREMERGE_OVERRIDE`, `$PLUGIN_PREMERGE_OVERRIDE` variables for EBPF, FLP, Plugin respectively to the SHA hash of the premerge image, e.g. `e2bdef6`
 
 ### Updating common parameters of flowcollector
 Initial configuration of flowcollector is set via the CRD, in the case of this repo that lies under `scripts/netobserv/flows_v1beta2_flowcollector.yaml`
 
 You can update common parameters of flowcollector individually with the following commands:
-- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/<collector agent>/sampling", "value": <value>}]"`
+- **eBPF Sampling rate:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": <value>}]"`
 - **eBPF Memory limit:** `$ oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "<value>Mi"}] -n netobserv`
 - **FLP CPU limit:** `$ oc patch flowcollector  cluster --type=json -p "[{"op": "replace", "path": "/spec/flowlogsPipeline/resources/limits/cpu", "value": "<value>m"}]"`
     -  Note that 1000m = 1000 millicores, i.e. 1 core
@@ -92,10 +91,9 @@ Dittybopper allows for live viewing of the following metrics:
 * Loki Data Rate
 
 To install Dittybopper, follow the steps below:
-1. If you're using the upstream operator, navigate to the `scripts/` directory of this repository and run `$ setup_dittybopper_template`
-2. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
-3. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -t $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_upstream.json` if you're using the upstream operator, otherwise run `$ ./deploy.sh -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv_dittybopper_downstream.json` if you're using the downstream operator
-4. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
+1. Clone the [performance-dashboards](https://github.com/cloud-bulldozer/performance-dashboards) repo if you haven't already
+2. From `performance-dashboards/dittybopper`, run `$ ./deploy.sh -i $WORKSPACE/ocp-qe-perfscale-ci/scripts/queries/netobserv_dittybopper.json`
+3. If the data isn't visible, you can manually import it by going to the Grafana URL (can be obtained with `$ oc get routes -n dittybopper`), logging in as `admin`, and uploading the relevant dittybopper config file in the `Dashboards` view.
 
 ## Testing with Scale CI
 You can use the OCP QE PerfScale team's [scale-ci Jenkins jobs](https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.redhat.com/job/scale-ci/job/e2e-benchmarking-multibranch-pipeline/) to run performance and scale tests against NO-enabled clusters

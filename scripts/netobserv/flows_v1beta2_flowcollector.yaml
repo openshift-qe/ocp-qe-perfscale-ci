@@ -4,14 +4,13 @@ metadata:
   name: cluster
 spec:
   agent:
+    type: eBPF
     ebpf:
       cacheActiveTimeout: 5s
       cacheMaxFlows: 100000
-      debug: {}
       excludeInterfaces:
       - lo
       imagePullPolicy: IfNotPresent
-      kafkaBatchSize: 10485760
       logLevel: info
       resources:
         limits:
@@ -31,7 +30,6 @@ spec:
         daemonSetName: ovnkube-node
         namespace: ovn-kubernetes
       sampling: 400
-    type: EBPF
   consolePlugin:
     autoscaler:
       maxReplicas: 3
@@ -43,10 +41,9 @@ spec:
             type: Utilization
         type: Resource
       minReplicas: 1
-      status: DISABLED
+      status: Disabled
     imagePullPolicy: IfNotPresent
-    logLevel: debug
-    port: 9001
+    logLevel: info
     portNaming:
       enable: true
       portNames:
@@ -69,7 +66,6 @@ spec:
     - filter:
         dst_kind: Service
       name: Services network
-    register: true
     replicas: 1
     resources:
       limits:
@@ -77,7 +73,10 @@ spec:
       requests:
         cpu: 100m
         memory: 50Mi
-  deploymentModel: DIRECT
+    advanced:
+      port: 9001
+      register: true
+  deploymentModel: Direct
   exporters: []
   kafka:
     address: kafka-cluster-kafka-bootstrap.netobserv
@@ -99,22 +98,18 @@ spec:
     mode: LokiStack
     lokiStack:
       name: lokistack
-      namespace: netobserv
-    batchWait: 1s
-    batchSize: 10485760
-    minBackoff: 1s
-    maxBackoff: 5s
     maxRetries: 2
+    writeBatchWait: 1s
+    writeBatchSize: 10485760
+    advanced:
+      writeMinBackoff: 1s
+      writeMaxBackoff: 5s
   namespace: netobserv
   processor:
-    debug: {}
-    dropUnusedFields: true
-    enableKubeProbes: true
-    healthPort: 8080
     imagePullPolicy: IfNotPresent
     kafkaConsumerAutoscaler:
       maxReplicas: 0
-      status: DISABLED
+      status: Disabled
     kafkaConsumerBatchSize: 10485760
     kafkaConsumerQueueCapacity: 1000
     kafkaConsumerReplicas: 3
@@ -127,11 +122,15 @@ spec:
       server:
         port: 9102
         tls:
-          type: DISABLED
-    port: 2055
+          type: Disabled
     resources:
       limits:
         memory: 800Mi
       requests:
         cpu: 100m
         memory: 100Mi
+    advanced:
+      port: 2055
+      healthPort: 8080
+      dropUnusedFields: true
+      enableKubeProbes: true

@@ -3,25 +3,37 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1683220206925,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -30,6 +42,15 @@
       },
       "id": 42,
       "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "refId": "A"
+        }
+      ],
       "title": "NetObserv KPIs",
       "type": "row"
     },
@@ -38,12 +59,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Thanos",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -63,8 +81,6 @@
         "min": false,
         "rightSide": true,
         "show": true,
-        "sort": "avg",
-        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -75,7 +91,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -85,6 +101,9 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "uid": "$Datasource"
+          },
           "expr": "sum(rate(netobserv_ingest_flows_processed[1m]))",
           "instant": false,
           "interval": "",
@@ -92,30 +111,65 @@
           "refId": "A"
         },
         {
+          "datasource": {
+            "uid": "$Datasource"
+          },
           "expr": "sum(rate(netobserv_loki_sent_entries_total[1m]))",
           "interval": "",
           "legendFormat": "Flows written/s",
           "refId": "B"
         },
         {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
           "expr": "sum(rate(netobserv_loki_dropped_entries_total[1m]))",
           "interval": "",
           "legendFormat": "Flows dropped/s",
+          "range": true,
           "refId": "C"
         },
         {
-          "expr": "sum(rate(netobserv_ingest_errors[1m]))",
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(netobserv_agent_errors_total[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_ingest_errors[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_encode_prom_errors[1m])) OR on() vector(0))\n+ (sum(rate(netobserv_loki_batch_retries_total[1m])) OR on() vector(0))",
           "hide": false,
           "interval": "",
           "legendFormat": "Flows errored/s",
+          "range": true,
           "refId": "D"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_namespace_flows_total{SrcK8S_Namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Workload flows generated/s",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_namespace_flows_total{SrcK8S_Namespace!~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Other flows generated/s",
+          "range": true,
+          "refId": "F"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
-      "title": "Flows processed/written/dropped/errored per second",
+      "title": "Flow Rates",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -123,9 +177,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -133,25 +185,18 @@
         {
           "$$hashKey": "object:64",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:65",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -159,12 +204,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$Datasource",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -179,13 +221,11 @@
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": false,
-        "max": false,
+        "current": true,
+        "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
-        "sort": "avg",
-        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -196,7 +236,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -206,24 +246,33 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(netobserv_ingest_flows_processed{pod=~\"$PodPrefix\"}[1m])*60) by (pod)",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(netobserv_ingest_flows_processed[1m])*60)",
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_workload_ingress_bytes_total{SrcK8S_Namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\", DstK8S_OwnerType=\"Deployment\"}[1m])) OR on() vector(0)",
           "hide": false,
           "interval": "",
-          "legendFormat": "Total flows",
+          "legendFormat": "Workload bytes sent to NetObserv/s",
+          "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_network_receive_bytes_total{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\", cluster=\"\", namespace=~\"node-density-heavy.*|ingress-perf|cluster-density.*\"}[1m])) OR on() vector(0)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Workload bytes sent elsewhere/s",
+          "range": true,
+          "refId": "C"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
-      "title": "Flows processed per minute",
+      "title": "Workload Traffic",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -231,9 +280,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -241,25 +288,18 @@
         {
           "$$hashKey": "object:1163",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:1164",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -267,12 +307,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -283,17 +320,15 @@
         "y": 9
       },
       "hiddenSeries": false,
-      "id": 54,
+      "id": 67,
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": false,
-        "max": false,
+        "current": true,
+        "max": true,
         "min": false,
         "rightSide": true,
         "show": true,
-        "sort": "avg",
-        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -304,7 +339,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -314,17 +349,20 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(netobserv_loki_dropped_entries_total{pod=~\"$PodPrefix\"}[1m])*60) by (pod)",
           "interval": "",
-          "legendFormat": "Node Ingress/s",
+          "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
-      "title": "Node traffic received per second",
+      "title": "Flow Drops Per Pod",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -332,40 +370,34 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
-          "$$hashKey": "object:179",
-          "format": "binBps",
-          "label": null,
+          "$$hashKey": "object:1163",
+          "format": "short",
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
-          "$$hashKey": "object:180",
+          "$$hashKey": "object:1164",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -374,6 +406,15 @@
       },
       "id": 40,
       "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "refId": "A"
+        }
+      ],
       "title": "NetObserv CPU",
       "type": "row"
     },
@@ -382,12 +423,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -419,7 +457,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -429,36 +467,62 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"})",
           "interval": "",
           "legendFormat": "eBPF",
+          "range": true,
           "refId": "A"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"flowlogs.*\"})",
           "interval": "",
           "legendFormat": "FLP",
           "refId": "B"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"kafka.*\"})",
           "interval": "",
           "legendFormat": "Kafka",
           "refId": "C"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"})",
           "interval": "",
           "legendFormat": "Loki",
           "refId": "D"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(pod:container_cpu_usage:sum{namespace=~\"openshift-netobserv-operator\", pod=~\"netobserv-controller.*\"})",
           "interval": "",
           "legendFormat": "NetObserv Controller",
           "refId": "E"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(pod:container_cpu_usage:sum{namespace=~\"netobserv\", pod=~\"netobserv-plugin.*\"})",
           "interval": "",
           "legendFormat": "NetObserv Console Plugin",
@@ -466,9 +530,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "CPU Usage Totals",
       "tooltip": {
         "shared": true,
@@ -477,9 +539,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -487,25 +547,18 @@
         {
           "$$hashKey": "object:139",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:140",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -513,12 +566,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$Datasource",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -538,7 +588,6 @@
         "min": false,
         "rightSide": true,
         "show": true,
-        "sideWidth": null,
         "sort": "avg",
         "sortDesc": true,
         "total": false,
@@ -551,7 +600,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -561,16 +610,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\"}",
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
+          "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "eBPF CPU Usage",
       "tooltip": {
         "shared": true,
@@ -579,9 +631,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -589,25 +639,18 @@
         {
           "$$hashKey": "object:1208",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:1209",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -615,12 +658,8 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$Datasource",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -652,7 +691,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -662,6 +701,9 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "uid": "$Datasource"
+          },
           "expr": "pod:container_cpu_usage:sum{namespace=~\"netobserv\", pod=~\"flowlogs.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
@@ -669,9 +711,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "FLP CPU Usage",
       "tooltip": {
         "shared": true,
@@ -680,9 +720,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -690,25 +728,18 @@
         {
           "$$hashKey": "object:944",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:945",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -716,12 +747,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -753,7 +781,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -763,16 +791,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
           "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"loki.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Loki CPU Usage",
       "tooltip": {
         "shared": true,
@@ -781,9 +813,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -791,25 +821,18 @@
         {
           "$$hashKey": "object:659",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:660",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -817,12 +840,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -854,7 +874,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -864,16 +884,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
           "expr": "pod:container_cpu_usage:sum{namespace=\"netobserv\", pod=~\"kafka.*\"}",
           "interval": "",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Kafka CPU Usage",
       "tooltip": {
         "shared": true,
@@ -882,9 +906,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -892,30 +914,26 @@
         {
           "$$hashKey": "object:659",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:660",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -924,6 +942,15 @@
       },
       "id": 38,
       "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "refId": "A"
+        }
+      ],
       "title": "NetObserv Memory",
       "type": "row"
     },
@@ -932,12 +959,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -969,7 +993,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -979,36 +1003,60 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\", pod=~\"netobserv-ebpf.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "eBFP",
           "refId": "A"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"flowlogs.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "FLP",
           "refId": "B"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "Kafka",
           "refId": "C"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "Loki",
           "refId": "D"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=~\"openshift-netobserv-operator\", pod=~\"netobserv-controller.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "NetObserv Controller",
           "refId": "E"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=~\"netobserv\", pod=~\"netobserv-plugin.*\", container=\"\"})",
           "interval": "",
           "legendFormat": "NetObserv Console Plugin",
@@ -1016,9 +1064,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Memory Usage Totals (RSS)",
       "tooltip": {
         "shared": true,
@@ -1027,9 +1073,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1037,25 +1081,18 @@
         {
           "$$hashKey": "object:257",
           "format": "bytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:258",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1063,12 +1100,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -1100,7 +1134,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1110,6 +1144,10 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=\"netobserv-privileged\", container=\"\", pod=~\"$PodPrefix\"}) by (container, pod, namespace)",
           "interval": "",
           "legendFormat": "{{pod}}",
@@ -1117,9 +1155,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "eBPF Memory Usage (RSS)",
       "tooltip": {
         "shared": true,
@@ -1128,9 +1164,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1138,25 +1172,18 @@
         {
           "$$hashKey": "object:134",
           "format": "bytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:135",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1164,12 +1191,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -1201,7 +1225,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1211,6 +1235,10 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
           "expr": "sum(container_memory_rss{namespace=~\"netobserv\", container=\"\", node=~\"$_node\", pod=~\"flowlogs.*\"}) by (container, pod, namespace, node)",
           "interval": "",
           "intervalFactor": 1,
@@ -1219,9 +1247,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "FLP Memory Usage (RSS)",
       "tooltip": {
         "shared": true,
@@ -1230,9 +1256,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1240,25 +1264,18 @@
         {
           "$$hashKey": "object:513",
           "format": "bytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:514",
           "format": "decbytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1266,12 +1283,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -1279,107 +1293,6 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 60
-      },
-      "hiddenSeries": false,
-      "id": 30,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node)",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Loki Memory Usage (RSS)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:1680",
-          "format": "bytes",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:1681",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
         "y": 60
       },
       "hiddenSeries": false,
@@ -1404,7 +1317,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1414,16 +1327,111 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"loki.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
+      "title": "Loki Memory Usage (RSS)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1680",
+          "format": "bytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1681",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 60
+      },
+      "hiddenSeries": false,
+      "id": 30,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
+          "expr": "sum(container_memory_rss{namespace=\"netobserv\", pod=~\"kafka.*\", container=\"\", node=~\"$_node\"}) by (container, pod, namespace, node )",
+          "interval": "",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
       "title": "Kafka Memory Usage (RSS)",
       "tooltip": {
         "shared": true,
@@ -1432,9 +1440,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1442,38 +1448,43 @@
         {
           "$$hashKey": "object:1680",
           "format": "bytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:1681",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 68
       },
-      "id": 48,
+      "id": 36,
       "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "refId": "A"
+        }
+      ],
       "title": "Additional Metrics",
       "type": "row"
     },
@@ -1482,19 +1493,109 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
       },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
+        "y": 69
+      },
+      "hiddenSeries": false,
+      "id": 54,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(node_network_receive_bytes_total[1m]))",
+          "interval": "",
+          "legendFormat": "Node Ingress/s",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Node traffic received per second",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:179",
+          "format": "binBps",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:180",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PF55DCC5EC58ABF5A"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
         "y": 69
       },
       "hiddenSeries": false,
@@ -1519,7 +1620,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1529,16 +1630,20 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\"}[5m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PF55DCC5EC58ABF5A"
+          },
+          "editorMode": "code",
+          "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", persistentvolumeclaim=~\".*kafka.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Kafka PVC Usage",
       "tooltip": {
         "shared": true,
@@ -1547,9 +1652,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1557,25 +1660,18 @@
         {
           "$$hashKey": "object:141",
           "format": "bytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:142",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1583,12 +1679,8 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$Datasource",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "uid": "$Datasource"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -1596,6 +1688,92 @@
         "h": 8,
         "w": 12,
         "x": 0,
+        "y": 77
+      },
+      "hiddenSeries": false,
+      "id": 64,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.4.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "expr": "sum(rate(loki_distributor_bytes_received_total[1m]))",
+          "interval": "",
+          "legendFormat": "Bytes/s",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Loki Data Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:209",
+          "format": "binBps",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:210",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$Datasource"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
         "y": 77
       },
       "hiddenSeries": false,
@@ -1620,7 +1798,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "9.4.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1630,16 +1808,19 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "uid": "$Datasource"
+          },
+          "editorMode": "code",
           "expr": "sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace=\"netobserv\", persistentvolumeclaim=~\".*loki.*\"}[5m]))",
           "interval": "",
           "legendFormat": "{{persistentvolumeclaim}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Loki PVC Usage",
       "tooltip": {
         "shared": true,
@@ -1648,9 +1829,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1658,127 +1837,24 @@
         {
           "$$hashKey": "object:508",
           "format": "decbytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "$$hashKey": "object:509",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Thanos",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 77
-      },
-      "hiddenSeries": false,
-      "id": 64,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(loki_distributor_bytes_received_total[1m]))",
-          "interval": "",
-          "legendFormat": "Bytes/s",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Loki Data Rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:209",
-          "format": "binBps",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:210",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 26,
+  "revision": 1,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -1786,10 +1862,9 @@
       {
         "current": {
           "selected": false,
-          "text": "Thanos",
-          "value": "Thanos"
+          "text": "Cluster Prometheus",
+          "value": "Cluster Prometheus"
         },
-        "error": null,
         "hide": 0,
         "includeAll": false,
         "label": "Datasource",
@@ -1799,7 +1874,7 @@
         "query": "prometheus",
         "queryValue": "",
         "refresh": 1,
-        "regex": "/Thanos/",
+        "regex": "/Cluster Prometheus/",
         "skipUrlSync": false,
         "type": "datasource"
       },
@@ -1814,22 +1889,26 @@
             "$__all"
           ]
         },
-        "datasource": "$Datasource",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "$Datasource"
+        },
         "definition": "label_values(kubelet_node_name, node)",
-        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": "Node",
         "multi": true,
         "name": "_node",
         "options": [],
-        "query": "label_values(kubelet_node_name, node)",
+        "query": {
+          "query": "label_values(kubelet_node_name, node)",
+          "refId": "Cluster Prometheus-_node-Variable-Query"
+        },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -1840,7 +1919,6 @@
           "text": ".*",
           "value": ".*"
         },
-        "error": null,
         "hide": 0,
         "label": "podPrefix",
         "name": "PodPrefix",
@@ -1862,8 +1940,9 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "",
-  "title": "NetObserv Upstream Metrics",
-  "uid": "hmI9De_nzas",
-  "version": 1
+  "timezone": "utc",
+  "title": "NetObserv Metrics",
+  "uid": "hmI9De_nz",
+  "version": 2,
+  "weekStart": ""
 }
