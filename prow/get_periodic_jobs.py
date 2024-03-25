@@ -185,6 +185,12 @@ def get_arch_type(yaml_file):
         return yaml_file['steps']['env']['OCP_ARCH']
     return "x86"
 
+def get_profile_type(yaml_file):
+
+    if "PROFILE_TYPE" in yaml_file['steps']['env'].keys():
+        return yaml_file['steps']['env']['PROFILE_TYPE']
+    return "none"
+
 def test_profile(folder_path, fileName):
     with open(folder_path + "/" + fileName, "r") as f:
         yaml_file = yaml.safe_load(f)
@@ -205,7 +211,8 @@ def test_profile(folder_path, fileName):
         job_url = get_job_history(fileName, test['as'])
 
         worker_size = get_worker_type(test)
-        row = [test['as'], type, arch_type, version, stream, worker_count, worker_size, '"' + cron_cadence +'"', cron_in_words, job_url]
+        profile_set = get_profile_type(test)
+        row = [test['as'], type, arch_type, version, stream, worker_count, worker_size, profile_set, '"' + cron_cadence +'"', cron_in_words, job_url]
         final_row.append(row)
     return final_row
 
@@ -225,7 +232,7 @@ file_names = invoke("ls " + folder_path)
 p = 0
 #all_rows = ["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", 'Cron Cadencde', "Cron In Words", "Job history Url"]
 all_rows = []
-all_rows.append(["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", 'Cron Cadencde', "Cron In Words", "Job history Url"])
+all_rows.append(["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", "Profile", 'Cron Cadence', "Cron In Words", "Job history Url"])
 for file_name in file_names.split():
     if file_name != "OWNERS":
         print("file name " + str(file_name))
