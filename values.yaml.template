@@ -67,9 +67,6 @@ rapidastConfig: |
             apiScan:
                 apis:
                     apiUrl: "$API_URL"
-                    # alternative: 
-                    # apiFile: "/home/rapidast/config/ocp-openapi-v2-1.23.5+3afdacb.json"
-                    # apiFile: "/opt/rapidast/config/ocp-openapi-v3-fixed.json"
 
             results: "*stdout"
 
@@ -94,4 +91,4 @@ rapidastConfig: |
             overrideConfigs:
               # to set the value 'default' for {namespace} in the API path
               - formhandler.fields.field(0).fieldId=namespace  
-              - formhandler.fields.field(0).value=default
+              - formhandler.fields.field(0).value=$NAMESPACE

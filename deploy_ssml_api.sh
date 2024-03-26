@@ -1,5 +1,4 @@
 #!/bin/bash
-oc label ns default security.openshift.io/scc.podSecurityLabelSync=false pod-security.kubernetes.io/enforce=privileged pod-security.kubernetes.io/audit=privileged pod-security.kubernetes.io/warn=privileged --overwrite
 
 export CONSOLE_URL=$(oc get routes console -n openshift-console -o jsonpath='{.spec.host}')
 
@@ -7,6 +6,9 @@ export CLUSTER_NAME=$(oc get machineset -n openshift-machine-api -o=go-template=
 
 export BASE_API_URL=$(oc get infrastructure -o jsonpath="{.items[*].status.apiServerURL}")
 export TOKEN=$(oc whoami -t)
+export NAMESPACE=${NAMESPACE:-default}
+
+oc label ns $NAMESPACE security.openshift.io/scc.podSecurityLabelSync=false pod-security.kubernetes.io/enforce=privileged pod-security.kubernetes.io/audit=privileged pod-security.kubernetes.io/warn=privileged --overwrite
 
 # path for local testing
 #dast_tool_path=../rapidast/
@@ -14,7 +16,6 @@ dast_tool_path=./dast_tool
 echo "$CONSOLE_URL"
 #curl -k "https://${CONSOLE_URL}/api/kubernetes/openapi/v2" -H "Cookie: openshift-session-token=${TOKEN}"  -H "Accept: application/json"  >> openapi.json
 mkdir results 
-
 
 counter=0
 #for api_doc in $(kubectl api-versions); do
