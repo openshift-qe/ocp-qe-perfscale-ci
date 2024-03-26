@@ -41,7 +41,7 @@ for api_doc in ${API_URL_LIST}; do
   folder_api_name=$(echo "$api_doc" | tr "/" .)
   mkdir results/$folder_api_name
 
-  oc get $rapidast_pod -n default -o yaml >> results/$folder_api_name/pod_yaml.yaml
+  #oc get $rapidast_pod -n default -o yaml >> results/$folder_api_name/pod_yaml.yaml
 
   oc get $rapidast_pod -o 'jsonpath={..status.conditions}'
   while [[ $(oc get $rapidast_pod -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') == "True" ]]; do
@@ -49,12 +49,10 @@ for api_doc in ${API_URL_LIST}; do
     sleep 5
     
   done
-  pwd 
   
-  cp $dast_tool_path/helm/chart/value_test.yaml results/$folder_api_name/value.yaml
+  #cp $dast_tool_path/helm/chart/value_test.yaml results/$folder_api_name/value.yaml
 
   oc logs $rapidast_pod -n default >> results/$folder_api_name/pod_logs.out
-  chmod +x $dast_tool_path/helm/results.sh
 
   ./results.sh rapidast-pvc results/$folder_api_name
   ls results
