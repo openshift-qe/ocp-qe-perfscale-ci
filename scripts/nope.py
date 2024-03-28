@@ -304,6 +304,23 @@ def dump_data_locally(timestamp, partial=False):
     # return if no issues
     return None
 
+def format_for_upload():
+    ''' formats the data in RESULTS into a de-normalized payload for elasticsearch
+        returns a map with the de-normalized array under the 'data' key
+    '''
+    payload = {"data":[]}
+
+    if 'jenkins_env' in RESULTS:
+        payload["data"].append(RESULTS['jenkins_env'])
+    if 'netobserve_env' in RESULTS:
+        payload["data"].append(RESULTS['netobserve_env'])
+
+    if 'data' in RESULTS and len(RESULTS['data']) > 0:
+        for item in RESULTS['data']:
+            clean_data = process_query(item['metric_name'], item['query'], item['raw_data'])
+            payload["data"].extend(clean_data)
+
+    return payload
 
 def upload_data_to_elasticsearch():
     ''' uploads captured data in RESULTS dictionary to Elasticsearch
@@ -317,8 +334,10 @@ def upload_data_to_elasticsearch():
         retry_on_timeout=True
     )
 
+    formatted = format_for_upload()
+
     start = time.time()
-    for item in RESULTS['data']:
+    for item in formatted['data']:
         metric_name = item.get('metric_name')
         if metric_name == 'netobservEnv':
             index = 'prod-netobserv-operator-metadata'
@@ -485,18 +504,17 @@ def main():
 
     # get jenkins env data if applicable
     if JENKINS_SERVER is not None:
-        RESULTS["data"].append(get_jenkins_env_info())
+        RESULTS["jenkins_env"] = get_jenkins_env_info()
 
     # get netobserv env data
-    RESULTS["data"].append(get_netobserv_env_info())
+    RESULTS["netobserv_env"] = get_netobserv_env_info()
 
     # get prometheus data
     for entry in QUERIES:
         metric_name = entry['metricName']
         query = entry['query']
         raw_data = run_query(metric_name, query)
-        clean_data = process_query(metric_name, query, raw_data)
-        RESULTS["data"].extend(clean_data)
+        RESULTS["data"].append({"raw_data": raw_data, "query" : query, "metric_name" : metric_name})
 
     # log success if no issues
     logging.info(f"Data captured successfully")
