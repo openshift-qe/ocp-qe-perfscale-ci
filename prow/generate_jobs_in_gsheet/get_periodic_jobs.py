@@ -5,10 +5,12 @@ import csv
 import yaml
 import calendar 
 from datetime import datetime
-
+import os
+import sys
 
 # Invokes a given command and returns the stdout
 def invoke(command):
+    output = ""
     try:
         output = subprocess.check_output(command, shell=True,
                                          universal_newlines=True)
@@ -16,24 +18,23 @@ def invoke(command):
         print("Failed to run %s" % (command))
     return output
 
-def add_new_worksheet(row,sheet_loc): 
+def add_new_worksheet(row,gsheet_key_location, gsheet_location): 
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive",
     ]
     credentials = ServiceAccountCredentials.from_json_keyfile_name(
-       sheet_loc, scope
+       gsheet_key_location, scope
     )
     
     gc = gspread.authorize(credentials)
-    #sheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1cciTazgmvoD0YBdMuIQBRxyJnblVuczgbBL5xC8uGuI/edit?usp=sharing")
-    sheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1TM73n4Y6zKRQjvCX8zFM0LwYxChdsncTEGPHpdsS9Ig/edit?usp=sharing")
-    today = datetime.today().strftime("%m/%d/%Y, %H-%M-%S")
-    print("today " + str(today))
-    title_today = "Prow Cadences" + str(today)
-    sheet.add_worksheet(title=title_today, rows=100, cols=20)
-    ws = sheet.worksheet(title_today)
+    sheet = gc.open_by_url(gsheet_location)
+    timestamp = datetime.today().strftime("%m/%d/%Y-%H%M%S")
+    title = "ProwCadence" + str(timestamp)
+    sheet.add_worksheet(title=title, rows=100, cols=20)
+    ws = sheet.worksheet(title)
     ws.append_rows(row,value_input_option="USER_ENTERED")
+    print(f"New worksheet tab '{title}' is created in {gsheet_location}")
 
 def write_csv(row):
     # append to file
@@ -45,10 +46,13 @@ def write_csv(row):
 
 def get_cron_in_words(cron_string):
 
+    if " " not in cron_string:
+        return f"{cron_string}"
     cron_split = cron_string.split(" ")
-    # index 1 time of day 
-    # index 2 day of month
-    # index 3 ?
+    # index 0 Minute of hour
+    # index 1 Hour of day
+    # index 2 Day of month
+    # index 3 Month
     # index 4 day of week
 
     end_string = ""
@@ -217,27 +221,51 @@ def test_profile(folder_path, fileName):
     return final_row
 
 
-#Edit google sheet secret location
-sheet_loc = "/Users/prubenda/.secrets/perf_sheet_service_account.json"
+#Get Google sheet secret
+gsheet_key_location = os.getenv('GSHEET_KEY_LOCATION')
+gsheet_location = os.getenv('GSHEET_LOCATION', 'https://docs.google.com/spreadsheets/d/1TM73n4Y6zKRQjvCX8zFM0LwYxChdsncTEGPHpdsS9Ig')
+jobs_folder_location = os.getenv('JOBS_FOLDER_LOCATION', 'openshift-qe/ocp-qe-perfscale-ci')
 
+if not gsheet_key_location:
+    print("GSHEET_KEY_LOCATION is not set.")
+    sys.exit(1)
+try:
+    with open(gsheet_key_location, "r") as file:
+        pass
+except FileNotFoundError:
+    print(f"File '{gsheet_key_location}' not found. Please set it correctly as GSHEET_KEY_LOCATION env viriable.")
+    sys.exit(1)
+except IOError:
+    print(f"Error: File '{gsheet_key_location}' could not be opened.")
+    sys.exit(1)
 
 final_csv = "periodic.csv"
 invoke("rm -rf release_master")
 invoke("mkdir release_master")
-invoke("cd release_master; git clone https://github.com/openshift/release.git")
-folder_path="./release_master/release/ci-operator/config/openshift-qe/ocp-qe-perfscale-ci"
+invoke("cd release_master; git clone https://github.com/openshift/release.git --depth=1")
+jobs_folder_path=f"./release_master/release/ci-operator/config/{jobs_folder_location}"
 
-file_names = invoke("ls " + folder_path)
+# Check if the folder exists
+if os.path.exists(jobs_folder_path) and os.path.isdir(jobs_folder_path):
+    # Check if the folder is not empty
+    if any(os.listdir(jobs_folder_path)):
+        pass
+    else:
+        print(f"The folder '{jobs_folder_path}' exists but is empty.")
+        sys.exit(1)
+else:
+    print(f"The folder '{jobs_folder_path}' does not exist or is not a directory.")
+    sys.exit(1)
 
-p = 0
-#all_rows = ["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", 'Cron Cadencde', "Cron In Words", "Job history Url"]
+file_names = invoke("ls " + jobs_folder_path)
+
 all_rows = []
 all_rows.append(["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", "Profile", 'Cron Cadence', "Cron In Words", "Job history Url"])
 for file_name in file_names.split():
     if file_name != "OWNERS":
         print("file name " + str(file_name))
-        file_name_rows = test_profile(folder_path, file_name)
+        file_name_rows = test_profile(jobs_folder_path, file_name)
         all_rows.extend(file_name_rows)
 
 write_csv(all_rows)
-add_new_worksheet(all_rows, sheet_loc)
+add_new_worksheet(all_rows, gsheet_key_location, gsheet_location)
