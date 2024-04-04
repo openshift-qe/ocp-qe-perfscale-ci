@@ -125,10 +125,10 @@ Prometheus queries are sourced from the `netobserv_prometheus_queries.yaml` file
 
 Gathered data can be tied to specific UUIDs and/or Jenkins jobs using specific flags - see the below section for more information. You can also tie a run to a Jira ticket if applicable using the `--jira` flag. 
 
-If no Elasticsearch server is available to be uploaded to, a raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily dump data to a JSON file rather than upload to Elasticsearch with the `--dump` flag.
+A raw JSON file will be written to the `data/` directory in the project - note this directory will be created automatically if it does not already exist. You can also explictily disable Elasticsearch uploading with the `--dump-only` flag.
 
 ### Upload Mode
-Data that has been dumped to a JSON file, either due to an issue with Elasticsearch of done explicitly, can be uploaded to Elasticsearch later using the NOPE tool's Upload mode. Note that the specified JSON file must be in the `data/` directory. Also, you do not need to be connected to an OpenShift cluster if you are running in Upload mode.
+Data that has been dumped to a JSON file, either due to an issue with Elasticsearch or done explicitly, can be uploaded to Elasticsearch later using the NOPE tool's Upload mode. Note that the specified JSON file must be in the `data/` directory. Also, you do not need to be connected to an OpenShift cluster if you are running in Upload mode.
 
 ### Baseline Mode
 The NOPE tool can also be used for fetching and uploading baselines on a workload-by-workload basis by running it in Baseline mode. Fetching is based on workloads and ISO timestamps - for a given workload, the NOPE tool will fetch the latest baseline present on the specified Elasticsearch server and dump the UUID of that baseline to a `baseline.json` file in the `data/` directory. Uploading is based on UUID - the NOPE tool will gather data about the test run on the specified UUID and create a new baseline document in Elasticsearch. Note you do not need to be connected to an OpenShift cluster if you are running in Baseline mode.
