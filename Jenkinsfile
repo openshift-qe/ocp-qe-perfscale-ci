@@ -177,6 +177,7 @@ pipeline {
           export CERBERUS_KUBECONFIG=~/.kube/config
         
           export CERBERUS_CORES=.05
+          export CERBERUS_TIMEOUT=10
           cd cerberus_jenkins
           python3.9 --version
           python3.9 -m venv venv3
