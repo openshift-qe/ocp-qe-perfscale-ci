@@ -326,10 +326,10 @@ pipeline {
             '''
         )
         booleanParam(
-            name: 'NOPE_DUMP',
+            name: 'NOPE_DUMP_ONLY',
             defaultValue: false,
             description: '''
-                Check this box to dump data collected by the NOPE tool to a file instead of uploading to Elasticsearch<br/>
+                Check this box to dump data collected by the NOPE tool to a file without uploading to Elasticsearch<br/>
                 Touchstone will <b>not</b> be run if this box is checked
             '''
         )
@@ -401,7 +401,7 @@ pipeline {
                     if (params.WORKLOAD == 'None' && params.NOPE == true) {
                         error('NOPE tool cannot be run if a workload is not run first')
                     }
-                    if (params.NOPE == false && params.NOPE_DUMP == true) {
+                    if (params.NOPE == false && params.NOPE_DUMP_ONLY == true) {
                         error('NOPE must be run to dump data to a file')
                     }
                     if (params.NOPE == false && params.NOPE_DEBUG == true) {
@@ -410,7 +410,7 @@ pipeline {
                     if (params.NOPE == false && params.NOPE_JIRA != '') {
                         error('NOPE must be run to tie in a Jira')
                     }
-                    if (params.GEN_CSV == true && params.NOPE_DUMP == true) {
+                    if (params.GEN_CSV == true && params.NOPE_DUMP_ONLY == true) {
                         error('Spreadsheet cannot be generated if data is not uploaded to Elasticsearch')
                     }
                     if (params.WORKLOAD == 'None' && params.RUN_BASELINE_COMPARISON == true) {
@@ -822,8 +822,8 @@ pipeline {
                     script {
                         // construct arguments for NOPE tool and execute
                         NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
-                        if (params.NOPE_DUMP == true) {
-                            NOPE_ARGS += " --dump"
+                        if (params.NOPE_DUMP_ONLY == true) {
+                            NOPE_ARGS += " --dump-only"
                         }
                         if (params.NOPE_DEBUG == true) {
                             NOPE_ARGS += " --debug"
@@ -856,7 +856,7 @@ pipeline {
         }
         stage('Run Touchstone tool') {
             when {
-                expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP == false && currentBuild.currentResult != "UNSTABLE" }
+                expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP_ONLY == false && currentBuild.currentResult != "UNSTABLE" }
             }
             steps {
                 // checkout e2e-benchmarking repo

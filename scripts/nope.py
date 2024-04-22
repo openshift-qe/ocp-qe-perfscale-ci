@@ -53,7 +53,7 @@ SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'ingress-perf', 'clu
 ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com'
 ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
-DUMP = False
+DUMP_ONLY = False
 UPLOAD_FILE = None
 BASELINE_TO_FETCH = None
 BASELINE_TO_UPLOAD = None
@@ -530,10 +530,10 @@ def main():
 
     # either dump data locally or upload it to Elasticsearch
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    if DUMP:
-        dump_data_locally(timestamp)
-        logging.info(f"Data written to {DATA_DIR}/data_{timestamp}.json")
-    else:
+    
+    dump_data_locally(timestamp)
+    logging.info(f"Data written to {DATA_DIR}/data_{timestamp}.json")
+    if not DUMP_ONLY:
         try:
             elapsed_time = upload_data_to_elasticsearch()
             logging.info(f"Elasticsearch upload completed in {elapsed_time} seconds")
@@ -570,7 +570,7 @@ if __name__ == '__main__':
     standard.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
     standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
-    standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
+    standard.add_argument("--dump-only", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
     standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
 
     # set upload mode flags
@@ -708,10 +708,9 @@ if __name__ == '__main__':
     logging.info(f"TOKEN: {TOKEN}")
 
     # determine if data will be dumped locally or uploaded to Elasticsearch
-    DUMP = args.dump
-    if DUMP:
-        logging.info(f"Data will be dumped locally to {DATA_DIR}")
-    else:
+    DUMP_ONLY = args.dump_only
+    logging.info(f"Data will be dumped locally to {DATA_DIR}")
+    if not DUMP_ONLY:
         if (ES_USERNAME is None) or (ES_PASSWORD is None):
             logging.error("Credentials need to be set to upload data to Elasticsearch")
             sys.exit(1)
