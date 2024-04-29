@@ -19,6 +19,10 @@ spec:
           cpu: 100m
           memory: 50Mi
       sampling: 1
+      metrics:
+        enable: true
+        server:
+          port: 9400
     ipfix:
       cacheActiveTimeout: 20s
       cacheMaxFlows: 400
