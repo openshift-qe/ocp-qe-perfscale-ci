@@ -124,7 +124,7 @@ spec:
         - workload_ingress_bytes_total
         - namespace_flows_total
       server:
-        port: 9102
+        port: 9401
         tls:
           type: Disabled
     resources:
