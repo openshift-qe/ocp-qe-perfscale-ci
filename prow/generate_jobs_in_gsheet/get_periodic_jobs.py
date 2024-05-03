@@ -164,18 +164,20 @@ def get_job_history(file_name, test_name):
     return job_cell
 
 def get_release(yaml_file):
-    if "latest" in yaml_file['releases'].keys():
-        for v1 in yaml_file['releases']['latest'].values():
-            if "stream" in v1.keys(): 
-                return v1['version'], v1['stream']
-            return v1['version'], v1['channel']
-    for v in yaml_file['releases'].values():
-        print('v = ' + str(v))  
-        
-        for v1 in v.values():
-            if "stream" in v1.keys(): 
-                return v1['version'], v1['stream']
-            return v1['version'], v1['channel']
+    if "releases" in yaml_file: 
+        if "latest" in yaml_file['releases'].keys():
+            for v1 in yaml_file['releases']['latest'].values():
+                if "stream" in v1.keys(): 
+                    return v1['version'], v1['stream']
+                return v1['version'], v1['channel']
+        for v in yaml_file['releases'].values():
+            print('v = ' + str(v))  
+            
+            for v1 in v.values():
+                if "stream" in v1.keys(): 
+                    return v1['version'], v1['stream']
+                return v1['version'], v1['channel']
+    return "",""
 
 def get_cron(yaml_file): 
     
@@ -200,24 +202,25 @@ def test_profile(folder_path, fileName):
         yaml_file = yaml.safe_load(f)
     version, stream = get_release(yaml_file)
     final_row = []
-    for test in yaml_file['tests']:
-        
-        cron_cadence = get_cron(test)
-        if cron_cadence is False: 
-            continue
-        cron_in_words = get_cron_in_words(cron_cadence)
-        worker_count = get_replicas(test)
-        type = get_cloud_type(test)
-        arch_type =get_arch_type(test)
-        channel_test = verify_channel(test)
-        if channel_test != "": 
-            stream = channel_test
-        job_url = get_job_history(fileName, test['as'])
+    if version: 
+        for test in yaml_file['tests']:
+            
+            cron_cadence = get_cron(test)
+            if cron_cadence is False: 
+                continue
+            cron_in_words = get_cron_in_words(cron_cadence)
+            worker_count = get_replicas(test)
+            type = get_cloud_type(test)
+            arch_type =get_arch_type(test)
+            channel_test = verify_channel(test)
+            if channel_test != "": 
+                stream = channel_test
+            job_url = get_job_history(fileName, test['as'])
 
-        worker_size = get_worker_type(test)
-        profile_set = get_profile_type(test)
-        row = [test['as'], type, arch_type, version, stream, worker_count, worker_size, profile_set, '"' + cron_cadence +'"', cron_in_words, job_url]
-        final_row.append(row)
+            worker_size = get_worker_type(test)
+            profile_set = get_profile_type(test)
+            row = [test['as'], type, arch_type, version, stream, worker_count, worker_size, profile_set, '"' + cron_cadence +'"', cron_in_words, job_url]
+            final_row.append(row)
     return final_row
 
 
