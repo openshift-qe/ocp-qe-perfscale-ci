@@ -64,7 +64,7 @@ def get_cron_in_words(cron_string):
             day_string = f"every {day} days"
         elif "," in day_of_month:
             day = day_of_month.split(',')
-            day_string = f"on day {day[0]} and {day[1]} of the month"
+            day_string = f"on days {day} of the month"
         else: 
             day_string = f"on day {day_of_month} of the month"
         #print("day string" + str(day_string))
