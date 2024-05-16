@@ -120,8 +120,8 @@ def get_multiaz(yaml_file):
 def get_cloud_type(yaml_file):
     
     if  "workflow" in yaml_file['steps'].keys(): 
-        if "hypershift" in yaml_file['steps']['workflow']: 
-            return "hypershift"
+        if "hcp" in yaml_file['steps']['workflow']: 
+            return "hcp"
         elif "rosa" in yaml_file['steps']['workflow']:
             return "rosa"
         elif "aro" in yaml_file['steps']['workflow']:
