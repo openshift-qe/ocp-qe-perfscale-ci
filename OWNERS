@@ -1,6 +1,7 @@
 approvers:
 - mffiedler
 - qiliRedHat
+- chentex
 reviewers:
 - qiliRedHat
 - mffiedler
@@ -8,3 +9,4 @@ reviewers:
 - rpattath
 - skordas
 - memodi
+- chentex
