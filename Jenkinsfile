@@ -120,7 +120,7 @@ pipeline {
                     userRemoteConfigs: [[url: params.QE_OCM_REPO ]]
                 ])
                 script {
-                    '''
+                    sh '''
                     ./scripts/run_ocm_benchmark.sh
                     '''
                 }
