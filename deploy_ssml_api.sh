@@ -12,7 +12,7 @@ oc label ns $NAMESPACE security.openshift.io/scc.podSecurityLabelSync=false pod-
 
 # path for local testing
 #dast_tool_path=../rapidast/
-dast_tool_path=./dast_tool
+dast_tool_path=${DAST_PATH:-./dast_tool}
 echo "$CONSOLE_URL"
 #curl -k "https://${CONSOLE_URL}/api/kubernetes/openapi/v2" -H "Cookie: openshift-session-token=${TOKEN}"  -H "Accept: application/json"  >> openapi.json
 mkdir results 
