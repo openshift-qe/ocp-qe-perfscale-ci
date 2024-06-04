@@ -1,20 +1,21 @@
 #!/bin/bash
+set -ex
 
 # declare tests with rate and duration. Duration will be in minutes
 # create_cluster, create-services, get-services and patch-services skipped till they get fixed and stabilized
 export tests="
-self-access-token 5/s 2 \n
-list-subscriptions 5/s 2 \n
-access-review 100/s 2 \n
-register-new-cluster 10/s 2 \n
-register-existing-cluster 100/s 2 \n
-list-clusters 20/s 2 \n
+self-access-token 5/s 1 \n
+list-subscriptions 5/s 1 \n
+access-review 100/s 1 \n
+register-new-cluster 10/s 1 \n
+register-existing-cluster 100/s 1 \n
+list-clusters 20/s 1 \n
 get-current-account 10/s 1 \n
-quota-cost 10/s 2 \n
-resource-review 5/s 2 \n
-cluster-authorizations 1/s 2 linear 6 20 2 \n
-self-terms-review 30/s 2 \n
-certificates 15/s 2"
+quota-cost 10/s 1 \n
+resource-review 5/s 1 \n
+cluster-authorizations 1/s 1 linear 6 20 1 \n
+self-terms-review 30/s 1 \n
+certificates 15/s 1"
 
 create_aws_key(){
     # Delete aws keys if more than 1 key exists
@@ -41,10 +42,13 @@ run_ocm_api_load(){
     echo "Base directory $BASEDIR"
 
     # export environment variables shared by airflow (avoid overriding local env vars)
+    rm -rf $BASEDIR/local_env.txt
     env > $BASEDIR/local_env.txt
     while IFS="=" read -r key value; do
         if ! grep -q "$key=" $BASEDIR/local_env.txt; then
-                export $key=$value
+            if [[ ! $key == *"."* ]]; then
+                export $key="${value}"
+            fi
         fi
     done < $BASEDIR/environment.txt
 

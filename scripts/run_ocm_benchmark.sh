@@ -22,11 +22,21 @@ setup(){
     fi
 
     rm -rf /tmp/perf-dept
+    rm -rf /tmp/environment.txt
     export GIT_USER=${ORCHESTRATION_USER}
     git clone -q --depth=1 --single-branch --branch master https://${SSHKEY_TOKEN}@github.com/redhat-performance/perf-dept.git /tmp/perf-dept
     export PUBLIC_KEY=/tmp/perf-dept/ssh_keys/id_rsa_pbench_ec2.pub
     export PRIVATE_KEY=/tmp/perf-dept/ssh_keys/id_rsa_pbench_ec2
     chmod 600 ${PRIVATE_KEY}
+
+    export AWS_PROFILE=${AWS_PROFILE}
+    export AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
+    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    export ES_SERVER=${ES_SERVER}
+    export OCM_TOKEN=${OCM_TOKEN}
+    export PROM_TOKEN=${PROM_TOKEN}
 
     # TESTDIR and UUID will be same for ocm-api-load operation. cleanup operation uses different TESTDIR to get unaffected by ocm-api-load operation failures. Cleanup still retrieves UUID and removes /tmp/${UUID} on ORCHESTRATION_HOST
     export TESTDIR=$(uuidgen | head -c8)-$JENKINS_JOB_NUMBER-$(date '+%Y%m%d')
@@ -34,6 +44,7 @@ setup(){
     echo "# UUID: ${UUID} TESTDIR: ${TESTDIR} "
 
     env >> /tmp/environment.txt
+    head -n -4 /tmp/environment.txt > /tmp/tmp.txt && mv /tmp/tmp.txt /tmp/environment.txt
 
     # Create temp directory to run tests (simulatenous runs will have their own temp directories)
     ssh -t -o 'ServerAliveInterval=30' -o 'StrictHostKeyChecking=no' -o 'UserKnownHostsFile=/dev/null' -i ${PRIVATE_KEY} root@${ORCHESTRATION_HOST} "mkdir /tmp/$TESTDIR"

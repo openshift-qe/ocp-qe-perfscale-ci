@@ -28,11 +28,17 @@ def RETURNSTATUS = "default"
 def output = ""
 def status = ""
 
-def JENKINS_JOB_NUMBER = currentBuild.number.toString()
-println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
+def CUR_JENKINS_JOB_NUMBER = currentBuild.number.toString()
+println "JENKINS_JOB_NUMBER $CUR_JENKINS_JOB_NUMBER"
 
 pipeline {
     agent { label params['JENKINS_AGENT_LABEL'] }
+
+    environment {
+        def JENKINS_JOB_NUMBER = "${CUR_JENKINS_JOB_NUMBER}"
+        PROM_URL_ENV = credentials('ocm.api.load.PROM_URL')
+    }
+
     parameters {
         string(
             name: 'OCM_TOKEN_URL',
@@ -76,7 +82,7 @@ pipeline {
         )
         string(
             name: 'PROM_URL',
-            defaultValue: 'https://prometheus.app-sre-stage-01.devshift.net',
+            defaultValue: '',
             description: 'Prometheus URL'
         )
         booleanParam(
@@ -99,6 +105,46 @@ pipeline {
             defaultValue: '',
             description: 'SSH token.'
         )
+        string(
+            name: 'AWS_PROFILE',
+            defaultValue: '',
+            description: 'AWS profile to use.'
+        )
+        string(
+            name: 'AWS_ACCOUNT_ID',
+            defaultValue: '',
+            description: 'AWS account ID.'
+        )
+        string(
+            name: 'AWS_DEFAULT_REGION',
+            defaultValue: '',
+            description: 'AWS default region.'
+        )
+        string(
+            name: 'AWS_SECRET_ACCESS_KEY',
+            defaultValue: '',
+            description: 'AWS access key.'
+        )
+        string(
+            name: 'AWS_ACCESS_KEY_ID',
+            defaultValue: '',
+            description: 'AWS access key ID.'
+        )
+        string(
+            name: 'ES_SERVER',
+            defaultValue: '',
+            description: 'ES Server to store results.'
+        )
+        string(
+            name: 'OCM_TOKEN',
+            defaultValue: '',
+            description: 'OCM Access token.'
+        )
+        string(
+            name: 'PROM_TOKEN',
+            defaultValue: '',
+            description: 'Prom Access token.'
+        )
         text(
             name: 'ENV_VARS',
             defaultValue: '',
@@ -113,11 +159,13 @@ pipeline {
             '''
         )
     }
-    environment {
-        def JENKINS_JOB_NUMBER = "${JENKINS_JOB_NUMBER}"
-    }
 
     stages {
+        stage('Print Env'){
+            steps {
+                sh 'printenv'
+            }
+        }
         stage('Run OCM API Load tests'){
             steps {
                 deleteDir()
@@ -129,7 +177,9 @@ pipeline {
                 ])
                 script {
                     sh '''
-                    echo $JENKINS_JOB_NUMBER
+                    if [ -z "${PROM_URL}" ]; then
+                        export PROM_URL=${PROM_URL_ENV}
+                    fi
                     ./scripts/run_ocm_benchmark.sh -o ocm-api-load
                     '''
                 }
