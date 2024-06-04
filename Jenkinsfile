@@ -94,6 +94,11 @@ pipeline {
             defaultValue: 'ocm-api-load',
             description: 'You can change this to point to a branch on your fork if needed.'
         )
+        string(
+            name: 'SSHKEY_TOKEN',
+            defaultValue: '',
+            description: 'SSH token.'
+        )
         text(
             name: 'ENV_VARS',
             defaultValue: '',

@@ -15,19 +15,20 @@ done
 setup(){
     SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-    echo "User: ${GIT_USER} ORCHESTRATION_HOST: ${ORCHESTRATION_HOST}"
-    if [[ $GIT_USER != "perf-ci" && ${ORCHESTRATION_HOST} == "airflow-ocm-jumphost.rdu2.scalelab.redhat.com" ]]; then
-	echo "$GIT_USER not allowed to use CI host ${ORCHESTRATION_HOST}"
+    echo "User: ${ORCHESTRATION_USER} ORCHESTRATION_HOST: ${ORCHESTRATION_HOST}"
+    if [[ $ORCHESTRATION_USER != "perf-ci" && ${ORCHESTRATION_HOST} == "airflow-ocm-jumphost.rdu2.scalelab.redhat.com" ]]; then
+	echo "$ORCHESTRATION_USER not allowed to use CI host ${ORCHESTRATION_HOST}"
 	exit 1
     fi
 
+    export GIT_USER=${ORCHESTRATION_USER}
     git clone -q --depth=1 --single-branch --branch master https://${SSHKEY_TOKEN}@github.com/redhat-performance/perf-dept.git /tmp/perf-dept
     export PUBLIC_KEY=/tmp/perf-dept/ssh_keys/id_rsa_pbench_ec2.pub
     export PRIVATE_KEY=/tmp/perf-dept/ssh_keys/id_rsa_pbench_ec2
     chmod 600 ${PRIVATE_KEY}
 
     # TESTDIR and UUID will be same for ocm-api-load operation. cleanup operation uses different TESTDIR to get unaffected by ocm-api-load operation failures. Cleanup still retrieves UUID and removes /tmp/${UUID} on ORCHESTRATION_HOST
-    export TESTDIR=$(uuidgen | head -c8)-$AIRFLOW_CTX_TASK_ID-$(date '+%Y%m%d')
+    export TESTDIR=$(uuidgen | head -c8)-$JENKINS_JOB_NUMBER-$(date '+%Y%m%d')
     export UUID=${UUID:-${TESTDIR}}
     echo "# UUID: ${UUID} TESTDIR: ${TESTDIR} "
 
