@@ -126,7 +126,9 @@ pipeline {
                 ])
                 script {
                     sh '''
-                    ./scripts/run_ocm_benchmark.sh
+
+                    export JENKINS_JOB_NUMBER=${JENKINS_JOB_NUMBER}
+                    ./scripts/run_ocm_benchmark.sh ocm-api-load
                     '''
                 }
            }
