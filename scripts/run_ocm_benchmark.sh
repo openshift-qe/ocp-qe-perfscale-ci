@@ -21,6 +21,7 @@ setup(){
 	exit 1
     fi
 
+    rm -rf /tmp/perf-dept
     export GIT_USER=${ORCHESTRATION_USER}
     git clone -q --depth=1 --single-branch --branch master https://${SSHKEY_TOKEN}@github.com/redhat-performance/perf-dept.git /tmp/perf-dept
     export PUBLIC_KEY=/tmp/perf-dept/ssh_keys/id_rsa_pbench_ec2.pub

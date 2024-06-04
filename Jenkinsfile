@@ -113,6 +113,9 @@ pipeline {
             '''
         )
     }
+    environment {
+        def JENKINS_JOB_NUMBER = "${JENKINS_JOB_NUMBER}"
+    }
 
     stages {
         stage('Run OCM API Load tests'){
@@ -126,9 +129,8 @@ pipeline {
                 ])
                 script {
                     sh '''
-
-                    export JENKINS_JOB_NUMBER=${JENKINS_JOB_NUMBER}
-                    ./scripts/run_ocm_benchmark.sh ocm-api-load
+                    echo $JENKINS_JOB_NUMBER
+                    ./scripts/run_ocm_benchmark.sh -o ocm-api-load
                     '''
                 }
            }
