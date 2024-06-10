@@ -623,7 +623,7 @@ pipeline {
                     // attempt to enable or update Kafka if applicable
                     println('Checking if Kafka needs to be enabled or updated...')
                     if (params.ENABLE_KAFKA == true) {
-                        println("Deploying Kafka...")
+                        println("Configuring Kafka...")
                         kafkaReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                             deploy_kafka
@@ -673,10 +673,10 @@ pipeline {
 
                     fcReturnCode = sh(returnStatus: true, script: """
                           source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            createFlowCollector $templateParams
+                          createFlowCollector $templateParams
                         """)
                     if (fcReturnCode.toInteger() != 0) {
-                            error('Failed to deploy flowcollector :(')
+                        error('Failed to deploy flowcollector :(')
                     }
                     else {
                         println('Successfully deployed Flowcollector :)')
