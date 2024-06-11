@@ -30,9 +30,6 @@ deploy_netobserv() {
     exit 1
   fi
 
-  echo "====> Creating NetObserv Project (if it does not already exist)"
-  oc new-project netobserv || true
-
   echo "====> Creating openshift-netobserv-operator namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/netobserv/netobserv-ns_og.yaml
   echo "====> Creating NetObserv subscription"
@@ -47,10 +44,18 @@ deploy_netobserv() {
   echo "====> Patch CSV so that DOWNSTREAM_DEPLOYMENT is set to 'true'"
   CSV=$(oc get csv -n openshift-netobserv-operator | egrep -i "net.*observ" | awk '{print $1}')
   oc patch csv/$CSV -n openshift-netobserv-operator --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/3/value", "value": 'true'}]"
+}
 
+createFlowCollector() {
+  set -x
+  templateParams=$*
   echo "====> Creating Flow Collector"
-  oc apply -f $SCRIPTS_DIR/netobserv/flows_v1beta2_flowcollector.yaml
+  oc process --ignore-unknown-parameters=true -f "$SCRIPTS_DIR"/netobserv/flows_v1beta2_flowcollector.yaml $templateParams -n default >/tmp/fc_template.yaml
+  oc apply -f /tmp/fc_template.yaml
+  waitForFlowcollectorReady
+}
 
+waitForFlowcollectorReady() {
   echo "====> Waiting for eBPF pods to be ready"
   while :; do
     oc get daemonset netobserv-ebpf-agent -n netobserv-privileged && break
@@ -58,12 +63,13 @@ deploy_netobserv() {
   done
   sleep 60
   oc wait --timeout=1200s --for=condition=ready pod -l app=netobserv-ebpf-agent -n netobserv-privileged
+  oc wait --timeout=1200s --for=condition=ready flowcollector cluster
 }
 
 patch_netobserv() {
   COMPONENT=$1
   IMAGE=$2
-  CSV=$(oc get csv -n openshift-netobserv-operator | egrep -i "net.*observ" | awk '{print $1}')
+  CSV=$(oc get csv -n openshift-netobserv-operator | grep -iE "net.*observ" | awk '{print $1}')
   if [[ -z "$COMPONENT" || -z "$IMAGE" ]]; then
     echo "Specify COMPONENT and IMAGE to be patched to existing CSV deployed"
     exit 1
@@ -132,7 +138,9 @@ deploy_lokistack() {
   oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
 
   echo "====> Determining LokiStack config"
-  if [[ $LOKISTACK_SIZE == "1x.extra-small" ]]; then
+  if [[ $LOKISTACK_SIZE == "1x.demo" ]]; then
+    LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-demo.yaml
+  elif [[ $LOKISTACK_SIZE == "1x.extra-small" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-exsmall.yaml
   elif [[ $LOKISTACK_SIZE == "1x.small" ]]; then
     LokiStack_CONFIG=$SCRIPTS_DIR/loki/lokistack-1x-small.yaml
@@ -215,27 +223,13 @@ deploy_kafka() {
     echo "====> No topic partitions config was found - using 6"
     echo "====> To set config, set TOPIC_PARTITIONS variable to desired number"
     export TOPIC_PARTITIONS=6
-  fi  
+  fi
   KAFKA_TOPIC=$SCRIPTS_DIR/amq-streams/kafkaTopic.yaml
   TMP_KAFKA_TOPIC=/tmp/topic.yaml
   envsubst <$KAFKA_TOPIC >$TMP_KAFKA_TOPIC
   oc apply -f $TMP_KAFKA_TOPIC -n netobserv
   sleep 60
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n netobserv
-
-  echo "====> Update flowcollector to use Kafka deploymentModel"
-  oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/deploymentModel", "value": "Kafka"}]"
-
-  echo "====> Update flowcollector replicas"
-  if [[ -z $FLP_KAFKA_REPLICAS ]]; then
-    echo "====> No flowcollector replicas config was found - using '3'"
-    echo "====> To set config, set FLP_KAFKA_REPLICAS variable to desired number"
-    FLP_KAFKA_REPLICAS=3
-  fi
-  oc patch flowcollector/cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/kafkaConsumerReplicas", "value": $FLP_KAFKA_REPLICAS}]"
-
-  echo "====> Waiting for Flow Collector to reload with new FLP pods..."
-  oc wait --timeout=180s --for=condition=ready flowcollector/cluster
 }
 
 delete_s3() {
@@ -301,12 +295,14 @@ delete_loki_operator() {
 
 nukeobserv() {
   echo "====> Nuking NetObserv and all related resources"
-  delete_s3
-  delete_lokistack
   delete_kafka
+  if [[ $LOKI_OPERATOR != "None" ]]; then
+    delete_s3
+    delete_lokistack
+    delete_loki_operator
+  fi
   delete_flowcollector
   delete_netobserv_operator
-  delete_loki_operator
   # seperate step as multiple different operators use this namespace
   oc delete project netobserv
 }
