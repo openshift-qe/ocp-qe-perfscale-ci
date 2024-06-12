@@ -181,6 +181,8 @@ pipeline {
                         export PROM_URL=${PROM_URL_ENV}
                     fi
                     ./scripts/run_ocm_benchmark.sh -o ocm-api-load
+                    sleep 60
+                    ./scripts/run_ocm_benchmark.sh -o cleanup
                     '''
                 }
            }
