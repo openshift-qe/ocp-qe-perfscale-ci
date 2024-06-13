@@ -1025,10 +1025,22 @@ pipeline {
         always {
             println('Post Section - Always')
             archiveArtifacts(
-                artifacts: '/tmp/fc_template.yaml, ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml, e2e-benchmarking/utils/*.json',
+                artifacts: 'e2e-benchmarking/utils/*.json',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
+            dir("/tmp"){
+                archiveArtifacts(
+                    artifacts: 'flowcollector.yaml',
+                    allowEmptyArchive: true,
+                    fingerprint: true)
+            }
+            dir("$workspace/ocp-qe-perfscale-ci/"){
+                archiveArtifacts(
+                    artifacts: 'data/**, scripts/netobserv/netobserv-dittybopper.yaml',
+                    allowEmptyArchive: true,
+                    fingerprint: true)
+            }
         }
         failure {
             println('Post Section - Failure')

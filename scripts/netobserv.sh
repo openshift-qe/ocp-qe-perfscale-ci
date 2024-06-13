@@ -50,8 +50,8 @@ createFlowCollector() {
   set -x
   templateParams=$*
   echo "====> Creating Flow Collector"
-  oc process --ignore-unknown-parameters=true -f "$SCRIPTS_DIR"/netobserv/flows_v1beta2_flowcollector.yaml $templateParams -n default >/tmp/fc_template.yaml
-  oc apply -f /tmp/fc_template.yaml
+  oc process --ignore-unknown-parameters=true -f "$SCRIPTS_DIR"/netobserv/flows_v1beta2_flowcollector.yaml $templateParams -n default -o yaml >/tmp/flowcollector.yaml
+  oc apply -f /tmp/flowcollector.yaml
   waitForFlowcollectorReady
 }
 
