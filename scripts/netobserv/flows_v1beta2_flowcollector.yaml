@@ -39,6 +39,10 @@ objects:
         multiClusterDeployment: false
         addZone: false
         metrics:
+          includeList:
+            - node_ingress_bytes_total
+            - workload_ingress_bytes_total
+            - namespace_flows_total
           server:
             port: 9401
             tls:

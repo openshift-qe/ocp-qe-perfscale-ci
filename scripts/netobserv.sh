@@ -259,8 +259,8 @@ delete_kafka() {
   DEPLOYMENT_MODEL=$(oc get flowcollector -o jsonpath='{.items[*].spec.deploymentModel}' -n netobserv)
   echo "====> Got $DEPLOYMENT_MODEL"
   if [[ $DEPLOYMENT_MODEL == "Kafka" ]]; then
-    oc delete --ignore-not-found kafka/kafka-cluster -n netobserv
     oc delete --ignore-not-found kafkaTopic/network-flows -n netobserv
+    oc delete --ignore-not-found kafka/kafka-cluster -n netobserv
     oc delete --ignore-not-found -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
     oc delete --ignore-not-found csv -l operators.coreos.com/amq-streams.openshift-operators -n openshift-operators
   fi

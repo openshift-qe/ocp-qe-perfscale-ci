@@ -136,6 +136,11 @@ The NOPE tool can also be used for fetching and uploading baselines on a workloa
 ## Fetching metrics using Touchstone 
 NetObserv metrics uploaded to Elasticsearch can be fetched using `touchstone` tool provided by [benchmark-comparison](https://github.com/cloud-bulldozer/benchmark-comparison). Once you have Touchstone set up, you can run it with any given UUID using the `netobserv_touchstone_statistics_config.json` file in the `queries/` directory under `scripts/`
 
+## Different touchstone configs in this branch:
+- [netobserv_touchstone_statistics_config.json](./queries/netobserv_touchstone_statistics_config.json) - collect *all* metrics including per pod, typically used for producing raw datasheets.
+- [netobserv_touchstone_tolerancy_config.json](./queries/netobserv_touchstone_tolerancy_config.json) - collects only *totals* of each metric, typically used for comparison datasheet.
+- [netobserv_touchstone_tolerancy_rules.yaml](./queries/netobserv_touchstone_tolerancy_rules.yaml) - defines tolerance thresholds for metrics that have been identified to determine Pass/Fail criteria depending upon comparison with the baseline
+
 ### Baseline comparison with touchstone
 `touchstone_compare` can be used to compare metrics between multiple runs via UUID using the `netobserv_touchstone_tolerancy_config.json` and  `netobserv_touchstone_tolerancy_rules.yaml` files in the `queries/` directory under `scripts/`. For example, to compare between 1.2 and 1.3 node-density-heavy benchmark metrics, you can run something like:
 ```bash
