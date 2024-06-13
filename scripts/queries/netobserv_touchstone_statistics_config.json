@@ -470,6 +470,32 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "ebpfFlowsDroppedTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfRingBufferMapRatioTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "rssFLPTotals"
                 },
                 "buckets": [
