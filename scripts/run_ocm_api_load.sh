@@ -52,6 +52,8 @@ run_ocm_api_load(){
         fi
     done < $BASEDIR/environment.txt
 
+    export ES_SERVER="https://$ES_SERVER_USER:$ES_SERVER_PASS@$ES_SERVER_URL"
+
     echo "# Benchmark UUID: ${UUID}"
 
     echo " Clone and build the binary"

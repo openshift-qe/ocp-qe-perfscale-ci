@@ -125,9 +125,14 @@ pipeline {
             description: 'AWS access key ID.'
         )
         string(
-            name: 'ES_SERVER',
+            name: 'ES_SERVER_URL',
             defaultValue: '',
-            description: 'ES Server to store results.'
+            description: 'ES Server URL to store results.'
+        )
+        string(
+            name: 'ES_SERVER_USER',
+            defaultValue: 'admin',
+            description: 'ES Server URL to store results.'
         )
         text(
             name: 'ENV_VARS',
