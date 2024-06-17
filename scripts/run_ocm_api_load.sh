@@ -18,9 +18,6 @@ self-terms-review 30/s 1 \n
 certificates 15/s 1"
 
 create_aws_key(){
-    pwd
-    echo $AWS_PROFILE
-    echo $AWS_CREDS >> test.conf
     # Delete aws keys if more than 1 key exists
     arr=(`aws iam list-access-keys --user-name OsdCcsAdmin --output text --query 'AccessKeyMetadata[*].AccessKeyId'`)
     arraylength=${#arr[@]}
@@ -96,7 +93,7 @@ run_ocm_api_load(){
 
 	# Timeout runs ocm-load-test for the specified duration even if airflow killed this script (when user wants to stop benchmark execution). This helps in ocm-load-test to cleanup resources it created. 10 minutes extra timeout is set so that test can prepare results after running for the given duration.
 	# kill-after option needs sudo permissions
-        timeout --kill-after=60s --preserve-status $(((tduration + 10) * 60)) $TESTDIR/build/ocm-load-test --aws-region $AWS_DEFAULT_REGION --aws-account-id $AWS_ACCOUNT_ID --aws-access-key $AWS_OSDCCADMIN_KEY --aws-access-secret $AWS_OSDCCADMIN_SECRET --cooldown $COOLDOWN --duration $tduration --elastic-index ocm-load-metrics --elastic-insecure-skip-verify=true --elastic-server $ES_SERVER --gateway-url $GATEWAY_URL --ocm-token $OCM_TOKEN --ocm-token-url $OCM_TOKEN_URL --output-path $TESTDIR/results --rate $trate --test-id $UUID --test-names $tname $rampoptions
+        timeout --kill-after=60s --preserve-status $(((tduration + 10) * 60)) $TESTDIR/build/ocm-load-test --aws-region $AWS_DEFAULT_REGION --aws-account-id $AWS_ACCOUNT_ID --aws-access-key $AWS_OSDCCADMIN_KEY --aws-access-secret $AWS_OSDCCADMIN_SECRET --cooldown $COOLDOWN --duration $tduration --elastic-index ocm-load-metrics --elastic-insecure-skip-verify=true --elastic-server "$ES_SERVER" --gateway-url $GATEWAY_URL --ocm-token $OCM_TOKEN --ocm-token-url $OCM_TOKEN_URL --output-path $TESTDIR/results --rate $trate --test-id $UUID --test-names $tname $rampoptions
 	sleep $COOLDOWN
     done
     benchmark_rv=$?
@@ -110,12 +107,12 @@ run_ocm_api_load(){
     curl -LsS ${KUBE_BURNER_RELEASE_URL} | tar xz --directory=$TESTDIR/
     echo "Running kube-burner index to scrap metrics from UHC account manager service from ${start_time} to ${end_time} and push to ES"
     $TESTDIR/kube-burner index -c $TESTDIR/kube-burner-am-config.yaml --uuid=${UUID} -u=${PROM_URL} --job-name ocm-api-load --token=${PROM_TOKEN} -m=$TESTDIR/ci/templates/metrics_acct_mgmr.yaml --start $start_time --end $end_time
-    echo "UHC account manager Metrics stored at elasticsearch server $ES_SERVER on index $KUBE_ES_INDEX with UUID $UUID and jobName: ocm-api-load"
+    echo "UHC account manager Metrics stored at elasticsearch server "$ES_SERVER" on index $KUBE_ES_INDEX with UUID $UUID and jobName: ocm-api-load"
 
     echo "Running kube-burner index to scrap metrics from UHC clusters service from ${start_time} to ${end_time} and push to ES"
     export KUBE_ES_INDEX=ocm-uhc-clusters-service
     $TESTDIR/kube-burner index -c $TESTDIR/kube-burner-cs-config.yaml --uuid=${UUID} -u=${PROM_URL} --job-name ocm-api-load --token=${PROM_TOKEN} -m=$TESTDIR/ci/templates/metrics_clusters_service.yaml --start $start_time --end $end_time
-    echo "UHC clusters service metrics stored at elasticsearch server $ES_SERVER on index $KUBE_ES_INDEX with UUID $UUID and jobName: ocm-api-load"
+    echo "UHC clusters service metrics stored at elasticsearch server "$ES_SERVER" on index $KUBE_ES_INDEX with UUID $UUID and jobName: ocm-api-load"
 
     echo "converting start and end times into milliseconds for creating Result URLs"
     start_time=`expr $start_time \* 1000`

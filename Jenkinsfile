@@ -145,11 +145,6 @@ pipeline {
     }
 
     stages {
-        stage('Print Env'){
-            steps {
-                sh 'printenv'
-            }
-        }
         stage('Run OCM API Load tests'){
             steps {
                 deleteDir()
@@ -167,6 +162,8 @@ pipeline {
                             string(credentialsId: 'ocm-al-server-password', variable: 'ES_SERVER_PASS' ),
                             string(credentialsId: 'ocm-al-sshkey-token', variable: 'SSHKEY_TOKEN' ),
                     ]) {
+                        env.AWS_ACCESS_KEY_ID = sh(script: "cat \$AWS_CREDS | awk -F' = ' '/^aws_access_key_id/ {print \$2}'", returnStdout: true).trim()
+                        env.AWS_SECRET_ACCESS_KEY = sh(script: "cat \$AWS_CREDS | awk -F' = ' '/^aws_secret_access_key/ {print \$2}'", returnStdout: true).trim()
                         sh '''
                         ./scripts/run_ocm_benchmark.sh -o ocm-api-load
                         sleep 60
