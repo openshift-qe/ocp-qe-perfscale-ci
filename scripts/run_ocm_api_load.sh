@@ -18,6 +18,9 @@ self-terms-review 30/s 1 \n
 certificates 15/s 1"
 
 create_aws_key(){
+    pwd
+    echo $AWS_PROFILE
+    echo $AWS_CREDS >> test.conf
     # Delete aws keys if more than 1 key exists
     arr=(`aws iam list-access-keys --user-name OsdCcsAdmin --output text --query 'AccessKeyMetadata[*].AccessKeyId'`)
     arraylength=${#arr[@]}

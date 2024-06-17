@@ -36,7 +36,6 @@ pipeline {
 
     environment {
         def JENKINS_JOB_NUMBER = "${CUR_JENKINS_JOB_NUMBER}"
-        PROM_URL_ENV = credentials('ocm.api.load.PROM_URL')
     }
 
     parameters {
@@ -67,7 +66,7 @@ pipeline {
         )
         string(
             name: 'ORCHESTRATION_USER',
-            defaultValue: '',
+            defaultValue: 'perf-ci',
             description: 'Orchestration User'
         )
         string(
@@ -101,23 +100,18 @@ pipeline {
             description: 'You can change this to point to a branch on your fork if needed.'
         )
         string(
-            name: 'SSHKEY_TOKEN',
-            defaultValue: '',
-            description: 'SSH token.'
-        )
-        string(
             name: 'AWS_PROFILE',
-            defaultValue: '',
+            defaultValue: 'openshift-perfscale',
             description: 'AWS profile to use.'
         )
         string(
             name: 'AWS_ACCOUNT_ID',
-            defaultValue: '',
+            defaultValue: '415909267177',
             description: 'AWS account ID.'
         )
         string(
             name: 'AWS_DEFAULT_REGION',
-            defaultValue: '',
+            defaultValue: 'us-west-2',
             description: 'AWS default region.'
         )
         string(
@@ -134,16 +128,6 @@ pipeline {
             name: 'ES_SERVER',
             defaultValue: '',
             description: 'ES Server to store results.'
-        )
-        string(
-            name: 'OCM_TOKEN',
-            defaultValue: '',
-            description: 'OCM Access token.'
-        )
-        string(
-            name: 'PROM_TOKEN',
-            defaultValue: '',
-            description: 'Prom Access token.'
         )
         text(
             name: 'ENV_VARS',
@@ -176,14 +160,19 @@ pipeline {
                     userRemoteConfigs: [[url: params.QE_OCM_REPO ]]
                 ])
                 script {
-                    sh '''
-                    if [ -z "${PROM_URL}" ]; then
-                        export PROM_URL=${PROM_URL_ENV}
-                    fi
-                    ./scripts/run_ocm_benchmark.sh -o ocm-api-load
-                    sleep 60
-                    ./scripts/run_ocm_benchmark.sh -o cleanup
-                    '''
+                    withCredentials([
+                            file(credentialsId: 'ocm-al-aws', variable: 'AWS_CREDS' ),
+                            string(credentialsId: 'ocm-al-ocm-token', variable: 'OCM_TOKEN' ),
+                            string(credentialsId: 'ocm-al-prom-token', variable: 'PROM_TOKEN' ),
+                            string(credentialsId: 'ocm-al-server-password', variable: 'ES_SERVER_PASS' ),
+                            string(credentialsId: 'ocm-al-sshkey-token', variable: 'SSHKEY_TOKEN' ),
+                    ]) {
+                        sh '''
+                        ./scripts/run_ocm_benchmark.sh -o ocm-api-load
+                        sleep 60
+                        ./scripts/run_ocm_benchmark.sh -o cleanup
+                        '''
+                    }
                 }
            }
         }
