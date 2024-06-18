@@ -872,7 +872,7 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking.git' ]],
+                    userRemoteConfigs: [[url: 'https://github.com/memodi/e2e-benchmarking.git' ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
