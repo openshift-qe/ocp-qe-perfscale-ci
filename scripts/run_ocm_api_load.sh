@@ -6,16 +6,16 @@ set -ex
 export tests="
 self-access-token 5/s 1 \n
 list-subscriptions 5/s 1 \n
-access-review 100/s 1 \n
-register-new-cluster 10/s 1 \n
-register-existing-cluster 100/s 1 \n
+access-review 50/s 1 \n
+register-new-cluster 2/s 1 \n
+register-existing-cluster 50/s 1 \n
 list-clusters 20/s 1 \n
 get-current-account 10/s 1 \n
 quota-cost 10/s 1 \n
 resource-review 5/s 1 \n
 cluster-authorizations 1/s 1 linear 6 20 1 \n
-self-terms-review 30/s 1 \n
-certificates 15/s 1"
+self-terms-review 15/s 1 \n
+certificates 10/s 1"
 
 create_aws_key(){
     # Delete aws keys if more than 1 key exists
@@ -92,10 +92,11 @@ run_ocm_api_load(){
             echo "create AWS OsdCcsAdmin key as it got deleted..."
             create_aws_key
         fi
-
+        echo $GATEWAY_URL
 	# Timeout runs ocm-load-test for the specified duration even if airflow killed this script (when user wants to stop benchmark execution). This helps in ocm-load-test to cleanup resources it created. 10 minutes extra timeout is set so that test can prepare results after running for the given duration.
 	# kill-after option needs sudo permissions
-        timeout --kill-after=60s --preserve-status $(((tduration + 20) * 60)) $TESTDIR/build/ocm-load-test --aws-region $AWS_DEFAULT_REGION --aws-account-id $AWS_ACCOUNT_ID --aws-access-key $AWS_OSDCCADMIN_KEY --aws-access-secret $AWS_OSDCCADMIN_SECRET --cooldown $COOLDOWN --duration $tduration --elastic-index ocm-load-metrics --elastic-insecure-skip-verify=true --elastic-server "$ES_SERVER" --gateway-url $GATEWAY_URL --ocm-token $OCM_TOKEN --ocm-token-url $OCM_TOKEN_URL --output-path $TESTDIR/results --rate $trate --test-id $UUID --test-names $tname $rampoptions
+        # timeout --kill-after=60s --preserve-status $(((tduration + 20) * 60)) $TESTDIR/build/ocm-load-test --aws-region $AWS_DEFAULT_REGION --aws-account-id $AWS_ACCOUNT_ID --aws-access-key $AWS_OSDCCADMIN_KEY --aws-access-secret $AWS_OSDCCADMIN_SECRET --cooldown $COOLDOWN --duration $tduration --elastic-index ocm-load-metrics --elastic-insecure-skip-verify=true --elastic-server $ES_SERVER --gateway-url $GATEWAY_URL --ocm-token $OCM_TOKEN --ocm-token-url $OCM_TOKEN_URL --output-path $TESTDIR/results --rate $trate --test-id $UUID --test-names $tname $rampoptions
+        $TESTDIR/build/ocm-load-test --aws-region $AWS_DEFAULT_REGION --aws-account-id $AWS_ACCOUNT_ID --aws-access-key $AWS_OSDCCADMIN_KEY --aws-access-secret $AWS_OSDCCADMIN_SECRET --cooldown $COOLDOWN --duration $tduration --elastic-index ocm-load-metrics --elastic-insecure-skip-verify=true --elastic-server $ES_SERVER --gateway-url $GATEWAY_URL --ocm-token $OCM_TOKEN --ocm-token-url $OCM_TOKEN_URL --output-path $TESTDIR/results --rate $trate --test-id $UUID --test-names $tname $rampoptions
 	sleep $COOLDOWN
     done
     benchmark_rv=$?

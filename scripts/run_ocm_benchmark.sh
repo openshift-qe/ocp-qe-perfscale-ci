@@ -38,14 +38,15 @@ setup(){
     export ES_SERVER_USER=${ES_SERVER_USER}
     export OCM_TOKEN=${OCM_TOKEN}
     export PROM_TOKEN=${PROM_TOKEN}
+    export GATEWAY_URL=${GATEWAY_URL}
 
     # TESTDIR and UUID will be same for ocm-api-load operation. cleanup operation uses different TESTDIR to get unaffected by ocm-api-load operation failures. Cleanup still retrieves UUID and removes /tmp/${UUID} on ORCHESTRATION_HOST
     export TESTDIR=$(uuidgen | head -c8)-$JENKINS_JOB_NUMBER-$(date '+%Y%m%d')
     export UUID=${UUID:-${TESTDIR}}
     echo "# UUID: ${UUID} TESTDIR: ${TESTDIR} "
 
+
     env >> /tmp/environment.txt
-    head -n -4 /tmp/environment.txt > /tmp/tmp.txt && mv /tmp/tmp.txt /tmp/environment.txt
 
     # Create temp directory to run tests (simulatenous runs will have their own temp directories)
     ssh -t -o 'ServerAliveInterval=30' -o 'StrictHostKeyChecking=no' -o 'UserKnownHostsFile=/dev/null' -i ${PRIVATE_KEY} root@${ORCHESTRATION_HOST} "mkdir /tmp/$TESTDIR"
