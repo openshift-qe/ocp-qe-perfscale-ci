@@ -32,7 +32,6 @@ objects:
               cpu: 100m
             limits:
               memory: ${EBPFMemoryLimit}
-          kafkaBatchSize: 10485760
       processor:
         imagePullPolicy: IfNotPresent
         logLevel: trace
