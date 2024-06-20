@@ -3,26 +3,19 @@ set -ex
 
 # declare tests with rate and duration. Duration will be in minutes
 # create_cluster, create-services, get-services and patch-services skipped till they get fixed and stabilized
-# export tests="
-# self-access-token 5/s 1 \n
-# list-subscriptions 5/s 1 \n
-# access-review 50/s 1 \n
-# register-new-cluster 2/s 1 \n
-# register-existing-cluster 50/s 1 \n
-# list-clusters 20/s 1 \n
-# get-current-account 10/s 1 \n
-# quota-cost 10/s 1 \n
-# resource-review 5/s 1 \n
-# cluster-authorizations 1/s 1 linear 6 20 1 \n
-# self-terms-review 15/s 1 \n
-# certificates 10/s 1"
-
 export tests="
-self-access-token 5/s 1 \n
-list-subscriptions 5/s 1 \n
-access-review 50/s 1 \n
-register-new-cluster 2/s 1 \n
-cluster-authorizations 1/s 1 linear 6 20 1"
+self-access-token 5/s 5 \n
+list-subscriptions 5/s 5 \n
+access-review 50/s 5 \n
+register-new-cluster 2/s 5 \n
+register-existing-cluster 50/s 5 \n
+list-clusters 20/s 5 \n
+get-current-account 10/s 5 \n
+quota-cost 10/s 5 \n
+resource-review 5/s 5 \n
+self-terms-review 15/s 5 \n
+certificates 10/s 5 \n
+cluster-authorizations 1/s 5 linear 6 20 1"
 
 create_aws_key(){
     # Delete aws keys if more than 1 key exists

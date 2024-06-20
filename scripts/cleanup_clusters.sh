@@ -1,5 +1,4 @@
 #!/bin/bash
-set -ex
 
 cleanup(){
     BASEDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
