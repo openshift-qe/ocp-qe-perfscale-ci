@@ -139,6 +139,39 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "nWorkloadFlowsProcessedTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "nWorkloadFlowsProcessedPerMinuteTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "nFlowsErroredTotals"
                 },
                 "buckets": [
@@ -199,6 +232,32 @@
                                 ]
                             }
                         },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfFlowsDroppedTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfRingBufferMapRatioTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
                         "avg"
                     ]
                 }

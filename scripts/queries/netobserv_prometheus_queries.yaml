@@ -19,7 +19,7 @@
   metricName: nWorkloadFlowsProcessedPerMinuteTotals
 
 # total bytes processed from workload namespaces by netobserv
-- query: sum(rate(netobserv_workload_ingress_bytes_total{SrcK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*", DstK8S_OwnerType="Deployment"}[1m])*60)
+- query: sum(rate(netobserv_workload_ingress_bytes_total{DstK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*",DstK8S_Type!="Service"}[1m])*60)
   metricName: nWorkloadBytesProcessedPerMinuteNetobserv
 
 # total bytes processed from workload namespaces by cadvisor / other means
@@ -89,6 +89,14 @@
 # eBPF pods memory usage (Working Set)
 - query: sum(container_memory_working_set_bytes{namespace="netobserv-privileged", container=""}) by (container, pod, namespace, node)
   metricName: ebpfMemoryUsageWorkingSet
+
+# eBPF drops
+- query: sum(rate(netobserv_agent_dropped_flows_total[1m]))
+  metricName: ebpfFlowsDroppedTotals
+
+# ebpf Ring buffer/Map Ratio
+- query: (sum(rate(netobserv_agent_evicted_flows_total{source="accounter"}[1m])) OR on() vector(0)) / sum(rate(netobserv_agent_evicted_flows_total{source="hashmap"}[1m]))
+  metricName: ebpfRingBufferMapRatioTotals
 
 ###############
 # FLP metrics #

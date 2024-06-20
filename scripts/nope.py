@@ -32,7 +32,7 @@ THANOS_URL = ''
 TOKEN = ''
 YAML_FILE = ''
 QUERIES = {}
-RESULTS = {"data": []}
+RESULTS = {"prometheus_data": []}
 DEBUG = False
 JIRA = None
 
@@ -53,7 +53,7 @@ SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'ingress-perf', 'clu
 ES_URL = 'search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com'
 ES_USERNAME = os.getenv('ES_USERNAME')
 ES_PASSWORD = os.getenv('ES_PASSWORD')
-DUMP = False
+DUMP_ONLY = False
 UPLOAD_FILE = None
 BASELINE_TO_FETCH = None
 BASELINE_TO_UPLOAD = None
@@ -66,8 +66,8 @@ def get_iso_timestamp(unix_timestamp):
     return datetime.datetime.utcfromtimestamp(int(unix_timestamp)).isoformat() + 'Z'
 
 
-def process_query(metric_name, query, raw_data):
-    ''' takes in a Prometheus metric name, query and its successful execution result
+def process_query(uuid, metric_name, query, raw_data):
+    ''' takes in a UUID, Prometheus metric name, query and its successful execution result
         reformats data into format desired for Elasticsearch upload
         returns dict object with post-processed data
     '''
@@ -84,7 +84,7 @@ def process_query(metric_name, query, raw_data):
                 iso_timestamp = get_iso_timestamp(data_point[0])
                 clean_data.append(
                     {
-                        "uuid": UUID,
+                        "uuid": uuid,
                         "metric_name": metric_name,
                         "data_type": "datapoint",
                         "iso_timestamp": iso_timestamp,
@@ -304,6 +304,33 @@ def dump_data_locally(timestamp, partial=False):
     # return if no issues
     return None
 
+def format_data_for_upload():
+    ''' formats the data in RESULTS into a de-normalized payload for elasticsearch
+        returns a de-normalized list
+    '''
+    uuid = None
+    payload = []
+
+    if 'jenkins_env' in RESULTS:
+        payload.append(RESULTS['jenkins_env'])
+        uuid = RESULTS['jenkins_env']['uuid']
+    if 'netobserv_env' in RESULTS:
+        payload.append(RESULTS['netobserv_env'])
+        if uuid is None:
+            uuid = RESULTS['netobserv_env']['uuid']
+        else:
+            assert uuid == RESULTS['netobserv_env']['uuid'], "UUIDs for jenkinsEnv and netobservEnv did not match, data may be malformed"
+    if 'prometheus_data' in RESULTS and len(RESULTS['prometheus_data']) > 0:
+        for item in RESULTS['prometheus_data']:
+            clean_data = process_query(
+                uuid,
+                item['metric_name'],
+                item['query'],
+                item['raw_data']
+            )
+            payload.extend(clean_data)
+
+    return payload
 
 def upload_data_to_elasticsearch():
     ''' uploads captured data in RESULTS dictionary to Elasticsearch
@@ -317,8 +344,9 @@ def upload_data_to_elasticsearch():
         retry_on_timeout=True
     )
 
+    documents = format_data_for_upload()
     start = time.time()
-    for item in RESULTS['data']:
+    for item in documents:
         metric_name = item.get('metric_name')
         if metric_name == 'netobservEnv':
             index = 'prod-netobserv-operator-metadata'
@@ -485,28 +513,27 @@ def main():
 
     # get jenkins env data if applicable
     if JENKINS_SERVER is not None:
-        RESULTS["data"].append(get_jenkins_env_info())
+        RESULTS["jenkins_env"] = get_jenkins_env_info()
 
     # get netobserv env data
-    RESULTS["data"].append(get_netobserv_env_info())
+    RESULTS["netobserv_env"] = get_netobserv_env_info()
 
     # get prometheus data
     for entry in QUERIES:
         metric_name = entry['metricName']
         query = entry['query']
         raw_data = run_query(metric_name, query)
-        clean_data = process_query(metric_name, query, raw_data)
-        RESULTS["data"].extend(clean_data)
+        RESULTS["prometheus_data"].append({"raw_data": raw_data, "query" : query, "metric_name" : metric_name})
 
     # log success if no issues
     logging.info(f"Data captured successfully")
 
     # either dump data locally or upload it to Elasticsearch
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    if DUMP:
-        dump_data_locally(timestamp)
-        logging.info(f"Data written to {DATA_DIR}/data_{timestamp}.json")
-    else:
+    
+    dump_data_locally(timestamp)
+    logging.info(f"Data written to {DATA_DIR}/data_{timestamp}.json")
+    if not DUMP_ONLY:
         try:
             elapsed_time = upload_data_to_elasticsearch()
             logging.info(f"Elasticsearch upload completed in {elapsed_time} seconds")
@@ -543,7 +570,7 @@ if __name__ == '__main__':
     standard.add_argument("--jenkins-job", type=str, help='Jenkins job name to associate with run')
     standard.add_argument("--jenkins-build", type=str, help='Jenkins build number to associate with run')
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
-    standard.add_argument("--dump", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
+    standard.add_argument("--dump-only", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
     standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
 
     # set upload mode flags
@@ -681,10 +708,9 @@ if __name__ == '__main__':
     logging.info(f"TOKEN: {TOKEN}")
 
     # determine if data will be dumped locally or uploaded to Elasticsearch
-    DUMP = args.dump
-    if DUMP:
-        logging.info(f"Data will be dumped locally to {DATA_DIR}")
-    else:
+    DUMP_ONLY = args.dump_only
+    logging.info(f"Data will be dumped locally to {DATA_DIR}")
+    if not DUMP_ONLY:
         if (ES_USERNAME is None) or (ES_PASSWORD is None):
             logging.error("Credentials need to be set to upload data to Elasticsearch")
             sys.exit(1)
