@@ -1,13 +1,17 @@
 #!/bin/bash
+set -ex
 
 cleanup(){
     BASEDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     echo "# BASEDIR: ${BASEDIR}"
 
+    rm -rf $BASEDIR/local_env.txt
     env > $BASEDIR/local_env.txt
     while IFS="=" read -r key value; do
         if ! grep -q "$key=" $BASEDIR/local_env.txt; then
-                export $key=$value
+            if [[ ! $key == *"."* ]]; then
+                export $key="${value}"
+            fi
         fi
     done < $BASEDIR/environment.txt
 
