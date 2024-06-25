@@ -38,6 +38,10 @@ pipeline {
         def JENKINS_JOB_NUMBER = "${CUR_JENKINS_JOB_NUMBER}"
     }
 
+    triggers {
+        cron('0 3 * * 5')
+    }
+
     parameters {
         string(
             name: 'OCM_TOKEN_URL',
@@ -70,19 +74,9 @@ pipeline {
             description: 'Orchestration User'
         )
         string(
-            name: 'ORCHESTRATION_HOST',
-            defaultValue: '',
-            description: 'Orchestration Host'
-        )
-        string(
             name: 'KUBE_BURNER_RELEASE_URL',
             defaultValue: 'https://github.com/cloud-bulldozer/kube-burner/releases/download/v0.16.1/kube-burner-0.16.1-Linux-x86_64.tar.gz',
             description: 'Kube Burner Release URL'
-        )
-        string(
-            name: 'PROM_URL',
-            defaultValue: '',
-            description: 'Prometheus URL'
         )
         booleanParam(
             name: "SEND_SLACK",
@@ -125,11 +119,6 @@ pipeline {
             description: 'AWS access key ID.'
         )
         string(
-            name: 'ES_SERVER_URL',
-            defaultValue: '',
-            description: 'ES Server URL to store results.'
-        )
-        string(
             name: 'ES_SERVER_USER',
             defaultValue: 'admin',
             description: 'ES Server URL to store results.'
@@ -162,6 +151,7 @@ pipeline {
                 script {
                     withCredentials([
                             file(credentialsId: 'ocm-al-aws', variable: 'AWS_CREDS' ),
+                            file(credentialsId: 'ocm-al-infra', variable: 'INFRA' ),
                             string(credentialsId: 'ocm-al-ocm-token', variable: 'OCM_TOKEN' ),
                             string(credentialsId: 'ocm-al-prom-token', variable: 'PROM_TOKEN' ),
                             string(credentialsId: 'ocm-al-server-password', variable: 'ES_SERVER_PASS' ),
@@ -169,6 +159,9 @@ pipeline {
                     ]) {
                         env.AWS_ACCESS_KEY_ID = sh(script: "cat \$AWS_CREDS | awk -F' = ' '/^aws_access_key_id/ {print \$2}'", returnStdout: true).trim()
                         env.AWS_SECRET_ACCESS_KEY = sh(script: "cat \$AWS_CREDS | awk -F' = ' '/^aws_secret_access_key/ {print \$2}'", returnStdout: true).trim()
+                        env.ORCHESTRATION_HOST = sh(script: "cat \$INFRA | awk -F' = ' '/^orchestration_host/ {print \$2}'", returnStdout: true).trim()
+                        env.PROM_URL = sh(script: "cat \$INFRA | awk -F' = ' '/^prom_url/ {print \$2}'", returnStdout: true).trim()
+                        env.ES_SERVER_URL = sh(script: "cat \$INFRA | awk -F' = ' '/^es_server/ {print \$2}'", returnStdout: true).trim()
                         sh '''
                         ./scripts/run_ocm_benchmark.sh -o ocm-api-load
                         sleep 60
