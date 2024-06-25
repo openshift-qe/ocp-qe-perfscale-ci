@@ -47,7 +47,7 @@ run_ocm_api_load(){
     while IFS="=" read -r key value; do
         if ! grep -q "$key=" $BASEDIR/local_env.txt; then
             if [[ ! $key == *"."* ]]; then
-                export $key="${value}"
+                export $key="${value}" || true
             fi
         fi
     done < $BASEDIR/environment.txt
