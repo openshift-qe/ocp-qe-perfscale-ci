@@ -1,6 +1,5 @@
 #!/bin/bash
 # shellcheck disable=SC2155
-set -ex
 
 export INDEXDATA=()
 

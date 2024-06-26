@@ -1,5 +1,4 @@
 #!/bin/bash
-set -ex
 
 # declare tests with rate and duration. Duration will be in minutes
 # create_cluster, create-services, get-services and patch-services skipped till they get fixed and stabilized
