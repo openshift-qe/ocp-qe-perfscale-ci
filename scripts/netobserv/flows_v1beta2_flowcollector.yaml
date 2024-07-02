@@ -34,7 +34,7 @@ objects:
               memory: ${EBPFMemoryLimit}
       processor:
         imagePullPolicy: IfNotPresent
-        logLevel: trace
+        logLevel: info
         multiClusterDeployment: false
         addZone: false
         metrics:
