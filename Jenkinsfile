@@ -41,6 +41,8 @@ pipeline {
         string(name: "DAST_IMAGE_TAG", defaultValue: "latest", description: 'Image tag to use as the base for running zap.')
         string(name: 'DAST_TOOL_URL', defaultValue: 'https://github.com/RedHatProductSecurity/rapidast.git', description: 'Rapidast tool github url .')
         string(name: 'DAST_TOOL_BRANCH', defaultValue: 'development', description: 'Rapdiast tool github barnch to checkout.')
+        string(name: 'SE_TOOL_URL', defaultValue: 'https://github.com/openshift-qe/ocpqe-security-tools.git', description: 'OCPQE security tool github url.')
+        string(name: 'SEC_TOOL_BRANCH', defaultValue: 'main', description: 'OCPQE security tool github barnch to checkout.')
         string(name: 'API_URL_LIST', defaultValue: 'admissionregistration.k8s.io/v1', description: 
         '''List of api files to scan against.
         Api docs you can find using <b>kubectl api-versions</b>''')
@@ -73,9 +75,9 @@ pipeline {
         deleteDir()
         checkout([
           $class: 'GitSCM',
-          branches: [[name: GIT_BRANCH ]],
+          branches: [[name: params.SEC_TOOL_BRANCH ]],
           doGenerateSubmoduleConfigurations: false,
-          userRemoteConfigs: [[url: GIT_URL ]
+          userRemoteConfigs: [[url: params.SE_TOOL_URL ]
           ]])
         checkout([
             $class: 'GitSCM',
