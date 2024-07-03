@@ -1,140 +1,130 @@
-apiVersion: flows.netobserv.io/v1beta2
-kind: FlowCollector
+apiVersion: template.openshift.io/v1
+kind: Template
 metadata:
-  name: cluster
-spec:
-  agent:
-    type: eBPF
-    ebpf:
-      cacheActiveTimeout: 5s
-      cacheMaxFlows: 100000
-      excludeInterfaces:
-      - lo
-      imagePullPolicy: IfNotPresent
-      logLevel: info
-      resources:
-        limits:
-          memory: 800Mi
-        requests:
-          cpu: 100m
-          memory: 50Mi
-      sampling: 1
-      metrics:
-        enable: true
-        server:
-          port: 9400
-    ipfix:
-      cacheActiveTimeout: 20s
-      cacheMaxFlows: 400
-      clusterNetworkOperator:
-        namespace: openshift-network-operator
-      forceSampleAll: false
-      ovnKubernetes:
-        containerName: ovnkube-node
-        daemonSetName: ovnkube-node
-        namespace: ovn-kubernetes
-      sampling: 400
-  consolePlugin:
-    autoscaler:
-      maxReplicas: 3
-      metrics:
-      - resource:
-          name: cpu
-          target:
-            averageUtilization: 50
-            type: Utilization
-        type: Resource
-      minReplicas: 1
-      status: Disabled
-    imagePullPolicy: IfNotPresent
-    logLevel: info
-    portNaming:
-      enable: true
-      portNames:
-        "3100": loki
-    quickFilters:
-    - default: true
-      filter:
-        dst_namespace!: openshift-,netobserv
-        src_namespace!: openshift-,netobserv
-      name: Applications
-    - filter:
-        dst_namespace: openshift-,netobserv
-        src_namespace: openshift-,netobserv
-      name: Infrastructure
-    - default: true
-      filter:
-        dst_kind: Pod
-        src_kind: Pod
-      name: Pods network
-    - filter:
-        dst_kind: Service
-      name: Services network
-    replicas: 1
-    resources:
-      limits:
-        memory: 100Mi
-      requests:
-        cpu: 100m
-        memory: 50Mi
-    advanced:
-      port: 9001
-      register: true
-  deploymentModel: Direct
-  exporters: []
-  kafka:
-    address: kafka-cluster-kafka-bootstrap.netobserv
-    tls:
-      caCert:
-        certFile: ca.crt
-        name: kafka-cluster-cluster-ca-cert
-        type: secret
-      enable: false
-      insecureSkipVerify: false
-      userCert:
-        certFile: user.crt
-        certKey: user.key
-        name: flp-kafka
-        type: secret
-    topic: network-flows
-  loki:
-    enable: true
-    mode: LokiStack
-    lokiStack:
-      name: lokistack
-    maxRetries: 2
-    writeBatchWait: 1s
-    writeBatchSize: 10485760
-    advanced:
-      writeMinBackoff: 1s
-      writeMaxBackoff: 5s
-  namespace: netobserv
-  processor:
-    imagePullPolicy: IfNotPresent
-    kafkaConsumerAutoscaler:
-      maxReplicas: 0
-      status: Disabled
-    kafkaConsumerBatchSize: 10485760
-    kafkaConsumerQueueCapacity: 1000
-    kafkaConsumerReplicas: 3
-    logLevel: info
-    metrics:
-      includeList:
-        - node_ingress_bytes_total
-        - workload_ingress_bytes_total
-        - namespace_flows_total
-      server:
-        port: 9401
+  name: flowcollector-template
+objects:
+  - apiVersion: flows.netobserv.io/v1beta2
+    kind: FlowCollector
+    metadata:
+      name: cluster
+    spec:
+      namespace: netobserv
+      deploymentModel: "${DeploymentModel}"
+      agent:
+        type: eBPF
+        ebpf:
+          imagePullPolicy: IfNotPresent
+          sampling: ${{EBPFSamplingRate}}
+          cacheMaxFlows: ${{EBPFCacheMaxFlows}}
+          interfaces: [ ]
+          excludeInterfaces: ["lo"]
+          logLevel: info
+          privileged: "${{EBPFPrivileged}}"
+          metrics:
+            enable: true
+            server:
+              port: 9400
+              tls:
+                type: Auto
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 100m
+            limits:
+              memory: ${EBPFMemoryLimit}
+      processor:
+        imagePullPolicy: IfNotPresent
+        logLevel: info
+        multiClusterDeployment: false
+        addZone: false
+        metrics:
+          includeList:
+            - node_ingress_bytes_total
+            - workload_ingress_bytes_total
+            - namespace_flows_total
+          server:
+            port: 9401
+            tls:
+              type: Auto
+          disableAlerts: []
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+          limits:
+            memory: ${FLPMemoryLimit}
+        kafkaConsumerReplicas: ${{KafkaConsumerReplicas}}
+        kafkaConsumerAutoscaler: null
+        kafkaConsumerQueueCapacity: 1000
+        kafkaConsumerBatchSize: 10485760
+        logTypes: Flows
+        advanced:
+          port: 2055
+          profilePort: 6060
+          dropUnusedFields: true
+          conversationTerminatingTimeout: 5s
+          conversationHeartbeatInterval: 5s
+          conversationEndTimeout: 20s
+      kafka:
+        address: kafka-cluster-kafka-bootstrap.netobserv
+        topic: network-flows
         tls:
-          type: Disabled
-    resources:
-      limits:
-        memory: 800Mi
-      requests:
-        cpu: 100m
-        memory: 100Mi
-    advanced:
-      port: 2055
-      healthPort: 8080
-      dropUnusedFields: true
-      enableKubeProbes: true
+          enable: false
+      loki:
+        mode: LokiStack
+        enable: "${{LokiEnable}}"
+        lokiStack:
+          name: lokistack
+        writeBatchWait: 1s
+        writeBatchSize: 10485760
+        advanced:
+          writeMinBackoff: 1s
+          writeMaxBackoff: 5s
+          writeMaxRetries: 2
+      consolePlugin:
+        enable: true
+        imagePullPolicy: IfNotPresent
+        logLevel: info
+        portNaming:
+          enable: true
+          portNames:
+            "3100": loki
+        quickFilters:
+        - name: Applications
+          filter:
+            src_namespace!: 'openshift-,netobserv'
+            dst_namespace!: 'openshift-,netobserv'
+          default: true
+        - name: Infrastructure
+          filter:
+            src_namespace: 'openshift-,netobserv'
+            dst_namespace: 'openshift-,netobserv'
+        - name: Pods network
+          filter:
+            src_kind: 'Pod'
+            dst_kind: 'Pod'
+          default: true
+        - name: Services network
+          filter:
+            dst_kind: 'Service'
+        advanced:
+          port: 9001
+          register: true
+      exporters: []
+parameters:
+  - name: DeploymentModel
+    value: "Kafka"
+  - name: EBPFSamplingRate
+    value: "1"
+  - name: EBPFMemoryLimit
+    value: "800Mi"
+  - name: FLPMemoryLimit
+    value: "800Mi"
+  - name: EBPFPrivileged
+    value: "false"
+  - name: EBPFCacheMaxFlows
+    value: "100000"
+  - name: LokiEnable
+    value: "true"
+  - name: KafkaConsumerReplicas
+    value: "3"

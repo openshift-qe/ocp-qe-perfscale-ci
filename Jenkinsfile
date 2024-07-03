@@ -92,7 +92,7 @@ pipeline {
                 You can use either the latest released or unreleased version of Loki Operator:<br/>
                 <b>Released</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
                 <b>Unreleased</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
-                If <b>None</b> is selected the installation will be skipped
+                If <b>None</b> is selected the installation will be skipped and Loki will disabled in Flowcollector
             '''
         )
         choice(
@@ -188,18 +188,23 @@ pipeline {
         )
         string(
             name: 'EBPF_SAMPLING_RATE',
-            defaultValue: '',
+            defaultValue: '1',
             description: 'Rate at which to sample flows'
+        )
+        string(
+            name: 'EBPF_CACHE_MAXFLOWS',
+            defaultValue: '100000',
+            description: 'eBPF max flows that can be cached before evicting'
         )
         string(
             name: 'EBPF_MEMORY_LIMIT',
             defaultValue: '',
             description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
-        string(
-            name: 'FLP_CPU_LIMIT',
-            defaultValue: '',
-            description: 'Note that 1000m = 1000 millicores, i.e. 1 core'
+        booleanParam(
+            name: 'EBPF_PRIVILEGED',
+            defaultValue: false,
+            description: 'Check this box to run ebpf-agent in privileged mode'
         )
         string(
             name: 'FLP_MEMORY_LIMIT',
@@ -208,7 +213,7 @@ pipeline {
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Check this box to setup Kafka for NetObserv or to update Kafka configs even if it is already installed'
         )
         choice(
@@ -224,10 +229,12 @@ pipeline {
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
-            defaultValue: '3',
+            defaultValue: '',
             description: '''
                 Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
-                3 - default for non-perf testing environments<br/>
+                <b>Leave this empty if you're triggering standard perf-workloads, default of 6, 12 and 18 FLP_KAFKA_REPLICAS will be used for node-density-heavy, ingress-perf and cluster-density-v2 workloads respectively</b><br/>
+                3 - for non-perf testing environments<br/>
+                <b>Use this field to overwrite default FLP_KAFKA_REPLICAS</b><br/>
             '''
         )
         separator(
@@ -241,11 +248,10 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf', 'ingress-perf'],
+            choices: ['None', 'cluster-density-v2', 'node-density-heavy', 'ingress-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                "cluster-density" and "node-density" options will trigger "kube-burner-ocp" job<br/>
-                "router-perf" will trigger "router-perf" job<br/>
+                "cluster-density-v2" and "node-density-heavy" options will trigger "kube-burner-ocp" job<br/>
                 "ingress-perf" will trigger "ingress-perf" job<br/>
                 "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
@@ -255,8 +261,8 @@ pipeline {
             name: 'VARIABLE',
             defaultValue: '1000',
             description: '''
-                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a></b> or <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workloads</b>.<br/>
-                <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
+                This variable configures parameter needed for each type of workload. <b>Not used by <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workload</b>.<br/>
+                <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density-v2</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>node-density-heavy</a>: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br/>
                 Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
             '''
@@ -265,24 +271,8 @@ pipeline {
             name: 'NODE_COUNT',
             defaultValue: '3',
             description: '''
-                Only for <b>node-density</b> and <b>node-density-heavy</b><br/>
+                Only for <b>node-density-heavy</b><br/>
                 Should be the number of worker nodes on your cluster (after scaling)
-            '''
-        )
-        string(
-            name: 'LARGE_SCALE_CLIENTS',
-            defaultValue: '1 80',
-            description: '''
-                Only for <b>router-perf</b><br/>
-                Threads/route to use in the large scale scenario
-            '''
-        )
-        string(
-            name: 'LARGE_SCALE_CLIENTS_MIX',
-            defaultValue: '1 25',
-            description: '''
-                Only for <b>router-perf</b><br/>
-                Threads/route to use in the large scale scenario with mix termination
             '''
         )
         booleanParam(
@@ -607,8 +597,6 @@ pipeline {
                         println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
                         sh(returnStatus: true, script: '''
                             oc get pods -n openshift-netobserv-operator
-                            oc get pods -n netobserv
-                            oc get pods -n netobserv-privileged
                         ''')
                     }
                 }
@@ -617,6 +605,80 @@ pipeline {
         stage('Configure NetObserv, flowcollector, and Kafka') {
             steps {
                 script {
+                    // attempt to enable or update Kafka if applicable
+                    println('Checking if Kafka needs to be enabled or updated...')
+                    if (params.ENABLE_KAFKA == true) {
+                        println("Configuring Kafka...")
+                        kafkaReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                            deploy_kafka
+                        """)
+                        // fail pipeline if installation and/or configuration failed
+                        if (kafkaReturnCode.toInteger() != 0) {
+                            error('Failed to deploy Kafka :(')
+                        }
+                        // otherwise continue and display controller and pods in netobserv NS
+                        else {
+                            println('Successfully enabled Kafka :)')
+                            sh(returnStatus: true, script: '''
+                                oc get pods -n openshift-operators
+                                oc get pods -n netobserv
+                            ''')
+                        }
+                    }
+                    else {
+                        println('Skipping Kafka configuration...')
+                    }
+
+                    templateParams = "-p "
+                    if (params.ENABLE_KAFKA != true) {
+                        templateParams += "DeploymentModel=Direct "
+                    }
+                    if (params.FLP_KAFKA_REPLICAS == '') {
+                        if (params.WORKLOAD == 'node-density-heavy') {
+                            FLP_KAFKA_REPLICAS = "6"
+                        }
+                        else if (params.WORKLOAD == 'ingress-perf') {
+                            FLP_KAFKA_REPLICAS = "12"
+                        }
+                        else if (params.WORKLOAD == 'cluster-density-v2') {
+                            FLP_KAFKA_REPLICAS = "18"
+                        }
+                        else {
+                            FLP_KAFKA_REPLICAS = "3"
+                        }
+                        templateParams += "KafkaConsumerReplicas=${params.FLP_KAFKA_REPLICAS} "
+                    }
+                    if (params.EBPF_MEMORY_LIMIT != "") {
+                        templateParams += "EBPFMemoryLimit=${params.EBPF_MEMORY_LIMIT} "
+                    }
+                    if (params.EBPF_PRIVILEGED == true){
+                        templateParams += "EBPFPrivileged=${params.EBPF_PRIVILEGED} "
+                    }
+                    if (params.EBPF_SAMPLING_RATE != ""){
+                        templateParams += "EBPFSamplingRate=${params.EBPF_SAMPLING_RATE} "
+                    }
+                    if (params.EBPF_CACHE_MAXFLOWS != ""){
+                        templateParams += "EBPFCacheMaxFlows=${params.EBPF_CACHE_MAXFLOWS} "
+                    }
+                    if (params.LOKI_OPERATOR == 'None') {
+                        templateParams += "LokiEnable=false "
+                    }
+                    if (params.FLP_MEMORY_LIMIT != "") {
+                        templateParams += "FLPMemoryLimit=${params.FLP_MEMORY_LIMIT} "
+                    }                    
+
+                    fcReturnCode = sh(returnStatus: true, script: """
+                          source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
+                          createFlowCollector $templateParams
+                        """)
+                    if (fcReturnCode.toInteger() != 0) {
+                        error('Failed to deploy flowcollector :(')
+                    }
+                    else {
+                        println('Successfully deployed Flowcollector :)')
+                    }
+
                     // capture NetObserv release and add it to build description
                     env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
                     if (env.RELEASE != '') {
@@ -633,63 +695,7 @@ pipeline {
                             error('Updating controller memory limit failed :(')
                         }
                     }
-                    if (params.EBPF_SAMPLING_RATE != '') {
-                        samplingReturnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/sampling", "value": ${params.EBPF_SAMPLING_RATE}}] -n netobserv"
-                        """)
-                        if (samplingReturnCode.toInteger() != 0) {
-                            error('Updating eBPF sampling rate failed :(')
-                        }
-                    }
-                    if (params.EBPF_MEMORY_LIMIT != '') {
-                        ebpfMemReturnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/agent/ebpf/resources/limits/memory", "value": "${params.EBPF_MEMORY_LIMIT}"}] -n netobserv"
-                        """)
-                        if (ebpfMemReturnCode.toInteger() != 0) {
-                            error('Updating eBPF memory limit failed :(')
-                        }
-                    }
-                    if (params.FLP_CPU_LIMIT != '') {
-                        flpCpuReturnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/cpu", "value": "${params.FLP_CPU_LIMIT}"}] -n netobserv"
-                        """)
-                        if (flpCpuReturnCode.toInteger() != 0) {
-                            error('Updating FLP CPU limit failed :(')
-                        }
-                    }
-                    if (params.FLP_MEMORY_LIMIT != '') {
-                        flpMemReturnCode = sh(returnStatus: true, script: """
-                            oc patch flowcollector cluster --type=json -p "[{"op": "replace", "path": "/spec/processor/resources/limits/memory", "value": "${params.FLP_MEMORY_LIMIT}"}] -n netobserv"
-                        """)
-                        if (flpMemReturnCode.toInteger() != 0) {
-                            error('Updating FLP memory limit failed :(')
-                        }
-                    }
                     println('Successfully updated common parameters of NetObserv and flowcollector :)')
-                    // attempt to enable or update Kafka if applicable
-                    println('Checking if Kafka needs to be enabled or updated...')
-                    if (params.ENABLE_KAFKA == true) {
-                        println("Configuring Kafka in flowcollector...")
-                        kafkaReturnCode = sh(returnStatus: true, script: """
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            deploy_kafka
-                        """)
-                        // fail pipeline if installation and/or configuration failed
-                        if (kafkaReturnCode.toInteger() != 0) {
-                            error('Failed to enable Kafka in flowcollector :(')
-                        }
-                        // otherwise continue and display controller and updated FLP pods running in cluster
-                        else {
-                            println('Successfully enabled Kafka with flowcollector :)')
-                            sh(returnStatus: true, script: '''
-                                oc get pods -n openshift-operators
-                                oc get pods -n netobserv
-                            ''')
-                        }
-                    }
-                    else {
-                        println('Skipping Kafka configuration...')
-                    }
                 }
             }
         }
@@ -732,22 +738,7 @@ pipeline {
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
                     sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
                     // build workload job based off selected workload
-                    if (params.WORKLOAD == 'router-perf') {
-                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
-                        workloadJob = build job: env.JENKINS_JOB, parameters: [
-                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
-                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
-                            booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
-                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX),
-                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
-                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
-                        ]
-                    }
-                    else if (params.WORKLOAD == 'ingress-perf') {
+                    if (params.WORKLOAD == 'ingress-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
@@ -863,7 +854,7 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/cloud-bulldozer/e2e-benchmarking.git' ]],
+                    userRemoteConfigs: [[url: 'https://github.com/memodi/e2e-benchmarking.git' ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
@@ -1016,10 +1007,22 @@ pipeline {
         always {
             println('Post Section - Always')
             archiveArtifacts(
-                artifacts: 'ocp-qe-perfscale-ci/data/**, ocp-qe-perfscale-ci/scripts/netobserv/netobserv-dittybopper.yaml, e2e-benchmarking/utils/*.json',
+                artifacts: 'e2e-benchmarking/utils/*.json',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
+            dir("/tmp"){
+                archiveArtifacts(
+                    artifacts: 'flowcollector.yaml',
+                    allowEmptyArchive: true,
+                    fingerprint: true)
+            }
+            dir("$workspace/ocp-qe-perfscale-ci/"){
+                archiveArtifacts(
+                    artifacts: 'data/**, scripts/netobserv/netobserv-dittybopper.yaml',
+                    allowEmptyArchive: true,
+                    fingerprint: true)
+            }
         }
         failure {
             println('Post Section - Failure')
