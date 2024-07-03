@@ -2,7 +2,7 @@
 
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
-BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
+BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi']
 
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
@@ -27,7 +27,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc415',
+            defaultValue: 'oc416',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -634,20 +634,20 @@ pipeline {
                     if (params.ENABLE_KAFKA != true) {
                         templateParams += "DeploymentModel=Direct "
                     }
-                    if (params.FLP_KAFKA_REPLICAS == '') {
+                    if (params.FLP_KAFKA_REPLICAS == "") {
                         if (params.WORKLOAD == 'node-density-heavy') {
-                            FLP_KAFKA_REPLICAS = "6"
+                            env.FLP_KAFKA_REPLICAS = '6'
                         }
                         else if (params.WORKLOAD == 'ingress-perf') {
-                            FLP_KAFKA_REPLICAS = "12"
+                            env.FLP_KAFKA_REPLICAS = '12'
                         }
                         else if (params.WORKLOAD == 'cluster-density-v2') {
-                            FLP_KAFKA_REPLICAS = "18"
+                            env.FLP_KAFKA_REPLICAS = '18'
                         }
                         else {
-                            FLP_KAFKA_REPLICAS = "3"
+                            env.FLP_KAFKA_REPLICAS = '3'
                         }
-                        templateParams += "KafkaConsumerReplicas=${params.FLP_KAFKA_REPLICAS} "
+                        templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
                     }
                     if (params.EBPF_MEMORY_LIMIT != "") {
                         templateParams += "EBPFMemoryLimit=${params.EBPF_MEMORY_LIMIT} "
