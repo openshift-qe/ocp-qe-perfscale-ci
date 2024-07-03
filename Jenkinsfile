@@ -163,6 +163,7 @@ pipeline {
                         env.PROM_URL = sh(script: "cat \$INFRA | base64 --decode | awk -F' = ' '/^PROM_URL/ {print \$2}'", returnStdout: true).trim()
                         env.ES_SERVER_URL = sh(script: "cat \$INFRA | base64 --decode | awk -F' = ' '/^ES_SERVER/ {print \$2}'", returnStdout: true).trim()
                         sh '''
+                        echo $BUILD_URL
                         ./scripts/run_ocm_benchmark.sh -o ocm-api-load
                         sleep 60
                         ./scripts/run_ocm_benchmark.sh -o cleanup
