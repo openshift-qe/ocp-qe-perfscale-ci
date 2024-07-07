@@ -42,6 +42,11 @@ pipeline{
         defaultValue: '', 
         description: 'Build number of job that has installed the cluster.'
       )
+      string(
+        name: 'BUILD_NUMBER', 
+        defaultValue: '', 
+        description: 'Build number of job that has installed the cluster.'
+      )
 
       separator(
         name: "BUILD_FLEXY_COMMON_PARAMS", 
