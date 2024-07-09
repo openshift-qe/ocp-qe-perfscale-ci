@@ -1,4 +1,4 @@
-FROM quay.io/openshifttest/python:3.9
+FROM registry.ci.openshift.org/ocp/4.17:base-rhel9
 
 LABEL vendor="Red Hat Inc." maintainer="OCP QE Team"
 
