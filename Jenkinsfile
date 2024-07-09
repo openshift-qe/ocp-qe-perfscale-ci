@@ -153,6 +153,8 @@ pipeline {
                             file(credentialsId: 'ocm-al-aws', variable: 'AWS_CREDS' ),
                             file(credentialsId: 'ocm-al-infra', variable: 'INFRA' ),
                             string(credentialsId: 'ocm-al-ocm-token', variable: 'OCM_TOKEN' ),
+                            string(credentialsId: 'ocm-al-ocm-client-id', variable: 'OCM_CLIENT_ID' ),
+                            string(credentialsId: 'ocm-al-ocm-client-secret', variable: 'OCM_CLIENT_SECRET' ),
                             string(credentialsId: 'ocm-al-prom-token', variable: 'PROM_TOKEN' ),
                             string(credentialsId: 'ocm-al-server-password', variable: 'ES_SERVER_PASS' ),
                             string(credentialsId: 'ocm-al-sshkey-token', variable: 'SSHKEY_TOKEN' ),
