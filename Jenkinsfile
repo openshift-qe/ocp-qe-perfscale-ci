@@ -42,12 +42,6 @@ pipeline{
         defaultValue: '', 
         description: 'Build number of job that has installed the cluster.'
       )
-      string(
-        name: 'BUILD_NUMBER', 
-        defaultValue: '', 
-        description: 'Build number of job that has installed the cluster.'
-      )
-
       separator(
         name: "BUILD_FLEXY_COMMON_PARAMS", 
         sectionHeader: "Build Flexy Parameters Common", 
@@ -165,7 +159,7 @@ pipeline{
       booleanParam(
         name: "KUBE_BURNER_OCP",
         defaultValue: false,
-        description: "If enabled, the kube-burner-ocp versions of the selected CI_TYPE will be run"
+        description: "If enabled, the kube-burner-ocp versions of the selected CI_TYPE will be run"      
       )
       string(
         name: 'VARIABLE', 
@@ -191,7 +185,54 @@ pipeline{
         Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
         '''
       )
-
+      separator(
+        name: "KRAKEN SCENARIO", 
+        sectionHeader: "Kraken Workloads:", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      booleanParam(
+        name: "MEMORY_HOG",
+        defaultValue: false,
+        description: "If enabled, the krkn versions of the selected CI_TYPE will be run"      
+      )
+      booleanParam(
+        name: "CPU_HOG",
+        defaultValue: false,
+        description: "If enabled, the krkn versions of the selected CI_TYPE will be run"      
+      )
+      choice(
+          choices: ["python","pod"], 
+          name: 'KRAKEN_RUN_TYPE', 
+          description: '''Type of way to run chaos scenario'''
+        )
+      string(
+        name: 'CPU_PERCENT', 
+        defaultValue: '', 
+        description: 'int the CPU load by percentage'
+      )
+      string(
+        name: 'TOTAL_CHAOS_DURATION', 
+        defaultValue: '', 
+        description: 'string stop stress test after N seconds.'
+      )
+      string(
+        name: 'NODE_CPU_CORE', 
+        defaultValue: '', 
+        description: 'nt the number of CPU cores to be used.'
+      )
+      string(
+        name: 'MEMORY_CONSUMPTION_PERCENTAGE', 
+        defaultValue: '', 
+        description: 'string N bytes per vm process or percentage of memory used (using the % symbol)'
+      )
+      string(
+        name: 'NUMBER_OF_WORKERS', 
+        defaultValue: '', 
+        description: 'int Number of VM stressors to be run'
+      )
       separator(
         name: "NODE_DENSITY_JOB_INFO", 
         sectionHeader: "Node Density Job Options", 
@@ -654,14 +695,14 @@ pipeline{
 
 
                   scale_config = '''
-RHEL_WORKER_PREFIX: rhel''' + i + '''\n
-cluster_domain: qe.devcluster.openshift.com
-aws:
-  profile: default
-  instance_size: m5.2xlarge
-  root_volume_size: "120"
-  ssh_user: ec2-user
-'''
+                    RHEL_WORKER_PREFIX: rhel''' + i + '''\n
+                    cluster_domain: qe.devcluster.openshift.com
+                    aws:
+                      profile: default
+                      instance_size: m5.2xlarge
+                      root_volume_size: "120"
+                      ssh_user: ec2-user
+                    '''
 
                         
                     RHEL_MAJOR_OS = 8
@@ -678,7 +719,7 @@ aws:
 
           }
           }
-        }
+          }
         }
 
         stage("Scale Up Cluster") {
@@ -704,83 +745,20 @@ aws:
             }
           }
         }
+
         stage("Perf Testing"){
             agent { label params['JENKINS_AGENT_LABEL'] }
             when {
                 expression { build_string != "DEFAULT" && status == "PASS" }
             }
-            steps{
-                script {
-                    if (params.CI_TYPE == "router-perf") {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
-                       ]
-                        currentBuild.description += """
-                            <b>Scale-Ci: </b> router-perf <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                        """
-                   }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf", propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
-                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
-                         ]
-                       currentBuild.description += """
-                            <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                       """
-                    } else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf-v2", propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml'),
-                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
-                         ]
-                       currentBuild.description += """
-                            <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                       """
-                    } else if ( ["ingress-perf"].contains(params.CI_TYPE) ) {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf", propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            string(name: "CONFIG", value: CONFIG),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
-                            booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
-                         ]
-                       currentBuild.description += """
-                            <b>Scale-Ci: Ingress Perf </b> ${CONFIG} <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                       """
-                    } else if (params.CI_TYPE == "regression-test") {
-                       loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/regression-test",propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            text(name: "ENV_VARS", value: ENV_VARS),string(name: "SVT_REPO", value: SVT_REPO),
-                            string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
-                            string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE),
-                            booleanParam(name: "CLEANUP", value: CLEANUP),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
-                            booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
-                       ]
-                        currentBuild.description += """
-                            <b>Scale-Ci: </b> regression-test <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                        """
-                    } else if (params.KUBE_BURNER_OCP == true || params.CI_TYPE == "cluster-density-v2") {
-                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp", propagate: false, parameters:[
+            stages{
+              stage("cluster-density-v2"){
+                 when {
+                expression { params.KUBE_BURNER_OCP == true }
+                 }
+                 steps{
+                  script{
+                    loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp", propagate: false, parameters:[
                             string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
                             string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),
                             text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
@@ -794,76 +772,229 @@ aws:
                             <b>Scale-Ci: Kube-burner-ocp </b> ${CI_TYPE}- ${VARIABLE} <br/>
                             <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
                         """
-                    } 
-                    else if (params.CI_TYPE == "") {
-                        println "No Scale-ci Job"
-                        currentBuild.description += """
-                            <b>No Scale-Ci Run</b><br/>
-                        """
-                    } else {
-                        loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
-                            string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
-                            string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
-                            string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
-                            text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
-                            booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
-                            string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
-                            string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
-                            booleanParam(name: "CHURN", value: CHURN),
-                            string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM) 
-                        ]
-                        currentBuild.description += """
-                            <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
-                            <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
-                        """
-                    }  
-                    if( loaded_ci != null ) {
-                      if( loaded_ci.result.toString() != "SUCCESS") {
-                           status = "Scale CI Job Failed"
-                           currentBuild.result = "FAILURE"
+                  }
+                 }
+              }
+            }
+            // steps{
+            //     script {
+            //         if (params.CI_TYPE == "router-perf") {
+            //            loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf",propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+            //                 booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER)
+            //            ]
+            //             currentBuild.description += """
+            //                 <b>Scale-Ci: </b> router-perf <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //             """
+            //        }else if ( ["network-perf-pod-network-test","network-perf-serviceip-network-test","network-perf-hostnetwork-network-test"].contains(params.CI_TYPE) ) {
+            //            loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf", propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE),booleanParam(name: "NETWORK_POLICY", value: NETWORK_POLICY),
+            //                 booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+            //                 booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+            //              ]
+            //            currentBuild.description += """
+            //                 <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //            """
+            //         } else if ( ["network-perf-v2"].contains(params.CI_TYPE) ) {
+            //            loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/network-perf-v2", propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 string(name: "WORKLOAD_TYPE", value: WORKLOAD_TYPE + '.yaml'),
+            //                 booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+            //                 booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+            //              ]
+            //            currentBuild.description += """
+            //                 <b>Scale-Ci: Network Perf </b> ${WORKLOAD_TYPE} ${NETWORK_POLICY} <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //            """
+            //         } else if ( ["ingress-perf"].contains(params.CI_TYPE) ) {
+            //            loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf", propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 string(name: "CONFIG", value: CONFIG),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),
+            //                 booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+            //              ]
+            //            currentBuild.description += """
+            //                 <b>Scale-Ci: Ingress Perf </b> ${CONFIG} <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //            """
+            //         } else if (params.CI_TYPE == "regression-test") {
+            //            loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/regression-test",propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),string(name: "SVT_REPO", value: SVT_REPO),
+            //                 string(name: "SVT_REPO_BRANCH", value: SVT_REPO_BRANCH),string(name: "PARAMETERS", value: VARIABLE),
+            //                 string(name: "SCRIPT", value: SCRIPT),string(name: "TEST_CASE", value: TEST_CASE),
+            //                 booleanParam(name: "CLEANUP", value: CLEANUP),booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),
+            //                 booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+            //            ]
+            //             currentBuild.description += """
+            //                 <b>Scale-Ci: </b> regression-test <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //             """
+            //         } else if (params.KUBE_BURNER_OCP == true || params.CI_TYPE == "cluster-density-v2") {
+            //             loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp", propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+            //                 booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
+            //                 string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 booleanParam(name: "CHURN", value: CHURN),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM)
+            //             ]
+            //             currentBuild.description += """
+            //                 <b>Scale-Ci: Kube-burner-ocp </b> ${CI_TYPE}- ${VARIABLE} <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //             """
+            //         } 
+            //         else if (params.CI_TYPE == "") {
+            //             println "No Scale-ci Job"
+            //             currentBuild.description += """
+            //                 <b>No Scale-Ci Run</b><br/>
+            //             """
+            //         } else {
+            //             loaded_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner", propagate: false, parameters:[
+            //                 string(name: "BUILD_NUMBER", value: "${build_string}"),string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),
+            //                 string(name: "WORKLOAD", value: CI_TYPE),string(name: "VARIABLE", value: VARIABLE),string(name: 'NODE_COUNT', value: NODE_COUNT),
+            //                 string(name: "BUILD_LIST", value: BUILD_LIST),string(name: 'APP_LIST', value: APP_LIST),
+            //                 text(name: "ENV_VARS", value: ENV_VARS),booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),
+            //                 booleanParam(name: "CERBERUS_CHECK", value: CERBERUS_CHECK),booleanParam(name: "CLEANUP", value: CLEANUP),
+            //                 string(name: "E2E_BENCHMARKING_REPO", value: E2E_BENCHMARKING_REPO),
+            //                 string(name: "E2E_BENCHMARKING_REPO_BRANCH", value: E2E_BENCHMARKING_REPO_BRANCH),booleanParam(name: "MUST_GATHER", value: MUST_GATHER),
+            //                 booleanParam(name: "CHURN", value: CHURN),
+            //                 string(name: 'IMAGE', value: IMAGE),string(name: 'IMAGE_STREAM', value: IMAGE_STREAM) 
+            //             ]
+            //             currentBuild.description += """
+            //                 <b>Scale-Ci: Kube-burner </b> ${CI_TYPE}- ${VARIABLE} <br/>
+            //                 <b>Scale-CI Job: </b> <a href="${loaded_ci.absoluteUrl}"> ${loaded_ci.getNumber()} </a> <br/>
+            //             """
+            //         }  
+            //         if( loaded_ci != null ) {
+            //           if( loaded_ci.result.toString() != "SUCCESS") {
+            //                status = "Scale CI Job Failed"
+            //                currentBuild.result = "FAILURE"
+            //             }
+            //         }
+
+            //     }
+            // }
+        }
+        
+       
+        stage("Run parallel tests") {
+                parallel {
+                  stage("krkn"){
+                    agent { label params['JENKINS_AGENT_LABEL'] }
+                    stages{
+                       stage("Start Kraken run") {
+                            steps {
+                                script {
+                                        kraken_job = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
+                                        parameters: [
+                                            string(name: 'BUILD_NUMBER', value: "${build_string}"),
+                                            text(name: "ENV_VARS", value: ENV_VARS),
+                                            string(name: 'KRAKEN_SCENARIO', value: "node-cpu-hog"),
+                                            string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
+                                            string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                                            string(name: "CPU_PERCENT", value:CPU_PERCENT),
+                                            string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
+                                            string(name: "NODE_CPU_CORE", value:NODE_CPU_CORE)    
+                                        ],
+                                        propagate: false
+                                        currentBuild.description += """
+                                        <b>Upgrade Job: </b> <a href="${kraken_job.absoluteUrl}"> ${build_string} </a> <br/>
+                                        """
+                                        if( kraken_job.result.toString() != "SUCCESS") {
+                                          status = "Upgrade Failed"
+                                          currentBuild.result = "FAILURE"
+                                        }
+                                }
+                            }
                         }
+                        stage("Start Kraken run 2") {
+                            steps {
+                                script {
+                                        kraken_job1 = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
+                                        parameters: [
+                                            string(name: 'BUILD_NUMBER', value: "${build_string}"),
+                                            text(name: "ENV_VARS", value: ENV_VARS),
+                                            string(name: 'KRAKEN_SCENARIO', value: "node-memory-hog"),
+                                            string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
+                                            string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                                            string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
+                                            string(name: "MEMORY_CONSUMPTION_PERCENTAGE", value: MEMORY_CONSUMPTION_PERCENTAGE),
+                                            string(name: "NUMBER_OF_WORKERS", value: NUMBER_OF_WORKERS)
+                                        ],
+                                        propagate: false
+                                        currentBuild.description += """
+                                        <b>Upgrade Job: </b> <a href="${kraken_job1.absoluteUrl}"> ${build_string} </a> <br/>
+                                        """
+                                        if( kraken_job1.result.toString() != "SUCCESS") {
+                                          status = "Upgrade Failed"
+                                          currentBuild.result = "FAILURE"
+                                        }
+                                }
+                            }
+                        }
+                      }
                     }
-
+                 
+                  stage('Upgrade'){
+                      agent { label params['JENKINS_AGENT_LABEL'] }
+                      when {
+                          expression { UPGRADE_VERSION != "" }
+                      }
+                      steps{
+                          script{
+                            currentBuild.description += """
+                            <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
+                            """
+                            def set_arch_type = "x86_64"
+                            if (params.ARCH_TYPE != "") {
+                              set_arch_type = params.ARCH_TYPE
+                            }
+                            else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
+                              set_arch_type = "aarch64"
+                            }	
+                            upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
+                                string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
+                                string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
+                                string(name: "ARCH_TYPE", value: set_arch_type),
+                                booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),
+                                booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),
+                                booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)
+                            ]
+                            currentBuild.description += """
+                                <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
+                            """
+                            if( upgrade_ci.result.toString() != "SUCCESS") {
+                              status = "Upgrade Failed"
+                              currentBuild.result = "FAILURE"
+                            }
+                          }
+                      }
+                  }
                 }
-            }
-        }
-        stage('Upgrade'){
-            agent { label params['JENKINS_AGENT_LABEL'] }
-            when {
-                expression { build_string != "DEFAULT" && status == "PASS" && UPGRADE_VERSION != ""  }
-            }
-            steps{
-                script{
-                    currentBuild.description += """
-                        <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
-                    """
-		    def set_arch_type = "x86_64"
-                    if (params.ARCH_TYPE != "") {
-                          set_arch_type = params.ARCH_TYPE
-                     }
-                    else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
-                          set_arch_type = "aarch64"
-                     }	
-			
-                    upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
-                        string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
-                        string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
-			string(name: "ARCH_TYPE", value: set_arch_type),
-			booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),
-                        booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),
-                        booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)
-                    ]
-                    currentBuild.description += """
-                        <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
-                    """
-                    if( upgrade_ci.result.toString() != "SUCCESS") {
-                       status = "Upgrade Failed"
-                       currentBuild.result = "FAILURE"
-                    }
-                }
-            }
         }
 
+       
+        
+        
         stage("Write out results") {
             agent { label params['JENKINS_AGENT_LABEL'] }
             when {
