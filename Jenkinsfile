@@ -647,8 +647,9 @@ pipeline {
                         else {
                             env.FLP_KAFKA_REPLICAS = '3'
                         }
-                        templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
                     }
+                    templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
+
                     if (params.EBPF_MEMORY_LIMIT != "") {
                         templateParams += "EBPFMemoryLimit=${params.EBPF_MEMORY_LIMIT} "
                     }
