@@ -642,6 +642,9 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'brew-registry-osbs-mirror', usernameVariable: 'BREW_USER', passwordVariable: 'BREW_PASSWORD')]){ 
                         sh 'podman login -u $BREW_USER -p $BREW_PASSWORD brew.registry.redhat.io'
                     }
+                    withCredentials([usernamePassword(credentialsId: '41c2dd39-aad7-4f07-afec-efc052b450f5', usernameVariable: 'REG_STAGE_USER', passwordVariable: 'REG_STAGE_PASSWORD')]){
+                        sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
+                    }
 
                     NOO_BUNDLE_VERSION=sh(returnStdout: true, script: '''
                             #!/usr/bin/env bash
