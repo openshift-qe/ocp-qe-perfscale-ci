@@ -12,6 +12,7 @@
                     "cache_max_flows",
                     "deploymentModel",
                     "flp_kind",
+                    "noo_bundle_version",
                     "jira",
                     "kafka_brokers",
                     "kafka_replicas",
@@ -703,6 +704,32 @@
                 "aggregations": {
                     "value": [
                         "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetObservCPUUsage"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetObservRSSUsage"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
                     ]
                 }
             }

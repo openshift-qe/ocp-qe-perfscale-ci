@@ -169,3 +169,15 @@
 # total working set memory by all Kafka pods - per pod is not included here as that is collected above
 - query: sum(container_memory_working_set_bytes{namespace="netobserv", container="", pod=~"kafka.*"})
   metricName: workingsetKafkaTotals
+
+###########################
+# Total NetObserv metrics #
+###########################
+
+# Total NetObserv CPU Usage, assuming Loki and Kafka also runs in netobserv NS
+- query: (sum(pod:container_cpu_usage:sum{namespace=~"netobserv.*|openshift-netobserv-operator"}) or on() vector(0))
+  metricName: TotalNetObservCPUUsage
+
+# Total NetObserv RSS Usage, assuming Loki and Kafka also runs in netobserv NS
+- query:  (sum(container_memory_rss{namespace=~"netobserv.*|openshift-netobserv-operator", container=""}) or on() vector(0))
+  metricName: TotalNetObservRSSUsage
