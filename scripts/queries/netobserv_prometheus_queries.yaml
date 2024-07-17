@@ -175,9 +175,9 @@
 ###########################
 
 # Total NetObserv CPU Usage, assuming Loki and Kafka also runs in netobserv NS
-- query: (sum(pod:container_cpu_usage:sum{namespace=~"netobserv|openshift-netobserv-operator"}) or on() vector(0))
+- query: (sum(pod:container_cpu_usage:sum{namespace=~"netobserv.*|openshift-netobserv-operator"}) or on() vector(0))
   metricName: TotalNetObservCPUUsage
 
 # Total NetObserv RSS Usage, assuming Loki and Kafka also runs in netobserv NS
-- query:  (sum(container_memory_rss{namespace=~"netobserv|openshift-netobserv-operator", container=""}) or on() vector(0))
+- query:  (sum(container_memory_rss{namespace=~"netobserv.*|openshift-netobserv-operator", container=""}) or on() vector(0))
   metricName: TotalNetObservRSSUsage
