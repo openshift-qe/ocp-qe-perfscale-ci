@@ -46,6 +46,7 @@ JENKINS_URL = 'https://mastern-jenkins-csb-openshift-qe.apps.ocp-c1.prod.psi.red
 JENKINS_JOB = None
 JENKINS_BUILD = None
 JENKINS_SERVER = None
+NOO_BUNDLE_VERSION = None
 UUID = None
 SUPPORTED_WORKLOADS = ['node-density-heavy', 'router-perf', 'ingress-perf', 'cluster-density', 'cluster-density-v2']
 
@@ -189,6 +190,7 @@ def get_netobserv_env_info():
         "metric_name": "netobservEnv",
         "data_type": "metadata",
         "iso_timestamp": iso_timestamp,
+        "noo_bundle_version": NOO_BUNDLE_VERSION
     }
     base_commands = {
         "ocp": 'oc get co/authentication -o=jsonpath="{.status.versions[0].version}"',
@@ -572,6 +574,8 @@ if __name__ == '__main__':
     standard.add_argument("--uuid", type=str, help='UUID to associate with run - if none is provided one will be generated')
     standard.add_argument("--dump-only", default=False, action='store_true', help='Flag to dump data locally instead of uploading it to Elasticsearch')
     standard.add_argument("--jira", type=str, help='Jira ticket to associate with run - should be in the form of "NETOBSERV-123"')
+    standard.add_argument("--noo-bundle-version", type=str, help='NOO Operator bundle associated with the run')
+
 
     # set upload mode flags
     upload = subparsers.add_parser(
@@ -668,6 +672,11 @@ if __name__ == '__main__':
         except Exception as e:
             logging.error("Error connecting to Jenkins server: ", e)
             sys.exit(1)
+
+    NOO_BUNDLE_VERSION=args.noo_bundle_version
+    if not NOO_BUNDLE_VERSION:
+        logging.warn("NOO_BUNDLE_VERSION is strongly recommended to set using --noo-bundle-version args")
+        NOO_BUNDLE_VERSION="N/A"
 
     # determine UUID and Jira if applicable
     UUID = args.uuid
