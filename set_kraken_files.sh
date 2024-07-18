@@ -57,6 +57,8 @@ elif [ -f "input.yaml.template" ]; then
   cat $kraken_path/$scenario_full_path/input.yaml
   
   cat $kraken_path/$scenario_full_path/workflow.yaml
+  # Moving into kraken repo
+  cd ../../kraken
 fi
 
 
@@ -76,6 +78,8 @@ if [[ $scenario_path == "openshift" ]]; then
 
   suffix='.template'
   file_name_yaml=${file_name/%$suffix}
+  # Moving into kraken repo
+  cd ../../kraken
 
   # need to excahnge name 
   export SCENARIO_FILE=$scenario_full_path/${file_name_yaml}
@@ -89,7 +93,6 @@ if [[ $scenario_path == "openshift" ]]; then
 
   cat $SCENARIO_FILE
 fi 
-# Moving into kraken repo
-cd ../../kraken
+
 
 envsubst < config.yaml.template > config2.yaml
