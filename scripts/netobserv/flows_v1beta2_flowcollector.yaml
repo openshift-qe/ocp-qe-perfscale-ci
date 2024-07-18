@@ -13,58 +13,17 @@ objects:
       agent:
         type: eBPF
         ebpf:
-          imagePullPolicy: IfNotPresent
           sampling: ${{EBPFSamplingRate}}
           cacheMaxFlows: ${{EBPFCacheMaxFlows}}
-          interfaces: [ ]
-          excludeInterfaces: ["lo"]
-          logLevel: info
           privileged: "${{EBPFPrivileged}}"
-          metrics:
-            enable: true
-            server:
-              port: 9400
-              tls:
-                type: Auto
           resources:
-            requests:
-              memory: 50Mi
-              cpu: 100m
             limits:
               memory: ${EBPFMemoryLimit}
       processor:
-        imagePullPolicy: IfNotPresent
-        logLevel: info
-        multiClusterDeployment: false
-        addZone: false
-        metrics:
-          includeList:
-            - node_ingress_bytes_total
-            - workload_ingress_bytes_total
-            - namespace_flows_total
-          server:
-            port: 9401
-            tls:
-              type: Auto
-          disableAlerts: []
         resources:
-          requests:
-            memory: 100Mi
-            cpu: 100m
           limits:
             memory: ${FLPMemoryLimit}
         kafkaConsumerReplicas: ${{KafkaConsumerReplicas}}
-        kafkaConsumerAutoscaler: null
-        kafkaConsumerQueueCapacity: 1000
-        kafkaConsumerBatchSize: 10485760
-        logTypes: Flows
-        advanced:
-          port: 2055
-          profilePort: 6060
-          dropUnusedFields: true
-          conversationTerminatingTimeout: 5s
-          conversationHeartbeatInterval: 5s
-          conversationEndTimeout: 20s
       kafka:
         address: kafka-cluster-kafka-bootstrap.netobserv
         topic: network-flows
@@ -73,44 +32,6 @@ objects:
       loki:
         mode: LokiStack
         enable: "${{LokiEnable}}"
-        lokiStack:
-          name: lokistack
-        writeBatchWait: 1s
-        writeBatchSize: 10485760
-        advanced:
-          writeMinBackoff: 1s
-          writeMaxBackoff: 5s
-          writeMaxRetries: 2
-      consolePlugin:
-        enable: true
-        imagePullPolicy: IfNotPresent
-        logLevel: info
-        portNaming:
-          enable: true
-          portNames:
-            "3100": loki
-        quickFilters:
-        - name: Applications
-          filter:
-            src_namespace!: 'openshift-,netobserv'
-            dst_namespace!: 'openshift-,netobserv'
-          default: true
-        - name: Infrastructure
-          filter:
-            src_namespace: 'openshift-,netobserv'
-            dst_namespace: 'openshift-,netobserv'
-        - name: Pods network
-          filter:
-            src_kind: 'Pod'
-            dst_kind: 'Pod'
-          default: true
-        - name: Services network
-          filter:
-            dst_kind: 'Service'
-        advanced:
-          port: 9001
-          register: true
-      exporters: []
 parameters:
   - name: DeploymentModel
     value: "Kafka"
