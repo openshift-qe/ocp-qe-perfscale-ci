@@ -60,7 +60,7 @@ elif [ -f "input.yaml.template" ]; then
 fi
 
 
-if [[ $scenario_path == "openshift"]]; then 
+if [[ $scenario_path == "openshift" ]]; then 
   #Scenario under arca or openshift sub folder
   scenario_full_path="$scenario_path_base/$scenario_path"
 
