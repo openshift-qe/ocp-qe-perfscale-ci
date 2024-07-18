@@ -1,12 +1,8 @@
 #/!/bin/bash
 
-kube_config_location_2=$1
 
-
-
-ls
 cd kraken-hub
-ls
+
 source env.sh
 source common_run.sh
 
@@ -48,47 +44,55 @@ elif [ -f "${kraken_s}.yaml.template" ]; then
 elif [ -f "${k_scenario_no_s}.yaml.template" ]; then
   file_name=${k_scenario_no_s}.yaml.template
 elif [ -f "input.yaml.template" ]; then
-  file_name=input.yaml
+  file_name=input.yaml.template
+  
   kraken_s=${KRAKEN_SCENARIO#*-}  
   scenario_path="arcaflow/$kraken_s"
   export NODE_SELECTORS="node-role.kubernetes.io/worker="
-  export SCENARIO_FOLDER="$kraken_path/$scenario_path_base/$scenario_path"
-  ls $SCENARIO_FOLDER
+  scenario_full_path="$scenario_path_base/$scenario_path"
+  cp $file_name $kraken_path/$scenario_full_path
+  export SCENARIO_FOLDER="$kraken_path/$scenario_full_path"
+  echo "$SCENARIO_FOLDER"
   setup_arcaflow_env "$SCENARIO_FOLDER"
-  cat input.yaml
+  cat $kraken_path/$scenario_full_path/input.yaml
+  
+  cat $kraken_path/$scenario_full_path/workflow.yaml
+  # Moving into kraken repo
+  cd ../../kraken
 fi
 
-#Scenario under arca or openshift sub folder
-scenario_full_path="$scenario_path_base/$scenario_path"
 
-# copy template file from kraken-hub to kraken
-# Need kraken path only here since we are under kraken-hub folder
-cp $file_name $kraken_path/$scenario_full_path
+if [[ $scenario_path == "openshift" ]]; then 
+  #Scenario under arca or openshift sub folder
+  scenario_full_path="$scenario_path_base/$scenario_path"
 
-# See all files in kraken that just copied over
-echo "full path $scenario_full_path" 
-ls $kraken_path/$scenario_full_path
+  # copy template file from kraken-hub to kraken
+  # Need kraken path only here since we are under kraken-hub folder
+  cp $file_name $kraken_path/$scenario_full_path
 
-echo "file name $file_name"
+  # See all files in kraken that just copied over
+  echo "full path $scenario_full_path" 
+  ls $kraken_path/$scenario_full_path
 
-# Moving into kraken repo
-cd ../../kraken
+  echo "file name $file_name"
 
-suffix='.template'
-file_name_yaml=${file_name/%$suffix}
+  suffix='.template'
+  file_name_yaml=${file_name/%$suffix}
+  # Moving into kraken repo
+  cd ../../kraken
 
-# need to excahnge name 
-export SCENARIO_FILE=$scenario_full_path/${file_name_yaml}
-echo "SCENARIO FILE Loc $SCENARIO_FILE"
+  # need to excahnge name 
+  export SCENARIO_FILE=$scenario_full_path/${file_name_yaml}
+  echo "SCENARIO FILE Loc $SCENARIO_FILE"
 
-# Overwrite template file using env variables 
-echo "file nme yaml $file_name_yaml \n\n\n\n"
-envsubst < $scenario_full_path/${file_name} > $SCENARIO_FILE
+  # Overwrite template file using env variables 
+  echo "file nme yaml $file_name_yaml \n\n\n\n"
+  envsubst < $scenario_full_path/${file_name} > $SCENARIO_FILE
 
-ls $scenario_full_path
+  ls $scenario_full_path
 
-cat $scenario_full_path/workflow.yaml
+  cat $SCENARIO_FILE
+fi 
 
-cat $SCENARIO_FILE
 
 envsubst < config.yaml.template > config2.yaml
