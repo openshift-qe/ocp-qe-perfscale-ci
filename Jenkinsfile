@@ -151,7 +151,7 @@ pipeline {
             python3.9 -m virtualenv venv3
             source venv3/bin/activate
             python --version
-            pip install -r kraken/requirements.txt
+            pip install -r kraken/requirements.txt yq
             ./kraken.sh
             exit $?
 
