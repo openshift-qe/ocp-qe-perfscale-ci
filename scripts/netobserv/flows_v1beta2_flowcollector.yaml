@@ -32,8 +32,6 @@ objects:
       loki:
         mode: LokiStack
         enable: "${{LokiEnable}}"
-        lokiStack:
-          name: lokistack
 parameters:
   - name: DeploymentModel
     value: "Kafka"
