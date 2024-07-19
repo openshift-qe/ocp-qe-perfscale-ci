@@ -131,7 +131,7 @@ pipeline {
           ''')
           sh "echo $RETURNSTATUS"
           archiveArtifacts(
-              artifacts: 'results/**',
+              artifacts: 'dast/results/**',
               allowEmptyArchive: true,
               fingerprint: true
           )
