@@ -9,6 +9,7 @@ if (userId) {
 def RETURNSTATUS = "default"
 def output = ""
 pipeline {
+  agent none
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: "DAST_IMAGE", defaultValue: "quay.io/redhatproductsecurity/rapidast", description: 'Image to use as the base for running zap.')
@@ -42,7 +43,6 @@ pipeline {
                </p>'''
             )
      }
-
   stages {
     stage('SSMl Run'){
         agent {
