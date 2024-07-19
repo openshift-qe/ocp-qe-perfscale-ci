@@ -732,6 +732,58 @@
                         "avg"
                     ]
                 }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalClusterCPUUsage"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalClusterRSSUsage"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "NetObservClusterCPUPercentUtil"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "NetObservClusterMemPercentUtil"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
             }
         ]
     }
