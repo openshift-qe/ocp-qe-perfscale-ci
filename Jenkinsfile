@@ -126,6 +126,7 @@ pipeline {
 
           cd dast
           ls
+          export DAST_PATH=../dast_tool
           ./deploy_ssml_api.sh
           ''')
           sh "echo $RETURNSTATUS"
