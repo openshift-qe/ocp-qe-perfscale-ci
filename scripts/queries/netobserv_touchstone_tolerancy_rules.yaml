@@ -65,7 +65,12 @@
 - json_path: ["metric_name", "TotalNetObservRSSUsage", "metric_name", "*", "avg(value)"]
   tolerancy: 10
   max_failures: 0
-# total usages
+- json_path: ["metric_name", "TotalNetworkBytesOut", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
+- json_path: ["metric_name", "TotalNetworkBytesIn", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
 - json_path: ["metric_name", "TotalClusterCPUUsage", "metric_name", "*", "avg(value)"]
   tolerancy: 60
   max_failures: 0
