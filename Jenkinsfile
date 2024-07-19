@@ -123,7 +123,7 @@ pipeline {
           mv ${HELM_DIR}/linux-amd64/helm $WORKSPACE/helm
           PATH=$PATH:$WORKSPACE
           helm version
-          
+          cd dast
           ./deploy_ssml_api.sh
           ''')
           sh "echo $RETURNSTATUS"
