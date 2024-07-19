@@ -171,13 +171,29 @@
   metricName: workingsetKafkaTotals
 
 ###########################
-# Total NetObserv metrics #
+# Total metrics #
 ###########################
 
 # Total NetObserv CPU Usage, assuming Loki and Kafka also runs in netobserv NS
-- query: (sum(pod:container_cpu_usage:sum{namespace=~"netobserv.*|openshift-netobserv-operator"}) or on() vector(0))
+- query: (sum(pod:container_cpu_usage:sum{namespace=~".*netobserv.*"}) or on() vector(0))
   metricName: TotalNetObservCPUUsage
 
 # Total NetObserv RSS Usage, assuming Loki and Kafka also runs in netobserv NS
-- query:  (sum(container_memory_rss{namespace=~"netobserv.*|openshift-netobserv-operator", container=""}) or on() vector(0))
+- query:  (sum(container_memory_rss{namespace=~".*netobserv.*", container=""}) or on() vector(0))
   metricName: TotalNetObservRSSUsage
+
+# Total Cluster CPU Usage
+- query:  sum(label_replace(cluster:cpu_usage_cores:sum{prometheus="openshift-monitoring/k8s"}, "resource", "cluster_cpu_usage", "prometheus", ".*")) by (resource)
+  metricName: TotalClusterCPUUsage
+
+# Total Cluster Memory Usage
+- query:  sum(label_replace(cluster:memory_usage_bytes:sum{prometheus="openshift-monitoring/k8s"}, "resource", "cluster_memory_usage", "prometheus", ".*")) by (resource)
+  metricName: TotalClusterRSSUsage
+
+# NetObserv % CPU usage as a factor total cluster CPU usage
+- query: sum(label_replace((((sum(namespace:container_cpu_usage:sum{namespace=~".*netobserv.*"})) / on() group_right() cluster:cpu_usage_cores:sum)*100), "resource", "cpu_usage%", "prometheus", ".*")) by (resource)
+  metricName: NetObservClusterCPUPercentUtil
+
+# NetObserv % memory usage as a factor total cluster memory usage
+- query: sum(label_replace((sum(container_memory_usage_bytes{namespace=~".*netobserv.*",  container=""}) / on() group_right() cluster:memory_usage_bytes:sum)*100, "resource", "memory_usage%", "prometheus", ".*")) by (resource)
+  metricName: NetObservClusterMemPercentUtil
