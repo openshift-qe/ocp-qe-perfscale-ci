@@ -9,32 +9,6 @@ if (userId) {
 def RETURNSTATUS = "default"
 def output = ""
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'PSI OCP-C1 agents'
-      yaml """\
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          labels:
-            label: ${JENKINS_AGENT_LABEL}
-        spec:
-          containers:
-          - name: "jnlp"
-            image: "image-registry.openshift-image-registry.svc:5000/aos-qe-ci/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
-            resources:
-              requests:
-                memory: "8Gi"
-                cpu: "2"
-              limits:
-                memory: "8Gi"
-                cpu: "2"
-            imagePullPolicy: Always
-            workingDir: "/home/jenkins/ws"
-            tty: true
-        """.stripIndent()
-    }
-  }
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
         string(name: "DAST_IMAGE", defaultValue: "quay.io/redhatproductsecurity/rapidast", description: 'Image to use as the base for running zap.')
@@ -71,6 +45,32 @@ pipeline {
 
   stages {
     stage('SSMl Run'){
+        agent {
+          kubernetes {
+            cloud 'PSI OCP-C1 agents'
+            yaml """\
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                labels:
+                  label: ${JENKINS_AGENT_LABEL}
+              spec:
+                containers:
+                - name: "jnlp"
+                  image: "image-registry.openshift-image-registry.svc:5000/aos-qe-ci/cucushift:${JENKINS_AGENT_LABEL}-rhel8"
+                  resources:
+                    requests:
+                      memory: "8Gi"
+                      cpu: "2"
+                    limits:
+                      memory: "8Gi"
+                      cpu: "2"
+                  imagePullPolicy: Always
+                  workingDir: "/home/jenkins/ws"
+                  tty: true
+              """.stripIndent()
+          }
+        }
       steps{
         deleteDir()
         checkout([
