@@ -761,6 +761,32 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "TotalNetworkBytesOut"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetworkBytesIn"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "NetObservClusterCPUPercentUtil"
                 },
                 "buckets": [

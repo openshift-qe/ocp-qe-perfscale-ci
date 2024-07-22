@@ -190,6 +190,15 @@
 - query:  sum(label_replace(cluster:memory_usage_bytes:sum{prometheus="openshift-monitoring/k8s"}, "resource", "cluster_memory_usage", "prometheus", ".*")) by (resource)
   metricName: TotalClusterRSSUsage
 
+# Total Network Transmit bytes/sec
+- query:  sum(instance:node_network_transmit_bytes_excluding_lo:rate1m * on(instance) group_left(role) (label_replace(max by (node) (kube_node_role{role=~".+"}), "instance", "$1", "node", "(.*)")))
+  metricName: TotalNetworkBytesOut
+
+# Total Network Receive bytes/sec
+- query:  sum(instance:node_network_receive_bytes_excluding_lo:rate1m * on(instance) group_left(role) (label_replace(max by (node) (kube_node_role{role=~".+"}), "instance", "$1", "node", "(.*)")))
+  metricName: TotalNetworkBytesIn
+
+
 # NetObserv % CPU usage as a factor total cluster CPU usage
 - query: sum(label_replace((((sum(namespace:container_cpu_usage:sum{namespace=~".*netobserv.*"})) / on() group_right() cluster:cpu_usage_cores:sum)*100), "resource", "cpu_usage%", "prometheus", ".*")) by (resource)
   metricName: NetObservClusterCPUPercentUtil
