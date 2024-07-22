@@ -31,6 +31,9 @@ def get_values_from_es(uuid) -> tuple:
                 noo_bundle_version = uuidMatchRes["noo_bundle_version"]
         except KeyError:
             logger.info("NOO bundle version not found")
+
+        noo_bundle_version += "/" + uuidMatchRes.get("iso_timestamp", 0)
+
         try:
             if uuidMatchRes["jira"] != "N/A":
                 jira = uuidMatchRes["jira"]
