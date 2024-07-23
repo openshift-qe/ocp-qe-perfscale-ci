@@ -64,7 +64,7 @@ def get_iso_timestamp(unix_timestamp):
     ''' takes in a unix timestamp and returns an iso timestamp representation
         iso timestamp will be Elasticsearch compatible 
     '''
-    return datetime.datetime.utcfromtimestamp(int(unix_timestamp)).isoformat() + 'Z'
+    return datetime.datetime.fromtimestamp(int(unix_timestamp), datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S %Z')
 
 
 def process_query(uuid, metric_name, query, raw_data):
