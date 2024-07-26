@@ -58,13 +58,15 @@ DUMP_ONLY = False
 UPLOAD_FILE = None
 BASELINE_TO_FETCH = None
 BASELINE_TO_UPLOAD = None
+JENKINS_BUILD_URL=None
+UUID_REPLACEMENT_STR=None
 
 
 def get_iso_timestamp(unix_timestamp):
     ''' takes in a unix timestamp and returns an iso timestamp representation
         iso timestamp will be Elasticsearch compatible 
     '''
-    return datetime.datetime.fromtimestamp(int(unix_timestamp), datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S %Z')
+    return datetime.datetime.utcfromtimestamp(int(unix_timestamp)).isoformat() + 'Z'
 
 
 def process_query(uuid, metric_name, query, raw_data):
@@ -190,7 +192,8 @@ def get_netobserv_env_info():
         "metric_name": "netobservEnv",
         "data_type": "metadata",
         "iso_timestamp": iso_timestamp,
-        "noo_bundle_version": NOO_BUNDLE_VERSION
+        "noo_bundle_version": NOO_BUNDLE_VERSION,
+        "uuid_replaced_info": UUID_REPLACEMENT_STR
     }
     base_commands = {
         "ocp": 'oc get co/authentication -o=jsonpath="{.status.versions[0].version}"',
@@ -251,7 +254,8 @@ def get_jenkins_env_info():
         "data_type": "metadata",
         "iso_timestamp": iso_timestamp,
         "jenkins_job_name": JENKINS_JOB,
-        "jenkins_build_num": JENKINS_BUILD
+        "jenkins_build_num": JENKINS_BUILD,
+        "buildUrl": JENKINS_BUILD_URL
     }
 
     # collect data from Jenkins server
@@ -677,6 +681,12 @@ if __name__ == '__main__':
     if not NOO_BUNDLE_VERSION:
         logging.warn("NOO_BUNDLE_VERSION is strongly recommended to set using --noo-bundle-version args")
         NOO_BUNDLE_VERSION="N/A"
+        UUID_REPLACEMENT_STR = f"{get_iso_timestamp(START_TIME)}"
+    else:
+        UUID_REPLACEMENT_STR = f"{NOO_BUNDLE_VERSION}/{get_iso_timestamp(START_TIME)}"
+    
+    UUID_REPLACEMENT_STR += "/" + JIRA if JIRA else ''
+    
 
     # determine UUID and Jira if applicable
     UUID = args.uuid
@@ -688,6 +698,11 @@ if __name__ == '__main__':
         JIRA = "N/A"
     else:
         logging.info(f"Associating run with Jira ticket {JIRA}")
+
+    # set original Jenkins build url
+    JENKINS_BUILD_URL = os.getenv("BUILD_URL")
+    if not JENKINS_BUILD_URL:
+        JENKINS_BUILD_URL = "N/A"
 
     # get YAML file with queries and set queries constant with data from YAML file
     YAML_FILE = args.yaml_file

@@ -3,6 +3,7 @@
         "metadata": {
             "prod-netobserv-operator-metadata": {
                 "fields": [
+                    "uuid_replaced_info",
                     "agent",
                     "arch",
                     "aws_s3_bucket_name",
@@ -27,6 +28,7 @@
             },
             "prod-netobserv-jenkins-metadata": {
                 "fields": [
+                    "buildUrl",
                     "jenkins_build_num",
                     "jenkins_job_name",
                     "variable",

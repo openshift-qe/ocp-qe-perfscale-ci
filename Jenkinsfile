@@ -11,9 +11,13 @@ if (userId) {
 } else {
     currentBuild.displayName = 'auto'
 }
-def NOO_BUNDLE_VERSION = ''
 
 pipeline {
+    environment {
+        def NOO_BUNDLE_VERSION = ''
+        def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
+        def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
+    }
 
     // job runs on specified agent
     agent { label params.JENKINS_AGENT_LABEL }
@@ -921,8 +925,8 @@ pipeline {
                 // checkout e2e-benchmarking repo
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/memodi/e2e-benchmarking.git' ]],
+                    branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
+                    userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
@@ -945,8 +949,17 @@ pipeline {
                             python --version
                             cd $WORKSPACE/e2e-benchmarking/utils
                             source compare.sh
-                            run_benchmark_comparison
+                            run_benchmark_comparison > ${BENCHMARK_CSV_LOG}
                         ''')
+                        
+                        if(fileExists("${BENCHMARK_CSV_LOG}")){
+                            try {
+                                METRICS_SHEET = sh(script: "grep Google ${BENCHMARK_CSV_LOG} | awk '{print \$6}'", returnStdout: true).trim()
+                                currentBuild.description += """Metrics sheet: <a href="${METRICS_SHEET}">${env.UUID}</a><br/>"""
+                            } catch (err) {
+                                    println("Failed to capture metrics google sheet  :(")
+                            }
+                        }
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
                         if (statisticsReturnCode.toInteger() != 0) {
                             unstable('Touchstone tool failed - run locally with the given UUID to get workload run statistics :(')
@@ -999,12 +1012,21 @@ pipeline {
                                         rm -rf /tmp/**/*.csv
                                         rm -rf *.csv
                                         source compare.sh
-                                        run_benchmark_comparison > $WORKSPACE/e2e-benchmarking/benchmark_out.log
+                                        run_benchmark_comparison > ${BENCHMARK_COMP_LOG}
                                         )
                                     ''')
 
+                                    if(fileExists("${BENCHMARK_COMP_LOG}")){
+                                        try {
+                                            COMP_SHEET = sh(script: "grep Google ${BENCHMARK_COMP_LOG} | awk '{print \$6}'", returnStdout: true).trim()
+                                            currentBuild.description += """Baseline Comparison: <a href="${COMP_SHEET}">Comparison Sheet</a><br/>"""
+                                        } catch (err) {
+                                                println("Failed to capture comparison google sheet  :(")
+                                        }
+                                    }    
+
                                     updateGSheetCode = sh(returnStatus: true, script: '''
-                                        SHEET_ID=$(grep Google $WORKSPACE/e2e-benchmarking/benchmark_out.log | awk -F'/' '{print $NF}' | awk '{print $1}')
+                                        SHEET_ID=$(grep Google ${BENCHMARK_COMP_LOG} | awk -F'/' '{print $NF}' | awk '{print $1}')
                                         cd $WORKSPACE/ocp-qe-perfscale-ci/scripts/sheets
                                         python3.9 --version
                                         python3.9 -m pip install virtualenv
