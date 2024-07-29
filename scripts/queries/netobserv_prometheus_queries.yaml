@@ -34,6 +34,13 @@
     + (sum(increase(netobserv_loki_batch_retries_total[1m])) OR on() vector(0))
   metricName: nFlowsErroredTotals
 
+# flow errored ratio for flows received in 1 min period
+- query: (sum(increase(netobserv_agent_errors_total[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_ingest_errors[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_encode_prom_errors[1m])) OR on() vector(0))
+    + (sum(increase(netobserv_loki_batch_retries_total[1m])) OR on() vector(0)) / sum(rate(netobserv_ingest_flows_processed[1m])) > 0.05 or on() vector(0)
+  metricName: nFlowsErroredRatio
+
 # total flows errored per minute
 - query:
     (sum(rate(netobserv_agent_errors_total[1m])*60) OR on() vector(0))
@@ -94,6 +101,10 @@
 - query: sum(rate(netobserv_agent_dropped_flows_total[1m]))
   metricName: ebpfFlowsDroppedTotals
 
+# eBPF flow drops ratio to number of evicted flows in 1 min. Note that netobserv_agent_dropped_flows_total may count unaggregated flows, which might result in a high ratio not representative of the actual (aggregated) flows being dropped.
+- query: sum(rate(netobserv_agent_dropped_flows_total[1m])) / sum(rate(netobserv_agent_evicted_flows_total[1m])) > 0.05 or on() vector(0)
+  metricName: ebpfFlowsDroppedRatio
+
 # ebpf Ring buffer/Map Ratio
 - query: (sum(rate(netobserv_agent_evicted_flows_total{source="accounter"}[1m])) OR on() vector(0)) / sum(rate(netobserv_agent_evicted_flows_total{source="hashmap"}[1m]))
   metricName: ebpfRingBufferMapRatioTotals
@@ -131,7 +142,7 @@
   metricName: workingsetLokiTotals
 
 # lokistack PVC usage averaging over 5 mins period
-- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*loki.*"}[5m]))
+- query: sum((avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*loki.*"}[5m])))
   metricName: lokiStorageUsage
 
 # total loki records written
@@ -146,6 +157,10 @@
 - query: sum(netobserv_loki_dropped_entries_total)
   metricName: lokiRecordsDropped
 
+# loki flow drops ratio to numbers of flows written in 1 min.
+- query: sum(rate(netobserv_loki_dropped_entries_total[1m])) / sum(rate(netobserv_loki_sent_entries_total[1m])) > 0.05 or on() vector(0)
+  metricName: lokiRecordsDroppedRatio
+
 # total records dropped while sending to Loki per minute (inverse of netobserv_loki_sent_entries_total)
 - query: sum(rate(netobserv_loki_dropped_entries_total[1m])*60)
   metricName: lokiRecordsDroppedPerMinute
@@ -155,7 +170,7 @@
 #################
 
 # Kafka PVC usage averaging over 5 mins period
-- query: sum by (persistentvolumeclaim) (avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*kafka.*"}[5m]))
+- query: sum((avg_over_time(kubelet_volume_stats_used_bytes{namespace="netobserv", persistentvolumeclaim=~".*kafka.*"}[5m])))
   metricName: kafkaStorageUsage
 
 # total CPU usage by all kafka pods - per pod is not included here as that is collected above
