@@ -128,7 +128,7 @@ pipeline {
           ls
           export DAST_PATH=../dast_tool
           set +e
-          $(./deploy_ssml_api.sh)
+          ./deploy_ssml_api.sh
           api_run_status=$?
 
           echo "api_run_status $api_run_status"
