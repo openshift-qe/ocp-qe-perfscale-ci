@@ -132,7 +132,7 @@ pipeline {
           api_run_status=$?
 
           echo "api_run_status $api_run_status"
-          ls
+          exit $api_run_status
 
           ''')
           sh "echo $RETURNSTATUS"
