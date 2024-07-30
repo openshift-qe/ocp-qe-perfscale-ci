@@ -127,7 +127,13 @@ pipeline {
           cd dast
           ls
           export DAST_PATH=../dast_tool
-          ./deploy_ssml_api.sh
+          set +e
+          $(./deploy_ssml_api.sh)
+          api_run_status=$?
+
+          echo "api_run_status $api_run_status"
+          ls
+
           ''')
           sh "echo $RETURNSTATUS"
           archiveArtifacts(
