@@ -15,7 +15,28 @@ pipeline {
         string(name: 'PAUSE_TIME', defaultValue: '4', description: 'Number of minutes to pause.')
         string(name: 'ITERATIONS', defaultValue: '1', description: 'Number of iterations to run of the chaos scenario.')
         choice(choices: ["application-outages","container-scenarios","namespace-scenarios","network-chaos","node-scenarios","pod-scenarios","node-cpu-hog","node-io-hog", "node-memory-hog", "power-outages","pvc-scenario","time-scenarios","zone-outages"], name: 'KRAKEN_SCENARIO', description: '''Type of kraken scenario to run''')
-        
+        string(name: 'NODE_CPU_PERCENTAGE', defaultValue: "", description: 'int the CPU load by percentage')
+         string(
+        name: 'TOTAL_CHAOS_DURATION', 
+        defaultValue: '', 
+        description: 'string stop stress test after N seconds.'
+      )
+      string(
+        name: 'NODE_CPU_CORE', 
+        defaultValue: '', 
+        description: 'nt the number of CPU cores to be used.'
+      )
+      string(
+        name: 'MEMORY_CONSUMPTION_PERCENTAGE', 
+        defaultValue: '', 
+        description: 'string N bytes per vm process or percentage of memory used (using the % symbol)'
+      )
+      string(
+        name: 'NUMBER_OF_WORKERS', 
+        defaultValue: '', 
+        description: 'int Number of VM stressors to be run'
+      )
+
         string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>

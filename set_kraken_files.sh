@@ -12,6 +12,18 @@ cd ${KRAKEN_SCENARIO}
 ls
 
 source env.sh
+
+# if [[ ${KRAKEN_SCENARIO} == "node-cpu-hog" ]]; then
+#   export NODE_CPU_PERCENTAGE=${CPU_PERCENT}
+#   export TOTAL_CHAOS_DURATION=${TOTAL_CHAOS_DURATION}
+#   export NODE_CPU_CORE=${NODE_CPU_CORE}
+# fi
+# if [[ ${KRAKEN_SCENARIO} == "node-memory-hog" ]]; then
+#   export TOTAL_CHAOS_DURATION=${TOTAL_CHAOS_DURATION}
+#   export MEMORY_CONSUMPTION_PERCENTAGE=${MEMORY_CONSUMPTION_PERCENTAGE}
+#   export NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS}
+# fi
+
 echo "scenario type ${SCENARIO_TYPE}"
 scenario_no_s=${SCENARIO_TYPE%?}
 
