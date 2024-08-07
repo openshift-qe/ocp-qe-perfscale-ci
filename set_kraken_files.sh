@@ -12,6 +12,7 @@ cd ${KRAKEN_SCENARIO}
 ls
 
 source env.sh
+
 echo "scenario type ${SCENARIO_TYPE}"
 scenario_no_s=${SCENARIO_TYPE%?}
 

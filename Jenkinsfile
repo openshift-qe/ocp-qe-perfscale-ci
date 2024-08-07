@@ -11,12 +11,55 @@ def output = ""
 pipeline {
   agent none
   parameters {
-        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name: 'PAUSE_TIME', defaultValue: '4', description: 'Number of minutes to pause.')
-        string(name: 'ITERATIONS', defaultValue: '1', description: 'Number of iterations to run of the chaos scenario.')
-        choice(choices: ["application-outages","container-scenarios","namespace-scenarios","network-chaos","node-scenarios","pod-scenarios","node-cpu-hog","node-io-hog", "node-memory-hog", "power-outages","pvc-scenario","time-scenarios","zone-outages"], name: 'KRAKEN_SCENARIO', description: '''Type of kraken scenario to run''')
-        
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc412',description:
+    string(
+      name: 'BUILD_NUMBER', 
+      defaultValue: '', 
+      description: 'Build number of job that has installed the cluster.'
+    )
+    string(
+      name: 'PAUSE_TIME', 
+      defaultValue: '4', 
+      description: 'Number of minutes to pause.'
+    )
+    string(
+      name: 'ITERATIONS', 
+      defaultValue: '1', 
+      description: 'Number of iterations to run of the chaos scenario.'
+    )
+    choice(
+      choices: ["application-outages","container-scenarios","namespace-scenarios","network-chaos","node-scenarios","pod-scenarios","node-cpu-hog","node-io-hog", "node-memory-hog", "power-outages","pvc-scenario","time-scenarios","zone-outages"], 
+      name: 'KRAKEN_SCENARIO', 
+      description: '''Type of kraken scenario to run'''
+    )
+    string(
+      name: 'NODE_CPU_PERCENTAGE', 
+      defaultValue: "", 
+      description: 'int the CPU load by percentage'
+    )
+    string(
+      name: 'TOTAL_CHAOS_DURATION', 
+      defaultValue: '', 
+      description: 'string stop stress test after N seconds.'
+    )
+    string(
+      name: 'NODE_CPU_CORE', 
+      defaultValue: '', 
+      description: 'nt the number of CPU cores to be used.'
+    )
+    string(
+      name: 'MEMORY_CONSUMPTION_PERCENTAGE', 
+      defaultValue: '', 
+      description: 'string N bytes per vm process or percentage of memory used (using the % symbol)'
+    )
+    string(
+      name: 'NUMBER_OF_WORKERS', 
+      defaultValue: '', 
+      description: 'int Number of VM stressors to be run'
+    )
+    string(
+      name:'JENKINS_AGENT_LABEL',
+      defaultValue:'oc412',
+      description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agent isn't stable<br>
         4.y: oc4y || mac-installer || rhel8-installer-4y <br/>
@@ -25,22 +68,41 @@ pipeline {
         3.9~3.10: ansible-2.4 <br/>
         3.4~3.7: ansible-2.4-extra || ansible-2.3 <br/>
         '''
-        )
-       text(name: 'ENV_VARS', defaultValue: '', description:'''<p>
-               Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
-               See https://github.com/krkn-chaos/krkn-hub/blob/main/docs/cerberus.md for list of variables to pass <br>
-               e.g.<br>
-               SOMEVAR1='env-test'<br>
-               SOMEVAR2='env2-test'<br>
-               ...<br>
-               SOMEVARn='envn-test'<br>
-               </p>'''
-            )
-       string(name: 'KRAKEN_REPO', defaultValue:'https://github.com/krkn-chaos/krkn', description:'You can change this to point to your fork if needed.')
-       string(name: 'KRAKN_REPO_BRANCH', defaultValue:'main', description:'You can change this to point to a branch on your fork if needed.')
-       string(name: 'KRAKEN_HUB_REPO', defaultValue:'https://github.com/krkn-chaos/krkn-hub', description:'You can change this to point to your fork if needed.')
-       string(name: 'KRAKN_HUB_REPO_BRANCH', defaultValue:'main', description:'You can change this to point to a branch on your fork if needed.')
-     }
+    )
+    text(
+      name: 'ENV_VARS',
+      defaultValue: '', 
+      description:'''<p>
+        Enter list of additional (optional) Env Vars you'd want to pass to the script, one pair on each line. <br>
+        See https://github.com/krkn-chaos/krkn-hub/blob/main/docs/cerberus.md for list of variables to pass <br>
+        e.g.<br>
+        SOMEVAR1='env-test'<br>
+        SOMEVAR2='env2-test'<br>
+        ...<br>
+        SOMEVARn='envn-test'<br>
+        </p>'''
+    )
+    string(
+      name: 'KRAKEN_REPO', 
+      defaultValue:'https://github.com/krkn-chaos/krkn', 
+      description:'You can change this to point to your fork if needed.'
+    )
+    string(
+      name: 'KRAKN_REPO_BRANCH', 
+      defaultValue:'main', 
+      description:'You can change this to point to a branch on your fork if needed.'
+    )
+    string(
+      name: 'KRAKEN_HUB_REPO', 
+      defaultValue:'https://github.com/krkn-chaos/krkn-hub', 
+      description:'You can change this to point to your fork if needed.'
+    )
+    string(
+      name: 'KRAKN_HUB_REPO_BRANCH', 
+      defaultValue:'main', 
+      description:'You can change this to point to a branch on your fork if needed.'
+    )
+  }
 
   stages {
     stage('Kraken Run'){
