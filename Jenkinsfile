@@ -33,7 +33,7 @@ def JENKINS_JOB_NUMBER = currentBuild.number.toString()
 println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
 
 pipeline {
-  agent none
+  agent any
 
   parameters {
     string(
@@ -80,6 +80,21 @@ pipeline {
           Email to share Google Sheet results with<br/>
           By default shares with email of person who ran the job
         '''
+    )
+    string(
+        name: 'LEASED_RESOURCE',
+        defaultValue: '',
+        description: 'The cloud provider region'
+    )
+    string(
+        name: 'CLUSTER_PROFILE_DIR',
+        defaultValue: '',
+        description: 'The directory containing the cluster profile'
+    )
+    booleanParam(
+        name: 'ENABLE_PORT_ALLOW',
+        defaultValue: false,
+        description: 'Enable port allow mechanism for netperf tests'
     )
     booleanParam(
       name: 'WRITE_TO_FILE', 
@@ -154,7 +169,64 @@ pipeline {
     )
   }
 
+  environment {
+    CLOUD_PROVIDER_REGION = "${params.LEASED_RESOURCE}"
+    AWSCRED = "${params.CLUSTER_PROFILE_DIR}/.awscred"
+  }
+
   stages {
+    stage('Setup AWS Credentials') {
+        steps {
+            script {
+                if (fileExists(env.AWSCRED)) {
+                        withEnv(["AWS_SHARED_CREDENTIALS_FILE=${env.AWSCRED}", "AWS_DEFAULT_REGION=${env.CLOUD_PROVIDER_REGION}"]) {
+                            echo 'AWS credentials and region set up'
+                        }
+                } else {
+                    error("Did not find compatible cloud provider cluster_profile")
+                }
+            }
+        }
+    }
+
+    stage('Update Security Group Rules') {
+      when {
+          expression {
+              return params.ENABLE_PORT_ALLOW
+          }
+      }
+      steps {
+          script {
+              CLUSTER_NAME = sh(
+                  script: '''
+                  oc get infrastructure cluster -o json
+                  jq -r '.status.apiServerURL'
+                  awk -F.  '{print$2}'
+                  ''',
+                  returnStdout: true
+              ).trim()
+              echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
+
+              VPC = sh(
+                  script: '''
+                  aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u
+                  ''',
+                  returnStdout: true
+              ).trim()
+              echo "VPC ID $VPC"
+
+              sh '''
+              for sg in \$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC" --output json | jq -r .SecurityGroups[].GroupId); 
+              do
+                  echo "Adding rule to SG \$sg"
+                  aws ec2 authorize-security-group-ingress --group-id \$sg --protocol tcp --port 10000-20000 --cidr 0.0.0.0/0
+                  aws ec2 authorize-security-group-ingress --group-id \$sg --protocol udp --port 10000-20000 --cidr 0.0.0.0/0
+              done
+              '''
+          }
+      }
+    }
+
     stage('Run Network Pod Perf Tests'){
       agent { label params['JENKINS_AGENT_LABEL'] }
       environment{
