@@ -73,6 +73,11 @@ pipeline {
           defaultValue: true,
           description: 'Boolean to create a google sheet with comparison data'
     )
+    booleanParam(
+          name: 'Network_Policy',
+          defaultValue: true,
+          description: 'Boolean to create network policy to open up the security group rules in your aws deployment'
+    )
     string(
         name: 'EMAIL_ID_OVERRIDE',
         defaultValue: '',
@@ -186,6 +191,46 @@ pipeline {
           currentBuild.displayName = "${currentBuild.displayName}-${params.BUILD_NUMBER}"
           currentBuild.description = "Copying Artifact from Flexy-install build <a href=\"${buildinfo.buildUrl}\">Flexy-install#${params.BUILD_NUMBER}</a>"
           buildinfo.params.each { env.setProperty(it.key, it.value) }
+        }
+        script{
+          withCredentials([
+            file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
+            if(params.Network_Policy == true) {
+            sh(returnStatus: true, script: '''
+            AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+            AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+            mkdir -p ~/.kube
+            cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+            export KUBECONFIG=~/.kube/config
+            export CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
+            mkdir -p ~/.aws
+            cp -f $OCP_AWS ~/.aws/credentials
+            echo "[profile default]
+            region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
+            output = text" > ~/.aws/config
+            CLOUD_PROVIDER_REGION=${LEASED_RESOURCE}
+            AWS_SHARED_CREDENTIALS_FILE="~/.aws/credentials"
+            AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
+            AWS_SECRET_ACCESS_KEY="$(aws configure get aws_secret_access_key)"
+            AWS_DEFAULT_REGION="$(aws configure get region)"
+            ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com"
+            CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
+            echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
+            python3.9 -m pip install virtualenv
+            python3.9 -m virtualenv venv3
+            source venv3/bin/activate
+            python --version
+            VPC=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PrivateIpAddress,PublicIpAddress, PrivateDnsName, VpcId]' --output text | column -t | grep $CLUSTER_NAME | awk '{print $7}' | grep -v '^$' | sort -u)
+            echo "VPC ID $VPC"
+            for sg in $(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$VPC" --output json | jq -r .SecurityGroups[].GroupId); 
+            do
+              echo "Adding rule to SG $sg"
+              aws ec2 authorize-security-group-ingress --group-id $sg --protocol tcp --port 10000-20000 --cidr 0.0.0.0/0
+              aws ec2 authorize-security-group-ingress --group-id $sg --protocol udp --port 10000-20000 --cidr 0.0.0.0/0
+            done
+            ''')
+            }
+	        }
         }
         script {
           withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'),
