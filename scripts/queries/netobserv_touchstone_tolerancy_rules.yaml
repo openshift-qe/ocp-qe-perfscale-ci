@@ -26,6 +26,9 @@
 - json_path: ["metric_name", "lokiRecordsDropped", "metric_name", "*", "max(value)"]
   tolerancy: -1
   max_failures: 0
+- json_path: ["metric_name", "ebpfFlowsDroppedTotals", "metric_name", "*", "max(value)"]
+  tolerancy: -1
+  max_failures: 0
 - json_path: ["metric_name", "lokiRecordsDroppedPerMinute", "metric_name", "*", "avg(value)"]
   tolerancy: -1
   max_failures: 0
@@ -54,4 +57,29 @@
   max_failures: 0
 - json_path: ["metric_name", "rssKafkaTotals", "metric_name", "*", "avg(value)"]
   tolerancy: 60
+  max_failures: 0
+# total usages
+- json_path: ["metric_name", "TotalNetObservCPUUsage", "metric_name", "*", "avg(value)"]
+  tolerancy: 10
+  max_failures: 0
+- json_path: ["metric_name", "TotalNetObservRSSUsage", "metric_name", "*", "avg(value)"]
+  tolerancy: 10
+  max_failures: 0
+- json_path: ["metric_name", "TotalNetworkBytesOut", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
+- json_path: ["metric_name", "TotalNetworkBytesIn", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
+- json_path: ["metric_name", "TotalClusterCPUUsage", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
+- json_path: ["metric_name", "TotalClusterRSSUsage", "metric_name", "*", "avg(value)"]
+  tolerancy: 60
+  max_failures: 0
+- json_path: ["metric_name", "NetObservClusterCPUPercentUtil", "metric_name", "*", "avg(value)"]
+  tolerancy: 10
+  max_failures: 0
+- json_path: ["metric_name", "NetObservClusterMemPercentUtil", "metric_name", "*", "avg(value)"]
+  tolerancy: 10
   max_failures: 0

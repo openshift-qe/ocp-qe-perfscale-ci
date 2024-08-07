@@ -228,7 +228,7 @@ deploy_kafka() {
   TMP_KAFKA_TOPIC=/tmp/topic.yaml
   envsubst <$KAFKA_TOPIC >$TMP_KAFKA_TOPIC
   oc apply -f $TMP_KAFKA_TOPIC -n netobserv
-  sleep 60
+  sleep 120
   oc wait --timeout=180s --for=condition=ready kafkatopic network-flows -n netobserv
 }
 

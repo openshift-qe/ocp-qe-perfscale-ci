@@ -1,0 +1,5 @@
+argparse>=1.4.0
+elasticsearch<7.14.0
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

@@ -3,6 +3,7 @@
         "metadata": {
             "prod-netobserv-operator-metadata": {
                 "fields": [
+                    "uuid_replaced_info",
                     "agent",
                     "arch",
                     "aws_s3_bucket_name",
@@ -12,6 +13,7 @@
                     "cache_max_flows",
                     "deploymentModel",
                     "flp_kind",
+                    "noo_bundle_version",
                     "jira",
                     "kafka_brokers",
                     "kafka_replicas",
@@ -26,6 +28,7 @@
             },
             "prod-netobserv-jenkins-metadata": {
                 "fields": [
+                    "buildUrl",
                     "jenkins_build_num",
                     "jenkins_job_name",
                     "variable",
@@ -703,6 +706,110 @@
                 "aggregations": {
                     "value": [
                         "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetObservCPUUsage"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetObservRSSUsage"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalClusterCPUUsage"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalClusterRSSUsage"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetworkBytesOut"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "TotalNetworkBytesIn"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "NetObservClusterCPUPercentUtil"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "NetObservClusterMemPercentUtil"
+                },
+                "buckets": [
+                    "metadata.resource.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
                     ]
                 }
             }

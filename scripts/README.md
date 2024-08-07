@@ -154,3 +154,6 @@ touchstone_compare -url $ES_URL -u d9be1710-abdb-420d-86da-883da583aa03 363eb0de
 where workloads UUIDs are:
 - `d9be1710-abdb-420d-86da-883da583aa03` for 1.2 node-density-heavy
 - `363eb0de-9213-4d9c-a347-849007003742` for 1.3 node-density-heavy
+
+## Performance comparison sheets update
+[noo_perfsheets_update.py](scripts/sheets/noo_perfsheets_update.py) is a tool to update the performance comparison sheets that are generated during the network observability performance testings runs which makes use of upstream tool [csv_gen.py](https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/utils/csv_gen.py). It  replaces the UUIDs with identifiable information and removes redundant rows from the initial generated sheet. To update the correct sheet it relies on [log line](https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/utils/csv_gen.py#L47) to fetch the sheet name in the Jenkins pipeline.

@@ -2,7 +2,7 @@
 
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
-BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi', 'nweinber']
+BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi']
 
 // rename build
 def userId = currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause)?.userId
@@ -13,6 +13,11 @@ if (userId) {
 }
 
 pipeline {
+    environment {
+        def NOO_BUNDLE_VERSION = ''
+        def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
+        def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
+    }
 
     // job runs on specified agent
     agent { label params.JENKINS_AGENT_LABEL }
@@ -27,7 +32,7 @@ pipeline {
     parameters {
         string(
             name: 'JENKINS_AGENT_LABEL',
-            defaultValue: 'oc415',
+            defaultValue: 'oc416',
             description: 'Label of Jenkins agent to execute job'
         )
         string(
@@ -117,14 +122,13 @@ pipeline {
         )
         choice(
             name: 'INSTALLATION_SOURCE',
-            choices: ['None', 'Official', 'Internal', 'OperatorHub', 'Source'],
+            choices: ['None', 'Official', 'Internal', 'Source'],
             description: '''
                 Network Observability can be installed from the following sources:<br/>
                 <b>Official</b> installs the <b>latest released downstream</b> version of the operator, i.e. what is available to customers<br/>
                 <b>Internal</b> installs the <b>latest unreleased downstream</b> version of the operator, i.e. the most recent internal bundle<br/>
-                <b>OperatorHub</b> installs the <b>latest released upstream</b> version of the operator, i.e. what is currently available on OperatorHub<br/>
                 <b>Source</b> installs the <b>latest unreleased upstream</b> version of the operator, i.e. directly from the main branch of the upstream source code<br/>
-                If <b>None</b> is selected the installation will be skipped
+                If <b>None</b> is selected the Operator installation and flowcollector configuration will be skipped
             '''
         )
         string(
@@ -140,7 +144,7 @@ pipeline {
             name: 'OPERATOR_PREMERGE_OVERRIDE',
             defaultValue: '',
             description: '''
-                If using Source installation, you can specify here a specific premerge image to use in the CatalogSource rather than using the main branch<br/>
+                If using Source installation, you can specify here a specific premerge Operator bundle image to use in the CatalogSource rather than using the main branch<br/>
                 These SHA hashes can be found in PR's after adding the label '/ok-to-test'<br/>
                 e.g. <b>e2bdef6</b>
             '''
@@ -229,10 +233,12 @@ pipeline {
         )
         string(
             name: 'FLP_KAFKA_REPLICAS',
-            defaultValue: '3',
+            defaultValue: '',
             description: '''
                 Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
-                3 - default for non-perf testing environments<br/>
+                <b>Leave this empty if you're triggering standard perf-workloads, default of 6, 12 and 18 FLP_KAFKA_REPLICAS will be used for node-density-heavy, ingress-perf and cluster-density-v2 workloads respectively</b><br/>
+                3 - for non-perf testing environments<br/>
+                <b>Use this field to overwrite default FLP_KAFKA_REPLICAS</b><br/>
             '''
         )
         separator(
@@ -246,11 +252,10 @@ pipeline {
         )
         choice(
             name: 'WORKLOAD',
-            choices: ['None', 'cluster-density-v2', 'cluster-density', 'node-density-heavy', 'node-density', 'router-perf', 'ingress-perf'],
+            choices: ['None', 'cluster-density-v2', 'node-density-heavy', 'ingress-perf'],
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
-                "cluster-density" and "node-density" options will trigger "kube-burner-ocp" job<br/>
-                "router-perf" will trigger "router-perf" job<br/>
+                "cluster-density-v2" and "node-density-heavy" options will trigger "kube-burner-ocp" job<br/>
                 "ingress-perf" will trigger "ingress-perf" job<br/>
                 "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
@@ -260,8 +265,8 @@ pipeline {
             name: 'VARIABLE',
             defaultValue: '1000',
             description: '''
-                This variable configures parameter needed for each type of workload. <b>Not used by <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/router-perf-v2/README.md>router-perf</a></b> or <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workloads</b>.<br/>
-                <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
+                This variable configures parameter needed for each type of workload. <b>Not used by <b><a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/ingress-perf/README.md>ingress-perf</a> workload</b>.<br/>
+                <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>cluster-density-v2</a>: This will export JOB_ITERATIONS env variable; set to 4 * num_workers. This variable sets the number of iterations to perform (1 namespace per iteration).<br/>
                 <a href=https://github.com/cloud-bulldozer/e2e-benchmarking/blob/master/workloads/kube-burner/README.md>node-density-heavy</a>: This will export PODS_PER_NODE env variable; set to 200, work up to 250. Creates this number of applications proportional to the calculated number of pods / 2<br/>
                 Read <a href=https://github.com/openshift-qe/ocp-qe-perfscale-ci/tree/kube-burner/README.md>here</a> for details about each variable
             '''
@@ -270,24 +275,8 @@ pipeline {
             name: 'NODE_COUNT',
             defaultValue: '3',
             description: '''
-                Only for <b>node-density</b> and <b>node-density-heavy</b><br/>
+                Only for <b>node-density-heavy</b><br/>
                 Should be the number of worker nodes on your cluster (after scaling)
-            '''
-        )
-        string(
-            name: 'LARGE_SCALE_CLIENTS',
-            defaultValue: '1 80',
-            description: '''
-                Only for <b>router-perf</b><br/>
-                Threads/route to use in the large scale scenario
-            '''
-        )
-        string(
-            name: 'LARGE_SCALE_CLIENTS_MIX',
-            defaultValue: '1 25',
-            description: '''
-                Only for <b>router-perf</b><br/>
-                Threads/route to use in the large scale scenario with mix termination
             '''
         )
         booleanParam(
@@ -347,8 +336,7 @@ pipeline {
             name: 'NOPE_JIRA',
             defaultValue: '',
             description: '''
-                Adds a Jira ticket to be tied to the NOPE run<br/>
-                Format should in the form of <b>NETOBSERV-123</b>
+                Add a NETOBSERV Jira ticket or any context to be associated with this Perf run, <b>must set when INSTALLATION_SOURCE = None</b><br/>
             '''
         )
         booleanParam(
@@ -420,6 +408,9 @@ pipeline {
                     }
                     if (params.WORKLOAD == 'None' && params.RUN_BASELINE_COMPARISON == true) {
                         error('Baseline comparison cannot be run if a workload is not run first')
+                    }
+                    if (params.INSTALLATION_SOURCE == 'None' && params.NOPE_JIRA == ''){
+                        error('Specify context of this perf run using NOPE_JIRA parameter')
                     }
                     println('Job params are valid - continuing execution...')
                 }
@@ -555,16 +546,26 @@ pipeline {
                     // if an 'Internal' installation, determine whether to use aosqe-index image or specific IIB image
                     if (params.INSTALLATION_SOURCE == 'Internal' && params.IIB_OVERRIDE != '') {
                         env.DOWNSTREAM_IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
+                        env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
                     }
                     else {
                         env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
+                        env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
                     }
                     // if a 'Source' installation, determine whether to use main image or specific premerge image
-                    if (params.INSTALLATION_SOURCE == 'Source' && params.OPERATOR_PREMERGE_OVERRIDE != '') {
-                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
-                    }
-                    else {
-                        env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
+                    if (params.INSTALLATION_SOURCE == 'Source') {
+                        if (params.OPERATOR_PREMERGE_OVERRIDE != '') {
+                            env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
+                            env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
+                            NOO_BUNDLE_VERSION="v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
+                        }
+                        else {
+                            env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
+                            env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
+                            NOO_BUNDLE_VERSION="v0.0.0-main"
+                        }
+                        println("Using NOO Bundle version: ${NOO_BUNDLE_VERSION}")
+                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
                     }
                     // attempt installation of Network Observability from selected source
                     println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")
@@ -617,7 +618,64 @@ pipeline {
                 }
             }
         }
+        stage('Capture NetObserv Operator Bundle version'){
+            when {
+                expression { params.INSTALLATION_SOURCE == "Official" || params.INSTALLATION_SOURCE == "Internal" }
+            }
+            agent { 
+                // run on upshift_docker agent because
+                // opm needs registry login
+                label "upshift_docker"
+            }
+            steps {
+                script {
+                    // copy artifacts from Flexy install
+                    copyArtifacts(
+                        fingerprintArtifacts: true,
+                        projectName: 'ocp-common/Flexy-install',
+                        selector: specific(params.FLEXY_BUILD_NUMBER),
+                        target: 'flexy-artifacts'
+                    )
+                    withCredentials(
+                        [usernamePassword(credentialsId: 'c1802784-0f74-4b35-99fb-32dfa9a207ad', usernameVariable: 'QUAY_USER', passwordVariable: 'QUAY_PASSWORD')]){
+                        sh 'podman login -u $QUAY_USER -p $QUAY_PASSWORD quay.io'
+                    }
+                    withCredentials([usernamePassword(credentialsId: 'db799772-7708-4ed0-bfe7-0fddfc8088eb', usernameVariable: 'REG_REDHAT_USER', passwordVariable: 'REG_REDHAT_PASSWORD')]){
+                        sh 'podman login -u $REG_REDHAT_USER -p ${REG_REDHAT_PASSWORD} registry.redhat.io'
+                    }
+                    withCredentials([usernamePassword(credentialsId: 'brew-registry-osbs-mirror', usernameVariable: 'BREW_USER', passwordVariable: 'BREW_PASSWORD')]){ 
+                        sh 'podman login -u $BREW_USER -p $BREW_PASSWORD brew.registry.redhat.io'
+                    }
+                    withCredentials([usernamePassword(credentialsId: '41c2dd39-aad7-4f07-afec-efc052b450f5', usernameVariable: 'REG_STAGE_USER', passwordVariable: 'REG_STAGE_PASSWORD')]){
+                        sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
+                    }
+
+                    NOO_BUNDLE_VERSION=sh(returnStdout: true, script: '''
+                            #!/usr/bin/env bash
+                            mkdir -p ~/.kube
+                            cp ${WORKSPACE}/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                            RELEASE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A | cut -d 'v' -f 3)
+
+                            # source from 4.12 because jenkins agent are on RHEL 8
+                            curl -sL "https://mirror2.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.12/opm-linux.tar.gz" -o opm-linux.tar.gz
+                            tar xf opm-linux.tar.gz
+                            BUNDLE_IMAGE=$(./opm alpha list bundles $CATALOG_IMAGE netobserv-operator | grep $RELEASE | awk '{print $5}')
+                            oc image info $BUNDLE_IMAGE -o json --filter-by-os linux/amd64 | jq '.config.config.Labels.url' | awk -F '/' '{print $NF}' | tr '\"' ' '
+                        ''').trim()
+                    if (NOO_BUNDLE_VERSION != '') {
+                        println("Found NOO Bundle version: ${NOO_BUNDLE_VERSION}")
+                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
+                    }
+                    else {
+                        println("Failed to find NOO_BUNDLE_VERSION :(, comparison may not have context and may use UUID")
+                    }
+                }
+            }
+        }
         stage('Configure NetObserv, flowcollector, and Kafka') {
+            when {
+                expression { params.INSTALLATION_SOURCE != "None"}
+            }
             steps {
                 script {
                     // attempt to enable or update Kafka if applicable
@@ -649,9 +707,22 @@ pipeline {
                     if (params.ENABLE_KAFKA != true) {
                         templateParams += "DeploymentModel=Direct "
                     }
-                    if (params.FLP_KAFKA_REPLICAS != '3') {
-                        templateParams += "KafkaConsumerReplicas=${params.FLP_KAFKA_REPLICAS} "
+                    if (params.FLP_KAFKA_REPLICAS == "") {
+                        if (params.WORKLOAD == 'node-density-heavy') {
+                            env.FLP_KAFKA_REPLICAS = '6'
+                        }
+                        else if (params.WORKLOAD == 'ingress-perf') {
+                            env.FLP_KAFKA_REPLICAS = '12'
+                        }
+                        else if (params.WORKLOAD == 'cluster-density-v2') {
+                            env.FLP_KAFKA_REPLICAS = '18'
+                        }
+                        else {
+                            env.FLP_KAFKA_REPLICAS = '3'
+                        }
                     }
+                    templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
+
                     if (params.EBPF_MEMORY_LIMIT != "") {
                         templateParams += "EBPFMemoryLimit=${params.EBPF_MEMORY_LIMIT} "
                     }
@@ -682,14 +753,8 @@ pipeline {
                         println('Successfully deployed Flowcollector :)')
                     }
 
-                    // capture NetObserv release and add it to build description
-                    env.RELEASE = sh(returnStdout: true, script: "oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A").trim()
-                    if (env.RELEASE != '') {
-                        currentBuild.description += "NetObserv Release: <b>${env.RELEASE}</b><br/>"
-                    }
-                    // attempt updating common parameters of NetObserv and flowcollector where specified
-                    println('Updating common parameters of NetObserv and flowcollector where specified...')
                     if (params.CONTROLLER_MEMORY_LIMIT != '') {
+                        println('Updating NOO memory limit...')
                         controllerReturnCode = sh(returnStatus: true, script: """
                             oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
                             sleep 60
@@ -698,7 +763,6 @@ pipeline {
                             error('Updating controller memory limit failed :(')
                         }
                     }
-                    println('Successfully updated common parameters of NetObserv and flowcollector :)')
                 }
             }
         }
@@ -741,22 +805,7 @@ pipeline {
                     currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
                     sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
                     // build workload job based off selected workload
-                    if (params.WORKLOAD == 'router-perf') {
-                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/router-perf'
-                        workloadJob = build job: env.JENKINS_JOB, parameters: [
-                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
-                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
-                            booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'LARGE_SCALE_CLIENTS', value: params.LARGE_SCALE_CLIENTS),
-                            string(name: 'LARGE_SCALE_CLIENTS_MIX', value: params.LARGE_SCALE_CLIENTS_MIX),
-                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
-                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
-                        ]
-                    }
-                    else if (params.WORKLOAD == 'ingress-perf') {
+                    if (params.WORKLOAD == 'ingress-perf') {
                         env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
                         workloadJob = build job: env.JENKINS_JOB, parameters: [
                             string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
@@ -829,8 +878,13 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
+                        echo "NOO_BUNDLE_VERSION: ${NOO_BUNDLE_VERSION}"
+                        env.NOO_BUNDLE_VERSION=NOO_BUNDLE_VERSION
                         // construct arguments for NOPE tool and execute
                         NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        if (env.NOO_BUNDLE_VERSION != ''){
+                            NOPE_ARGS += " --noo-bundle-version $NOO_BUNDLE_VERSION"
+                        }
                         if (params.NOPE_DUMP_ONLY == true) {
                             NOPE_ARGS += " --dump-only"
                         }
@@ -871,8 +925,8 @@ pipeline {
                 // checkout e2e-benchmarking repo
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: 'master' ]],
-                    userRemoteConfigs: [[url: 'https://github.com/memodi/e2e-benchmarking.git' ]],
+                    branches: [[name: params.E2E_BENCHMARKING_REPO_BRANCH ]],
+                    userRemoteConfigs: [[url: params.E2E_BENCHMARKING_REPO ]],
                     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'e2e-benchmarking']]
                 ])
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD'), file(credentialsId: 'sa-google-sheet', variable: 'GSHEET_KEY_LOCATION')]) {
@@ -887,7 +941,7 @@ pipeline {
                         env.GEN_JSON = false
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
                         env.WORKLOAD = params.WORKLOAD
-                        statisticsReturnCode = sh(returnStatus: true, script: """
+                        statisticsReturnCode = sh(returnStatus: true, script: '''
                             python3.9 --version
                             python3.9 -m pip install virtualenv
                             python3.9 -m virtualenv venv3
@@ -895,8 +949,17 @@ pipeline {
                             python --version
                             cd $WORKSPACE/e2e-benchmarking/utils
                             source compare.sh
-                            run_benchmark_comparison
-                        """)
+                            run_benchmark_comparison > ${BENCHMARK_CSV_LOG}
+                        ''')
+                        
+                        if(fileExists("${BENCHMARK_CSV_LOG}")){
+                            try {
+                                METRICS_SHEET = sh(script: "grep Google ${BENCHMARK_CSV_LOG} | awk '{print \$6}'", returnStdout: true).trim()
+                                currentBuild.description += """Metrics sheet: <a href="${METRICS_SHEET}">${env.UUID}</a><br/>"""
+                            } catch (err) {
+                                    println("Failed to capture metrics google sheet  :(")
+                            }
+                        }
                         // mark pipeline as unstable if Touchstone failed, continue otherwise
                         if (statisticsReturnCode.toInteger() != 0) {
                             unstable('Touchstone tool failed - run locally with the given UUID to get workload run statistics :(')
@@ -939,7 +1002,7 @@ pipeline {
                                     env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
                                     // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                                     env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                    baselineReturnCode = sh(returnStatus: true, script: """
+                                    baselineReturnCode = sh(returnStatus: true, script: '''
                                         python3.9 --version
                                         python3.9 -m pip install virtualenv
                                         python3.9 -m virtualenv venv3
@@ -949,8 +1012,30 @@ pipeline {
                                         rm -rf /tmp/**/*.csv
                                         rm -rf *.csv
                                         source compare.sh
-                                        run_benchmark_comparison
-                                    """)
+                                        run_benchmark_comparison > ${BENCHMARK_COMP_LOG}
+                                        )
+                                    ''')
+
+                                    if(fileExists("${BENCHMARK_COMP_LOG}")){
+                                        try {
+                                            COMP_SHEET = sh(script: "grep Google ${BENCHMARK_COMP_LOG} | awk '{print \$6}'", returnStdout: true).trim()
+                                            currentBuild.description += """Baseline Comparison: <a href="${COMP_SHEET}">Comparison Sheet</a><br/>"""
+                                        } catch (err) {
+                                                println("Failed to capture comparison google sheet  :(")
+                                        }
+                                    }    
+
+                                    updateGSheetCode = sh(returnStatus: true, script: '''
+                                        SHEET_ID=$(grep Google ${BENCHMARK_COMP_LOG} | awk -F'/' '{print $NF}' | awk '{print $1}')
+                                        cd $WORKSPACE/ocp-qe-perfscale-ci/scripts/sheets
+                                        python3.9 --version
+                                        python3.9 -m pip install virtualenv
+                                        python3.9 -m virtualenv venv3
+                                        source venv3/bin/activate
+                                        python -m pip install -r requirements.txt
+                                        ./noo_perfsheets_update.py --sheet-id ${SHEET_ID} --uuid1 ${UUID} --uuid2 ${BASELINE_UUID} --service-account ${GSHEET_KEY_LOCATION}
+                                    ''')
+
                                     // mark pipeline as unstable if Touchstone failed, continue otherwise
                                     if (baselineReturnCode.toInteger() != 0) {
                                         unstable('One or more new statistics was not in a tolerable range of baseline statistics :(')
@@ -1012,6 +1097,9 @@ pipeline {
                                             }
                                         }
                                     }
+                                    if (updateGSheetCode.toInteger() != 0) {
+                                        println("Failed to update comparison sheet with context :(")
+                                    }
                                 }
                             }
                         }
@@ -1025,7 +1113,7 @@ pipeline {
         always {
             println('Post Section - Always')
             archiveArtifacts(
-                artifacts: 'e2e-benchmarking/utils/*.json',
+                artifacts: 'e2e-benchmarking/utils/*.json,e2e-benchmarking/*.log',
                 allowEmptyArchive: true,
                 fingerprint: true
             )
