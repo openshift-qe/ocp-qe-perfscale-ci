@@ -1,5 +1,3 @@
-@Library('flexy') _
-
 // global variables for pipeline
 NETOBSERV_MUST_GATHER_IMAGE = 'quay.io/netobserv/must-gather'
 BASELINE_UPDATE_USERS = ['auto', 'aramesha', 'memodi']
@@ -224,11 +222,7 @@ pipeline {
             name: 'TOPIC_PARTITIONS',
             choices: [6, 10, 24, 48],
             description: '''
-                Number of Kafka Topic Partitions. Below are recommended values for partitions:<br/>
-                6 - default for non-perf testing environments<br/>
-                10 - Perf testing with worker nodes <= 20<br/>
-                24 - Perf testing with worker nodes <= 50<br/>
-                48 - Perf testing with worker nodes <= 100<br/>
+                Number of Kafka Topic Partitions. 48 Partitions are used for all Perf testing scenarios<br/>
             '''
         )
         string(
@@ -388,31 +382,7 @@ pipeline {
         stage('Validate job parameters') {
             steps {
                 script {
-                    if (params.FLEXY_BUILD_NUMBER == '') {
-                        error('A Flexy build number must be specified')
-                    }
-                    if (params.WORKLOAD == 'None' && params.NOPE == true) {
-                        error('NOPE tool cannot be run if a workload is not run first')
-                    }
-                    if (params.NOPE == false && params.NOPE_DUMP_ONLY == true) {
-                        error('NOPE must be run to dump data to a file')
-                    }
-                    if (params.NOPE == false && params.NOPE_DEBUG == true) {
-                        error('NOPE must be run to enable debug mode')
-                    }
-                    if (params.NOPE == false && params.NOPE_JIRA != '') {
-                        error('NOPE must be run to tie in a Jira')
-                    }
-                    if (params.GEN_CSV == true && params.NOPE_DUMP_ONLY == true) {
-                        error('Spreadsheet cannot be generated if data is not uploaded to Elasticsearch')
-                    }
-                    if (params.WORKLOAD == 'None' && params.RUN_BASELINE_COMPARISON == true) {
-                        error('Baseline comparison cannot be run if a workload is not run first')
-                    }
-                    if (params.INSTALLATION_SOURCE == 'None' && params.NOPE_JIRA == ''){
-                        error('Specify context of this perf run using NOPE_JIRA parameter')
-                    }
-                    println('Job params are valid - continuing execution...')
+                    validateParams()
                 }
             }
         }
@@ -544,14 +514,21 @@ pipeline {
             steps {
                 script {
                     // if an 'Internal' installation, determine whether to use aosqe-index image or specific IIB image
-                    if (params.INSTALLATION_SOURCE == 'Internal' && params.IIB_OVERRIDE != '') {
-                        env.DOWNSTREAM_IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
-                        env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
+                    if (params.INSTALLATION_SOURCE == 'Internal') {
+                        if (params.IIB_OVERRIDE != '') {
+                            env.DOWNSTREAM_IMAGE = "brew.registry.redhat.io/rh-osbs/iib:${params.IIB_OVERRIDE}"
+                            env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
+                        }
+                        else {
+                            env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
+                            env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
+                        }
                     }
-                    else {
-                        env.DOWNSTREAM_IMAGE = "quay.io/openshift-qe-optional-operators/aosqe-index:v${env.MAJOR_VERSION}.${env.MINOR_VERSION}"
-                        env.CATALOG_IMAGE=env.DOWNSTREAM_IMAGE
+
+                    if (params.INSTALLATION_SOURCE == 'Official') {
+                        env.CATALOG_IMAGE= sh(returnStdout: true, script: "oc get catalogsource/redhat-operators -n openshift-marketplace -o jsonpath='{.spec.image}'").trim()
                     }
+
                     // if a 'Source' installation, determine whether to use main image or specific premerge image
                     if (params.INSTALLATION_SOURCE == 'Source') {
                         if (params.OPERATOR_PREMERGE_OVERRIDE != '') {
@@ -1158,4 +1135,32 @@ pipeline {
             }
         }
     }
+}
+
+def validateParams() {
+    if (params.FLEXY_BUILD_NUMBER == '') {
+        error('A Flexy build number must be specified')
+    }
+    if (params.WORKLOAD == 'None' && params.NOPE == true) {
+        error('NOPE tool cannot be run if a workload is not run first')
+    }
+    if (params.NOPE == false && params.NOPE_DUMP_ONLY == true) {
+        error('NOPE must be run to dump data to a file')
+    }
+    if (params.NOPE == false && params.NOPE_DEBUG == true) {
+        error('NOPE must be run to enable debug mode')
+    }
+    if (params.NOPE == false && params.NOPE_JIRA != '') {
+        error('NOPE must be run to tie in a Jira')
+    }
+    if (params.GEN_CSV == true && params.NOPE_DUMP_ONLY == true) {
+        error('Spreadsheet cannot be generated if data is not uploaded to Elasticsearch')
+    }
+    if (params.WORKLOAD == 'None' && params.RUN_BASELINE_COMPARISON == true) {
+        error('Baseline comparison cannot be run if a workload is not run first')
+    }
+    if (params.INSTALLATION_SOURCE == 'None' && params.NOPE_JIRA == ''){
+        error('Specify context of this perf run using NOPE_JIRA parameter')
+    }
+    println('Job params are valid - continuing execution...')
 }
