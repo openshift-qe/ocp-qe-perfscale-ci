@@ -186,6 +186,14 @@ pipeline{
         '''
       )
       separator(
+        name: " Network-Perf Job Options", 
+        sectionHeader: " Network-Perf Job Options:", 
+        sectionHeaderStyle: """
+          font-size: 18px;
+          font-weight: bold;
+          font-family: 'Orienta', sans-serif;"""
+      )
+      separator(
         name: "KRAKEN SCENARIO", 
         sectionHeader: "Kraken Workloads:", 
         sectionHeaderStyle: """
@@ -195,13 +203,13 @@ pipeline{
       )
       booleanParam(
         name: "MEMORY_HOG",
-        defaultValue: false,
-        description: "If enabled, the krkn versions of the selected CI_TYPE will be run"      
+        defaultValue: true,
+        description: "If enabled, the krkn versions of node_memory_hog will run"      
       )
       booleanParam(
         name: "CPU_HOG",
-        defaultValue: false,
-        description: "If enabled, the krkn versions of the selected CI_TYPE will be run"      
+        defaultValue: true,
+        description: "If enabled, the krkn versions of node_cpu_hog will run"      
       )
       choice(
           choices: ["python","pod"], 
@@ -209,7 +217,7 @@ pipeline{
           description: '''Type of way to run chaos scenario'''
         )
       string(
-        name: 'CPU_PERCENT', 
+        name: 'NODE_CPU_PERCENTAGE', 
         defaultValue: '', 
         description: 'int the CPU load by percentage'
       )
@@ -894,107 +902,109 @@ pipeline{
             //     }
             // }
         }
-        
-       
+               
         stage("Run parallel tests") {
-                parallel {
-                  stage("krkn"){
-                    agent { label params['JENKINS_AGENT_LABEL'] }
-                    stages{
-                       stage("Start Kraken run") {
-                            steps {
-                                script {
-                                        kraken_job = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
-                                        parameters: [
-                                            string(name: 'BUILD_NUMBER', value: "${build_string}"),
-                                            text(name: "ENV_VARS", value: ENV_VARS),
-                                            string(name: 'KRAKEN_SCENARIO', value: "node-cpu-hog"),
-                                            string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
-                                            string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                                            string(name: "CPU_PERCENT", value:CPU_PERCENT),
-                                            string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
-                                            string(name: "NODE_CPU_CORE", value:NODE_CPU_CORE)    
-                                        ],
-                                        propagate: false
-                                        currentBuild.description += """
-                                        <b>Upgrade Job: </b> <a href="${kraken_job.absoluteUrl}"> ${build_string} </a> <br/>
-                                        """
-                                        if( kraken_job.result.toString() != "SUCCESS") {
-                                          status = "Upgrade Failed"
-                                          currentBuild.result = "FAILURE"
-                                        }
-                                }
-                            }
-                        }
-                        stage("Start Kraken run 2") {
-                            steps {
-                                script {
-                                        kraken_job1 = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
-                                        parameters: [
-                                            string(name: 'BUILD_NUMBER', value: "${build_string}"),
-                                            text(name: "ENV_VARS", value: ENV_VARS),
-                                            string(name: 'KRAKEN_SCENARIO', value: "node-memory-hog"),
-                                            string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
-                                            string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
-                                            string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
-                                            string(name: "MEMORY_CONSUMPTION_PERCENTAGE", value: MEMORY_CONSUMPTION_PERCENTAGE),
-                                            string(name: "NUMBER_OF_WORKERS", value: NUMBER_OF_WORKERS)
-                                        ],
-                                        propagate: false
-                                        currentBuild.description += """
-                                        <b>Upgrade Job: </b> <a href="${kraken_job1.absoluteUrl}"> ${build_string} </a> <br/>
-                                        """
-                                        if( kraken_job1.result.toString() != "SUCCESS") {
-                                          status = "Upgrade Failed"
-                                          currentBuild.result = "FAILURE"
-                                        }
-                                }
-                            }
-                        }
+          parallel {
+            stage("krkn"){
+              agent { label params['JENKINS_AGENT_LABEL'] }
+              stages{
+                  stage("Start Kraken run"){
+                  when {
+                        expression { params.CPU_HOG == true }
                       }
-                    }
-                 
-                  stage('Upgrade'){
-                      agent { label params['JENKINS_AGENT_LABEL'] }
-                      when {
-                          expression { UPGRADE_VERSION != "" }
+                      steps {
+                          script {
+                                  kraken_job = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
+                                  parameters: [
+                                      string(name: 'BUILD_NUMBER', value: "${build_string}"),
+                                      text(name: "ENV_VARS", value: ENV_VARS),
+                                      string(name: 'KRAKEN_SCENARIO', value: "node-cpu-hog"),
+                                      string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
+                                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                                      string(name: "CPU_PERCENT", value:NODE_CPU_PERCENTAGE),
+                                      string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
+                                      string(name: "NODE_CPU_CORE", value:NODE_CPU_CORE)    
+                                  ],
+                                  propagate: false
+                                  currentBuild.description += """
+                                  <b>Kraken Job: </b> <a href="${kraken_job.absoluteUrl}"> ${kraken_job.getNumber()} </a> <br/>
+                                  """
+                                  if( kraken_job.result.toString() != "SUCCESS") {
+                                    status = "Kraken cpu hog Failed"
+                                    currentBuild.result = "FAILURE"
+                                  }
+                          }
                       }
-                      steps{
-                          script{
-                            currentBuild.description += """
-                            <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
-                            """
-                            def set_arch_type = "x86_64"
-                            if (params.ARCH_TYPE != "") {
-                              set_arch_type = params.ARCH_TYPE
-                            }
-                            else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
-                              set_arch_type = "aarch64"
-                            }	
-                            upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
-                                string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
-                                string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
-                                string(name: "ARCH_TYPE", value: set_arch_type),
-                                booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),
-                                booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),
-                                booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)
-                            ]
-                            currentBuild.description += """
-                                <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
-                            """
-                            if( upgrade_ci.result.toString() != "SUCCESS") {
-                              status = "Upgrade Failed"
-                              currentBuild.result = "FAILURE"
-                            }
+                  }
+                  stage("Start Kraken run 2") {
+                    when {
+                        expression { params.MEMORY_HOG == true }
+                      }
+                      steps {
+                          script {
+                                  kraken_job1 = build job: 'scale-ci/shyadav-e2e-benchmarking-multibranch-pipeline/kraken',
+                                  parameters: [
+                                      string(name: 'BUILD_NUMBER', value: "${build_string}"),
+                                      text(name: "ENV_VARS", value: ENV_VARS),
+                                      string(name: 'KRAKEN_SCENARIO', value: "node-memory-hog"),
+                                      string(name: "KRAKEN_RUN_TYPE", value: KRAKEN_RUN_TYPE),
+                                      string(name: 'JENKINS_AGENT_LABEL', value: JENKINS_AGENT_LABEL),
+                                      string(name: "TOTAL_CHAOS_DURATION", value:TOTAL_CHAOS_DURATION),
+                                      string(name: "MEMORY_CONSUMPTION_PERCENTAGE", value: MEMORY_CONSUMPTION_PERCENTAGE),
+                                      string(name: "NUMBER_OF_WORKERS", value: NUMBER_OF_WORKERS)
+                                  ],
+                                  propagate: false
+                                  currentBuild.description += """
+                                  <b>Kraken Job: </b> <a href="${kraken_job1.absoluteUrl}"> ${kraken_job1.getNumber()} </a> <br/>
+                                  """
+                                  if( kraken_job1.result.toString() != "SUCCESS") {
+                                    status = "Kraken memory hog Failed"
+                                    currentBuild.result = "FAILURE"
+                                  }
                           }
                       }
                   }
                 }
+              }
+            
+            stage('Upgrade'){
+                agent { label params['JENKINS_AGENT_LABEL'] }
+                when {
+                    expression { UPGRADE_VERSION != "" }
+                }
+                steps{
+                    script{
+                      currentBuild.description += """
+                      <b>Upgrade to: </b> ${UPGRADE_VERSION} <br/>
+                      """
+                      def set_arch_type = "x86_64"
+                      if (params.ARCH_TYPE != "") {
+                        set_arch_type = params.ARCH_TYPE
+                      }
+                      else if (params.CI_PROFILE != "" && params.CI_PROFILE.contains('ARM')) {
+                        set_arch_type = "aarch64"
+                      }	
+                      upgrade_ci = build job: "scale-ci/e2e-benchmarking-multibranch-pipeline/upgrade", propagate: false,parameters:[
+                          string(name: "BUILD_NUMBER", value: build_string),string(name: "MAX_UNAVAILABLE", value: MAX_UNAVAILABLE),
+                          string(name: "JENKINS_AGENT_LABEL", value: JENKINS_AGENT_LABEL),string(name: "UPGRADE_VERSION", value: UPGRADE_VERSION),
+                          string(name: "ARCH_TYPE", value: set_arch_type),
+                          booleanParam(name: "EUS_UPGRADE", value: EUS_UPGRADE),string(name: "EUS_CHANNEL", value: EUS_CHANNEL),
+                          booleanParam(name: "WRITE_TO_FILE", value: WRITE_TO_FILE),booleanParam(name: "ENABLE_FORCE", value: ENABLE_FORCE),
+                          booleanParam(name: "SCALE", value: SCALE),text(name: "ENV_VARS", value: ENV_VARS)
+                      ]
+                      currentBuild.description += """
+                          <b>Upgrade Job: </b> <a href="${upgrade_ci.absoluteUrl}"> ${upgrade_ci.getNumber()} </a> <br/>
+                      """
+                      if( upgrade_ci.result.toString() != "SUCCESS") {
+                        status = "Upgrade Failed"
+                        currentBuild.result = "FAILURE"
+                      }
+                    }
+                }
+            }
+          }
         }
-
-       
-        
-        
+  
         stage("Write out results") {
             agent { label params['JENKINS_AGENT_LABEL'] }
             when {
