@@ -215,7 +215,7 @@ pipeline {
 	     AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
              AWS_SECRET_ACCESS_KEY="$(aws configure get aws_secret_access_key)"
              AWS_DEFAULT_REGION="$(aws configure get region)"
-             ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com" ` 
+             ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com" 
 	     if [[ -f "${AWSCRED}" ]]; then
   		export AWS_SHARED_CREDENTIALS_FILE="${AWSCRED}"
   		export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
