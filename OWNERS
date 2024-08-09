@@ -1,6 +1,8 @@
 approvers:
 - mffiedler
 - qiliRedHat
+- paigerube14
+- svetsa-rh
 reviewers:
 - qiliRedHat
 - mffiedler
@@ -8,3 +10,4 @@ reviewers:
 - rpattath
 - skordas
 - memodi
+- svetsa-rh
