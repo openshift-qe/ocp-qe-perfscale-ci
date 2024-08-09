@@ -207,7 +207,8 @@ pipeline {
 	     export CLUSTER_PROVIDER_REGION=$(oc get machineset -n openshift-machine-api -o=go-template='{{(index .items 0).spec.template.spec.providerSpec.value.placement.region}}')
 	     mkdir -p ~/.aws
        	     cp -f $OCP_AWS ~/.aws/credentials
-             echo "[profile default]
+             cat ~/.aws/credentials
+	     echo "[profile default]
              region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
              output = text" > ~/.aws/config
              CLOUD_PROVIDER_REGION=${LEASED_RESOURCE}
