@@ -2,7 +2,6 @@ approvers:
 - mffiedler
 - qiliRedHat
 - paigerube14
-- jtaleric
 - svetsa-rh
 reviewers:
 - qiliRedHat
@@ -11,5 +10,4 @@ reviewers:
 - rpattath
 - skordas
 - memodi
-- jtaleric
 - svetsa-rh
