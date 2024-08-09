@@ -211,7 +211,7 @@ pipeline {
              region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
              output = text" > ~/.aws/config
              CLOUD_PROVIDER_REGION=${LEASED_RESOURCE}
-	     AWSCRED="${CLUSTER_PROFILE_DIR}/.awscred"
+	     AWSCRED="~/.aws/credentials"
 	     AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
              AWS_SECRET_ACCESS_KEY="$(aws configure get aws_secret_access_key)"
              AWS_DEFAULT_REGION="$(aws configure get region)"
