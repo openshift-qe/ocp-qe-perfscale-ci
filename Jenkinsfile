@@ -211,20 +211,12 @@ pipeline {
              region = `cat $WORKSPACE/flexy-artifacts/workdir/install-dir/terraform.platform.auto.tfvars.json | jq -r ".aws_region"`
              output = text" > ~/.aws/config
              CLOUD_PROVIDER_REGION=${LEASED_RESOURCE}
-	     AWSCRED="~/.aws/credentials"
-             cat "${AWSCRED}"
-	     AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
+	     AWS_SHARED_CREDENTIALS_FILE="~/.aws/credentials"
+             AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)"
              AWS_SECRET_ACCESS_KEY="$(aws configure get aws_secret_access_key)"
              AWS_DEFAULT_REGION="$(aws configure get region)"
              ENDPOINT="https://s3.${AWS_DEFAULT_REGION}.amazonaws.com" 
-	     if [[ -f "${AWSCRED}" ]]; then
-  		export AWS_SHARED_CREDENTIALS_FILE="${AWSCRED}"
-  		export AWS_DEFAULT_REGION="${CLOUD_PROVIDER_REGION}"
-	     else
-  		echo "Did not find compatible cloud provider cluster_profile"
-  		exit 1
-	     fi
- 	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
+	     CLUSTER_NAME=$(oc get infrastructure cluster -o json | jq -r '.status.apiServerURL' | awk -F.  '{print$2}')
 	     echo "Updating security group rules for data-path test on cluster $CLUSTER_NAME"
 	     python3.9 -m pip install virtualenv
              python3.9 -m virtualenv venv3
