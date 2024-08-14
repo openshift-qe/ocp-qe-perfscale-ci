@@ -74,7 +74,7 @@ pipeline {
           description: 'Boolean to create a google sheet with comparison data'
     )
     booleanParam(
-          name: 'Network_Policy',
+          name: 'NETWORK_POLICY',
           defaultValue: true,
           description: 'Boolean to create network policy to open up the security group rules in your aws deployment'
     )
@@ -195,7 +195,7 @@ pipeline {
         script{
           withCredentials([
             file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS')]) {
-            if(params.Network_Policy == true) {
+            if(params.NETWORK_POLICY == true) {
             sh(returnStatus: true, script: '''
             AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
             AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
