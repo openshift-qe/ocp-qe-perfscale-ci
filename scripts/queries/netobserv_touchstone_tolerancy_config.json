@@ -120,26 +120,6 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "nFlowsProcessedPerMinuteTotals"
-                },
-                "buckets": [
-                    "metric_name.keyword"
-                ],
-                "aggregations": {
-                    "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
-                    ]
-                }
-            },
-            {
-                "filter": {
                     "metric_name.keyword": "nWorkloadFlowsProcessedTotals"
                 },
                 "buckets": [
@@ -148,26 +128,6 @@
                 "aggregations": {
                     "value": [
                         "max"
-                    ]
-                }
-            },
-            {
-                "filter": {
-                    "metric_name.keyword": "nWorkloadFlowsProcessedPerMinuteTotals"
-                },
-                "buckets": [
-                    "metric_name.keyword"
-                ],
-                "aggregations": {
-                    "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
                     ]
                 }
             },
@@ -186,20 +146,13 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "nFlowsErroredPerMinuteTotals"
+                    "metric_name.keyword": "nFlowsErroredRatio"
                 },
                 "buckets": [
                     "metric_name.keyword"
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
                         "avg"
                     ]
                 }
@@ -219,26 +172,6 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "lokiRecordsWrittenPerMinute"
-                },
-                "buckets": [
-                    "metric_name.keyword"
-                ],
-                "aggregations": {
-                    "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
-                        "avg"
-                    ]
-                }
-            },
-            {
-                "filter": {
                     "metric_name.keyword": "ebpfFlowsDroppedTotals"
                 },
                 "buckets": [
@@ -247,6 +180,19 @@
                 "aggregations": {
                     "value": [
                         "max"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "ebpfFlowsDroppedRatio"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        "avg"
                     ]
                 }
             },
@@ -278,20 +224,13 @@
             },
             {
                 "filter": {
-                    "metric_name.keyword": "lokiRecordsDroppedPerMinute"
+                    "metric_name.keyword": "lokiRecordsDroppedRatio"
                 },
                 "buckets": [
                     "metric_name.keyword"
                 ],
                 "aggregations": {
                     "value": [
-                        {
-                            "percentiles": {
-                                "percents": [
-                                    90
-                                ]
-                            }
-                        },
                         "avg"
                     ]
                 }
@@ -378,6 +317,26 @@
             },
             {
                 "filter": {
+                    "metric_name.keyword": "cpuPrometheusTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
                     "metric_name.keyword": "rssFLPTotals"
                 },
                 "buckets": [
@@ -439,6 +398,26 @@
             {
                 "filter": {
                     "metric_name.keyword": "rssKafkaTotals"
+                },
+                "buckets": [
+                    "metric_name.keyword"
+                ],
+                "aggregations": {
+                    "value": [
+                        {
+                            "percentiles": {
+                                "percents": [
+                                    90
+                                ]
+                            }
+                        },
+                        "avg"
+                    ]
+                }
+            },
+            {
+                "filter": {
+                    "metric_name.keyword": "rssPrometheusTotals"
                 },
                 "buckets": [
                     "metric_name.keyword"
