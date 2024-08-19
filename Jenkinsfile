@@ -9,10 +9,10 @@ if (userId) {
 } else {
     currentBuild.displayName = 'auto'
 }
+def NOO_BUNDLE_VERSION = ''
 
 pipeline {
     environment {
-        def NOO_BUNDLE_VERSION = ''
         def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
         def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
     }
