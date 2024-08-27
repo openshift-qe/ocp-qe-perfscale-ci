@@ -115,15 +115,6 @@ pipeline {
           '''
       )
       string(
-          name: "PROFILE_TYPE",
-          choices: ["both","reporting","regular"]
-          defaultValue: "both",
-          description: '''
-          Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
-          See <a href=https://github.com/kube-burner/kube-burner-ocp?tab=readme-ov-file#metrics-profile-type>profile type</a> for more details about profiles
-          '''
-      )
-      string(
           name: "COMPARISON_CONFIG",
           defaultValue: "podLatency.json nodeMasters-ocp.json nodeWorkers-ocp.json etcd-ocp.json crio-ocp.json kubelet-ocp.json",
           description: 'JSON config files of what data to output into a Google Sheet'
