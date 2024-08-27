@@ -26,7 +26,9 @@ println "JENKINS_JOB_NUMBER $JENKINS_JOB_NUMBER"
 
 pipeline{
     agent any
-
+    options { 
+      timeout(time: 10, unit: 'HOURS')
+    }
     parameters {
       separator(
         name: "PRE_BUILT_FLEXY_ENV", 
@@ -465,7 +467,7 @@ pipeline{
         description: "Branch of ci-profiles repo to checkout"
       )
     }
-
+    
     stages{
         stage("Build Flexy Clusters") {
            agent { label params['JENKINS_AGENT_LABEL'] }
