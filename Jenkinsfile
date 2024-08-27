@@ -35,6 +35,9 @@ def cerberus_job = ""
 def status = "FAIL"
 pipeline {
   agent none
+  options { 
+      timeout(time: 5, unit: 'HOURS')
+    }
   parameters {
       string(
           name: 'BUILD_NUMBER',
@@ -106,6 +109,15 @@ pipeline {
       choice(
           name: "PROFILE_TYPE",
           choices: ["both","reporting","regular"],
+          description: '''
+          Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
+          See <a href=https://github.com/kube-burner/kube-burner-ocp?tab=readme-ov-file#metrics-profile-type>profile type</a> for more details about profiles
+          '''
+      )
+      string(
+          name: "PROFILE_TYPE",
+          choices: ["both","reporting","regular"]
+          defaultValue: "both",
           description: '''
           Select the type of metric collection you want, values are 'both', 'reporting', and 'regular'
           See <a href=https://github.com/kube-burner/kube-burner-ocp?tab=readme-ov-file#metrics-profile-type>profile type</a> for more details about profiles
