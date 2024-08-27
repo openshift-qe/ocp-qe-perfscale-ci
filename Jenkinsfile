@@ -35,6 +35,9 @@ def cerberus_job = ""
 def status = "FAIL"
 pipeline {
   agent none
+  options { 
+      timeout(time: 5, unit: 'HOURS')
+    }
   parameters {
       string(
           name: 'BUILD_NUMBER',
