@@ -193,7 +193,7 @@ pipeline {
       )
       string(
           name: 'E2E_BENCHMARKING_REPO',
-          defaultValue: 'https://github.com/liqcui/svt.git',
+          defaultValue: 'https://github.com/sahshah/svt.git',
           description: 'You can change this to point to your fork if needed.'
       )
       string(
