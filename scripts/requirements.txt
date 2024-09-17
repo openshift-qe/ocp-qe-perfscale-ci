@@ -1,2 +1,0 @@
-argparse>=1.4.0
-coloredlogs>=15.0.1
