@@ -243,8 +243,6 @@ pipeline {
                   imagePullPolicy: Always
                   workingDir: "/home/jenkins/ws"
                   tty: true
-                imagePullSecrets:
-                - name: "docker-config-quay.io"
               """.stripIndent()
           }
         }
