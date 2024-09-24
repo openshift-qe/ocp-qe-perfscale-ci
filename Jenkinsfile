@@ -12,17 +12,10 @@ if (userId) {
 
 pipeline {
     environment {
-        // def NOO_BUNDLE_VERSION = ''
+        def NOO_BUNDLE_VERSION = ''
         def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
         def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
         def templateParams = ''
-        def NOO_BUNDLE_VERSION = "1.7.0-67" //debug-only
-
-        // construct arguments for NOPE tool and execute
-        def STARTDATEUNIXTIMESTAMP = "1727204048" //debug-only
-        def ENDDATEUNIXTIMESTAMP = "1727204506" //debug-only
-        def JENKINS_BUILD = "19" //debug-only
-        def UUID = "21aeb685-91ed-4d74-8487-78e9ff0e72ea" //debug-only
     }
 
     // job runs on specified agent
@@ -363,13 +356,13 @@ pipeline {
     }
 
     stages {
-        // stage('Validate job parameters') {
-        //     steps {
-        //         script {
-        //             validateParams()
-        //         }
-        //     }
-        // }
+        stage('Validate job parameters') {
+            steps {
+                script {
+                    validateParams()
+                }
+            }
+        }
         stage('Setup testing environment') {
             steps {
                 // copy artifacts from Flexy install
@@ -571,6 +564,7 @@ pipeline {
         }
         stage('Capture NetObserv Operator Bundle version'){
             when {
+                beforeAgent true
                 expression { params.INSTALLATION_SOURCE == "Official" || params.INSTALLATION_SOURCE == "Internal" }
             }
             agent { 
@@ -772,8 +766,7 @@ pipeline {
         }
         stage('Run NOPE tool') {
             when {
-                // expression { params.WORKLOAD != 'None' && params.NOPE == true }
-                expression { params.WORKLOAD == 'None' && params.NOPE == true } // debug-only
+                expression { params.WORKLOAD != 'None' && params.NOPE == true }
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
@@ -781,7 +774,7 @@ pipeline {
                         echo "NOO_BUNDLE_VERSION: ${NOO_BUNDLE_VERSION}"
                         env.NOO_BUNDLE_VERSION=NOO_BUNDLE_VERSION
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID"
+                        NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid ${env.UUID}"
                         if (NOO_BUNDLE_VERSION != ''){
                             NOPE_ARGS += " --noo-bundle-version ${NOO_BUNDLE_VERSION}"
                         }
@@ -797,7 +790,7 @@ pipeline {
                         env.NOPE_ARGS = NOPE_ARGS
                         nopeReturnCode = sh(returnStatus: true, script: """
                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
-                            run_nope_tool $NOPE_ARGS
+                            run_nope_tool "$NOPE_ARGS"
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
                         if (nopeReturnCode.toInteger() == 2) {
@@ -815,8 +808,7 @@ pipeline {
         }
         stage('Run Touchstone tool') {
             when {
-                // expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP_ONLY == false && currentBuild.currentResult != "UNSTABLE" }
-              expression { params.WORKLOAD == 'None' && params.NOPE == true && params.NOPE_DUMP_ONLY == false && currentBuild.currentResult != "UNSTABLE" } // debug-only
+                expression { params.WORKLOAD != 'None' && params.NOPE == true && params.NOPE_DUMP_ONLY == false && currentBuild.currentResult != "UNSTABLE" }
             }
             steps {
                 // checkout e2e-benchmarking repo
@@ -873,7 +865,7 @@ pipeline {
                                     NOPE_ARGS += " baseline --fetch $WORKLOAD"
                                     fetchReturnCode = sh(returnStatus: true, script: """
                                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
-                                        run_nope_tool $NOPE_ARGS
+                                        run_nope_tool "$NOPE_ARGS"
                                     """)
                                     if (fetchReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
@@ -907,10 +899,10 @@ pipeline {
                                                 println("Failed to capture comparison google sheet  :(")
                                         }
                                     }  
-                                    GSHEET_ADD_ARGS = "--uuid1 $UUID --uuid2 $BASELINE_UUID --service-account $GSHEET_KEY_LOCATION"
+                                    GSHEET_ADD_ARGS = "--uuid1 ${env.UUID} --uuid2 $BASELINE_UUID --service-account $GSHEET_KEY_LOCATION"
                                     updateGSheetCode = sh(returnStatus: true, script: """
                                         source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
-                                        update_gsheet $GSHEET_ADD_ARGS
+                                        update_gsheet "$GSHEET_ADD_ARGS"
                                     """)
 
                                     // mark pipeline as unstable if Touchstone failed, continue otherwise
@@ -953,10 +945,10 @@ pipeline {
                                             if (params.NOPE_DEBUG == true) {
                                                 NOPE_ARGS += ' --debug'
                                             }
-                                            NOPE_ARGS += " baseline --upload $UUID"
+                                            NOPE_ARGS += " baseline --upload ${env.UUID}"
                                             uploadReturnCode = sh(returnStatus: true, script: """
                                                 source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
-                                                run_nope_tool $NOPE_ARGS
+                                                run_nope_tool "$NOPE_ARGS"
                                             """)
                                             if (uploadReturnCode.toInteger() != 0) {
                                                 unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')

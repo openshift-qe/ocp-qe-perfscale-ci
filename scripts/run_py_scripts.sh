@@ -15,7 +15,7 @@ function install_requirements(){
 function run_nope_tool(){
     enable_venv
     install_requirements "${WORKSPACE}"/ocp-qe-perfscale-ci/scripts/requirements.txt
-    python "${WORKSPACE}"/ocp-qe-perfscale-ci/scripts/nope.py "$1"
+    python "${WORKSPACE}"/ocp-qe-perfscale-ci/scripts/nope.py $1
 }
 
 function create_csv(){
@@ -46,5 +46,5 @@ function update_gsheet(){
     SHEET_ID=$(grep Google "${BENCHMARK_COMP_LOG}" | awk -F'/' '{print $NF}' | awk '{print $1}')
     enable_venv
     install_requirements "${WORKSPACE}/ocp-qe-perfscale-ci/scripts/sheets/requirements.txt"
-    python "$WORKSPACE"/ocp-qe-perfscale-ci/scripts/sheets/noo_perfsheets_update.py --sheet-id $SHEET_ID "$1"
+    python "$WORKSPACE"/ocp-qe-perfscale-ci/scripts/sheets/noo_perfsheets_update.py --sheet-id "$SHEET_ID" $1
 }
