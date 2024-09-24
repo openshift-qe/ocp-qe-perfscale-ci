@@ -1,4 +1,0 @@
-pyyaml
-oauth2client
-jq
-gspread
