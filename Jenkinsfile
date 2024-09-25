@@ -15,6 +15,7 @@ pipeline {
         def NOO_BUNDLE_VERSION = ''
         def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
         def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
+        def templateParams = ''
     }
 
     // job runs on specified agent
@@ -165,20 +166,6 @@ pipeline {
                 e.g. <b>e2bdef6</b>
             '''
         )
-        string(
-            name: 'PLUGIN_PREMERGE_OVERRIDE',
-            defaultValue: '',
-            description: '''
-                You can specify here a specific ConsolePlugin premerge image rather than using the operator defined image<br/>
-                These SHA hashes can be found in ConsolePlugin PR's after adding the label '/ok-to-test'<br/>
-                e.g. <b>e2bdef6</b>
-            '''
-        )
-        string(
-            name: 'CONTROLLER_MEMORY_LIMIT',
-            defaultValue: '',
-            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
-        )
         separator(
             name: 'FLOWCOLLECTOR_CONFIG_OPTIONS',
             sectionHeader: 'Flowcollector Configuration Options',
@@ -198,20 +185,10 @@ pipeline {
             defaultValue: '100000',
             description: 'eBPF max flows that can be cached before evicting'
         )
-        string(
-            name: 'EBPF_MEMORY_LIMIT',
-            defaultValue: '',
-            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
-        )
         booleanParam(
             name: 'EBPF_PRIVILEGED',
             defaultValue: false,
             description: 'Check this box to run ebpf-agent in privileged mode'
-        )
-        string(
-            name: 'FLP_MEMORY_LIMIT',
-            defaultValue: '',
-            description: 'Note that 800Mi = 800 mebibytes, i.e. 0.8 Gi'
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
@@ -575,16 +552,6 @@ pipeline {
                             error("Network Observability FLP image patch ${params.FLP_PREMERGE_OVERRIDE} failed :(")
                         }
                     }
-                    if (params.PLUGIN_PREMERGE_OVERRIDE != '') {
-                        env.PLUGIN_PREMERGE_IMAGE = "quay.io/netobserv/network-observability-console-plugin:${PLUGIN_PREMERGE_OVERRIDE}"
-                        netobservPluginPatchReturnCode = sh(returnStatus: true, script: """
-                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
-                            patch_netobserv "plugin" $PLUGIN_PREMERGE_IMAGE
-                        """)
-                        if (netobservPluginPatchReturnCode.toInteger() != 0) {
-                            error("Network Observability Plugin image patch ${params.PLUGIN_PREMERGE_OVERRIDE} failed :(")
-                        }
-                    }
                     // if installation and patching succeeds, continue and display controller, FLP, and eBPF pods running in cluster
                     else {
                         println("Successfully installed Network Observability from ${params.INSTALLATION_SOURCE} :)")
@@ -597,6 +564,7 @@ pipeline {
         }
         stage('Capture NetObserv Operator Bundle version'){
             when {
+                beforeAgent true
                 expression { params.INSTALLATION_SOURCE == "Official" || params.INSTALLATION_SOURCE == "Internal" }
             }
             agent { 
@@ -605,40 +573,37 @@ pipeline {
                 label "upshift_docker"
             }
             steps {
+                // checkout ocp-qe-perfscale-ci repo
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: GIT_BRANCH ]],
+                    userRemoteConfigs: [[url: GIT_URL ]],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ocp-qe-perfscale-ci']]
+                ])
+                // copy artifacts from Flexy install
+                copyArtifacts(
+                    fingerprintArtifacts: true,
+                    projectName: 'ocp-common/Flexy-install',
+                    selector: specific(params.FLEXY_BUILD_NUMBER),
+                    target: 'flexy-artifacts'
+                )
+                withCredentials(
+                    [usernamePassword(credentialsId: 'c1802784-0f74-4b35-99fb-32dfa9a207ad', usernameVariable: 'QUAY_USER', passwordVariable: 'QUAY_PASSWORD')]){
+                    sh 'podman login -u $QUAY_USER -p $QUAY_PASSWORD quay.io'
+                }
+                withCredentials([usernamePassword(credentialsId: 'db799772-7708-4ed0-bfe7-0fddfc8088eb', usernameVariable: 'REG_REDHAT_USER', passwordVariable: 'REG_REDHAT_PASSWORD')]){
+                    sh 'podman login -u $REG_REDHAT_USER -p ${REG_REDHAT_PASSWORD} registry.redhat.io'
+                }
+                withCredentials([usernamePassword(credentialsId: 'brew-registry-osbs-mirror', usernameVariable: 'BREW_USER', passwordVariable: 'BREW_PASSWORD')]){ 
+                    sh 'podman login -u $BREW_USER -p $BREW_PASSWORD brew.registry.redhat.io'
+                }
+                withCredentials([usernamePassword(credentialsId: '41c2dd39-aad7-4f07-afec-efc052b450f5', usernameVariable: 'REG_STAGE_USER', passwordVariable: 'REG_STAGE_PASSWORD')]){
+                    sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
+                }
                 script {
-                    // copy artifacts from Flexy install
-                    copyArtifacts(
-                        fingerprintArtifacts: true,
-                        projectName: 'ocp-common/Flexy-install',
-                        selector: specific(params.FLEXY_BUILD_NUMBER),
-                        target: 'flexy-artifacts'
-                    )
-                    withCredentials(
-                        [usernamePassword(credentialsId: 'c1802784-0f74-4b35-99fb-32dfa9a207ad', usernameVariable: 'QUAY_USER', passwordVariable: 'QUAY_PASSWORD')]){
-                        sh 'podman login -u $QUAY_USER -p $QUAY_PASSWORD quay.io'
-                    }
-                    withCredentials([usernamePassword(credentialsId: 'db799772-7708-4ed0-bfe7-0fddfc8088eb', usernameVariable: 'REG_REDHAT_USER', passwordVariable: 'REG_REDHAT_PASSWORD')]){
-                        sh 'podman login -u $REG_REDHAT_USER -p ${REG_REDHAT_PASSWORD} registry.redhat.io'
-                    }
-                    withCredentials([usernamePassword(credentialsId: 'brew-registry-osbs-mirror', usernameVariable: 'BREW_USER', passwordVariable: 'BREW_PASSWORD')]){ 
-                        sh 'podman login -u $BREW_USER -p $BREW_PASSWORD brew.registry.redhat.io'
-                    }
-                    withCredentials([usernamePassword(credentialsId: '41c2dd39-aad7-4f07-afec-efc052b450f5', usernameVariable: 'REG_STAGE_USER', passwordVariable: 'REG_STAGE_PASSWORD')]){
-                        sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
-                    }
-
-                    NOO_BUNDLE_VERSION=sh(returnStdout: true, script: '''
-                            #!/usr/bin/env bash
-                            mkdir -p ~/.kube
-                            cp ${WORKSPACE}/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                            RELEASE=$(oc get pods -l app=netobserv-operator -o jsonpath='{.items[*].spec.containers[1].env[0].value}' -A | cut -d 'v' -f 3)
-
-                            # source from 4.12 because jenkins agent are on RHEL 8
-                            curl -sL "https://mirror2.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.16/opm-linux.tar.gz" -o opm-linux.tar.gz
-                            tar xf opm-linux.tar.gz
-                            BUNDLE_IMAGE=$(./opm-rhel8 alpha list bundles $CATALOG_IMAGE netobserv-operator | grep $RELEASE | awk '{print $5}')
-                            oc image info $BUNDLE_IMAGE -o json --filter-by-os linux/amd64 | jq '.config.config.Labels.url' | awk -F '/' '{print $NF}' | tr '\"' ' '
-                        ''').trim()
+                    NOO_BUNDLE_VERSION=sh(returnStdout: true, script: """
+                        $WORKSPACE/ocp-qe-perfscale-ci/scripts/build_info.sh
+                        """).trim()
                     if (NOO_BUNDLE_VERSION != '') {
                         println("Found NOO Bundle version: ${NOO_BUNDLE_VERSION}")
                         currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
@@ -679,46 +644,8 @@ pipeline {
                     else {
                         println('Skipping Kafka configuration...')
                     }
-
-                    templateParams = "-p "
-                    if (params.ENABLE_KAFKA != true) {
-                        templateParams += "DeploymentModel=Direct "
-                    }
-                    if (params.FLP_KAFKA_REPLICAS == "") {
-                        if (params.WORKLOAD == 'node-density-heavy') {
-                            env.FLP_KAFKA_REPLICAS = '6'
-                        }
-                        else if (params.WORKLOAD == 'ingress-perf') {
-                            env.FLP_KAFKA_REPLICAS = '12'
-                        }
-                        else if (params.WORKLOAD == 'cluster-density-v2') {
-                            env.FLP_KAFKA_REPLICAS = '18'
-                        }
-                        else {
-                            env.FLP_KAFKA_REPLICAS = '3'
-                        }
-                    }
-                    templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
-
-                    if (params.EBPF_MEMORY_LIMIT != "") {
-                        templateParams += "EBPFMemoryLimit=${params.EBPF_MEMORY_LIMIT} "
-                    }
-                    if (params.EBPF_PRIVILEGED == true){
-                        templateParams += "EBPFPrivileged=${params.EBPF_PRIVILEGED} "
-                    }
-                    if (params.EBPF_SAMPLING_RATE != ""){
-                        templateParams += "EBPFSamplingRate=${params.EBPF_SAMPLING_RATE} "
-                    }
-                    if (params.EBPF_CACHE_MAXFLOWS != ""){
-                        templateParams += "EBPFCacheMaxFlows=${params.EBPF_CACHE_MAXFLOWS} "
-                    }
-                    if (params.LOKI_OPERATOR == 'None') {
-                        templateParams += "LokiEnable=false "
-                    }
-                    if (params.FLP_MEMORY_LIMIT != "") {
-                        templateParams += "FLPMemoryLimit=${params.FLP_MEMORY_LIMIT} "
-                    }                    
-
+                    setKafkaReplicas()
+                    templateParams = setTemplateParams()
                     fcReturnCode = sh(returnStatus: true, script: """
                           source $WORKSPACE/ocp-qe-perfscale-ci/scripts/netobserv.sh
                           createFlowCollector $templateParams
@@ -728,17 +655,6 @@ pipeline {
                     }
                     else {
                         println('Successfully deployed Flowcollector :)')
-                    }
-
-                    if (params.CONTROLLER_MEMORY_LIMIT != '') {
-                        println('Updating NOO memory limit...')
-                        controllerReturnCode = sh(returnStatus: true, script: """
-                            oc -n openshift-netobserv-operator patch csv $RELEASE --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": ${params.CONTROLLER_MEMORY_LIMIT}}]"
-                            sleep 60
-                        """)
-                        if (controllerReturnCode.toInteger() != 0) {
-                            error('Updating controller memory limit failed :(')
-                        }
                     }
                 }
             }
@@ -858,7 +774,7 @@ pipeline {
                         echo "NOO_BUNDLE_VERSION: ${NOO_BUNDLE_VERSION}"
                         env.NOO_BUNDLE_VERSION=NOO_BUNDLE_VERSION
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = '--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid $UUID'
+                        NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid ${env.UUID}"
                         if (NOO_BUNDLE_VERSION != ''){
                             NOPE_ARGS += " --noo-bundle-version ${NOO_BUNDLE_VERSION}"
                         }
@@ -871,14 +787,10 @@ pipeline {
                         if (params.NOPE_JIRA != '') {
                             NOPE_ARGS += " --jira ${params.NOPE_JIRA}"
                         }
+                        env.NOPE_ARGS = NOPE_ARGS
                         nopeReturnCode = sh(returnStatus: true, script: """
-                            python3.9 --version
-                            python3.9 -m pip install virtualenv
-                            python3.9 -m virtualenv venv3
-                            source venv3/bin/activate
-                            python --version
-                            python -m pip install -r $WORKSPACE/ocp-qe-perfscale-ci/scripts/requirements.txt
-                            python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                            run_nope_tool "$NOPE_ARGS"
                         """)
                         // fail pipeline if NOPE run failed, continue otherwise
                         if (nopeReturnCode.toInteger() == 2) {
@@ -918,16 +830,10 @@ pipeline {
                         env.GEN_JSON = false
                         env.NETWORK_TYPE = sh(returnStdout: true, script: "oc get network.config/cluster -o jsonpath='{.spec.networkType}'").trim()
                         env.WORKLOAD = params.WORKLOAD
-                        statisticsReturnCode = sh(returnStatus: true, script: '''
-                            python3.9 --version
-                            python3.9 -m pip install virtualenv
-                            python3.9 -m virtualenv venv3
-                            source venv3/bin/activate
-                            python --version
-                            cd $WORKSPACE/e2e-benchmarking/utils
-                            source compare.sh
-                            run_benchmark_comparison > ${BENCHMARK_CSV_LOG}
-                        ''')
+                        statisticsReturnCode = sh(returnStatus: true, script: """
+                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                            create_csv
+                        """)
                         
                         if(fileExists("${BENCHMARK_CSV_LOG}")){
                             try {
@@ -956,10 +862,10 @@ pipeline {
                                     if (params.NOPE_DEBUG == true) {
                                         NOPE_ARGS += ' --debug'
                                     }
-                                    NOPE_ARGS += ' baseline --fetch $WORKLOAD'
+                                    NOPE_ARGS += " baseline --fetch $WORKLOAD"
                                     fetchReturnCode = sh(returnStatus: true, script: """
-                                        source venv3/bin/activate
-                                        python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                                        run_nope_tool "$NOPE_ARGS"
                                     """)
                                     if (fetchReturnCode.toInteger() != 0) {
                                         unstable('NOPE baseline fetching failed - run locally with UUIDs to get baseline comparison statistics :(')
@@ -979,19 +885,11 @@ pipeline {
                                     env.COMPARISON_CONFIG = 'netobserv_touchstone_tolerancy_config.json'
                                     // ES_SERVER and ES_SERVER_BASELINE are the same since we store all of our results on the same ES server
                                     env.ES_SERVER_BASELINE = "https://$ES_USERNAME:$ES_PASSWORD@search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
-                                    baselineReturnCode = sh(returnStatus: true, script: '''
-                                        python3.9 --version
-                                        python3.9 -m pip install virtualenv
-                                        python3.9 -m virtualenv venv3
-                                        source venv3/bin/activate
-                                        python --version
-                                        cd $WORKSPACE/e2e-benchmarking/utils
-                                        rm -rf /tmp/**/*.csv
-                                        rm -rf *.csv
-                                        source compare.sh
-                                        run_benchmark_comparison > ${BENCHMARK_COMP_LOG}
+                                    baselineReturnCode = sh(returnStatus: true, script: """
+                                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                                            run_comparison
                                         )
-                                    ''')
+                                    """)
 
                                     if(fileExists("${BENCHMARK_COMP_LOG}")){
                                         try {
@@ -1000,18 +898,12 @@ pipeline {
                                         } catch (err) {
                                                 println("Failed to capture comparison google sheet  :(")
                                         }
-                                    }    
-
-                                    updateGSheetCode = sh(returnStatus: true, script: '''
-                                        SHEET_ID=$(grep Google ${BENCHMARK_COMP_LOG} | awk -F'/' '{print $NF}' | awk '{print $1}')
-                                        cd $WORKSPACE/ocp-qe-perfscale-ci/scripts/sheets
-                                        python3.9 --version
-                                        python3.9 -m pip install virtualenv
-                                        python3.9 -m virtualenv venv3
-                                        source venv3/bin/activate
-                                        python -m pip install -r requirements.txt
-                                        ./noo_perfsheets_update.py --sheet-id ${SHEET_ID} --uuid1 ${UUID} --uuid2 ${BASELINE_UUID} --service-account ${GSHEET_KEY_LOCATION}
-                                    ''')
+                                    }  
+                                    GSHEET_ADD_ARGS = "--uuid1 ${env.UUID} --uuid2 $BASELINE_UUID --service-account $GSHEET_KEY_LOCATION"
+                                    updateGSheetCode = sh(returnStatus: true, script: """
+                                        source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                                        update_gsheet "$GSHEET_ADD_ARGS"
+                                    """)
 
                                     // mark pipeline as unstable if Touchstone failed, continue otherwise
                                     if (baselineReturnCode.toInteger() != 0) {
@@ -1038,14 +930,8 @@ pipeline {
                                         env.GEN_JSON = true
                                         env.GEN_CSV = false
                                         jsonReturnCode = sh(returnStatus: true, script: """
-                                            python3.9 --version
-                                            python3.9 -m pip install virtualenv
-                                            python3.9 -m virtualenv venv3
-                                            source venv3/bin/activate
-                                            python --version
-                                            cd $WORKSPACE/e2e-benchmarking/utils
-                                            source compare.sh
-                                            run_benchmark_comparison
+                                            source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                                            gen_json_comparison
                                         """)
                                         println('Generated debug JSON for tolerancy analysis :)')
                                     }
@@ -1059,10 +945,10 @@ pipeline {
                                             if (params.NOPE_DEBUG == true) {
                                                 NOPE_ARGS += ' --debug'
                                             }
-                                            NOPE_ARGS += ' baseline --upload $UUID'
+                                            NOPE_ARGS += " baseline --upload ${env.UUID}"
                                             uploadReturnCode = sh(returnStatus: true, script: """
-                                                source venv3/bin/activate
-                                                python $WORKSPACE/ocp-qe-perfscale-ci/scripts/nope.py $NOPE_ARGS
+                                                source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
+                                                run_nope_tool "$NOPE_ARGS"
                                             """)
                                             if (uploadReturnCode.toInteger() != 0) {
                                                 unstable('NOPE baseline uploading failed - run locally with the UUID from this job to set the new baseline :(')
@@ -1163,4 +1049,42 @@ def validateParams() {
         error('Specify context of this perf run using NOPE_JIRA parameter')
     }
     println('Job params are valid - continuing execution...')
+}
+
+def setKafkaReplicas(){
+    if (params.FLP_KAFKA_REPLICAS == "") {
+        if (params.WORKLOAD == 'node-density-heavy') {
+            env.FLP_KAFKA_REPLICAS = '6'
+        }
+        else if (params.WORKLOAD == 'ingress-perf') {
+            env.FLP_KAFKA_REPLICAS = '12'
+        }
+        else if (params.WORKLOAD == 'cluster-density-v2') {
+            env.FLP_KAFKA_REPLICAS = '18'
+        }
+        else {
+            env.FLP_KAFKA_REPLICAS = '3'
+        }
+    }
+}
+
+def setTemplateParams(){
+    def templateParams = "-p "
+    if (params.ENABLE_KAFKA != true) {
+        templateParams += "DeploymentModel=Direct "
+    }
+    templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
+    if (params.EBPF_PRIVILEGED == true){
+        templateParams += "EBPFPrivileged=${params.EBPF_PRIVILEGED} "
+    }
+    if (params.EBPF_SAMPLING_RATE != ""){
+        templateParams += "EBPFSamplingRate=${params.EBPF_SAMPLING_RATE} "
+    }
+    if (params.EBPF_CACHE_MAXFLOWS != ""){
+        templateParams += "EBPFCacheMaxFlows=${params.EBPF_CACHE_MAXFLOWS} "
+    }
+    if (params.LOKI_OPERATOR == 'None') {
+        templateParams += "LokiEnable=false "
+    }
+    return templateParams
 }
