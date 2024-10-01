@@ -100,20 +100,21 @@ def get_replicas(yaml_file):
 
     if "workflow" in yaml_file['steps'].keys() and "single-node" in yaml_file['steps']['workflow']: 
         return "1"
-    if "REPLICAS" in yaml_file['steps']['env'].keys():
-        return yaml_file['steps']['env']['REPLICAS']
-    elif "WORKER_REPLICA_COUNT" in yaml_file['steps']['env'].keys(): 
-        return yaml_file['steps']['env']['WORKER_REPLICA_COUNT']
-    elif "COMPUTE_NODE_REPLICAS" in yaml_file['steps']['env'].keys(): 
-        return yaml_file['steps']['env']['COMPUTE_NODE_REPLICAS']
-    elif "ARO_WORKER_COUNT" in yaml_file['steps']['env'].keys(): 
-        return yaml_file['steps']['env']['ARO_WORKER_COUNT']
+    if "env" in yaml_file['steps'].keys(): 
+        if "REPLICAS" in yaml_file['steps']['env'].keys():
+            return yaml_file['steps']['env']['REPLICAS']
+        elif "WORKER_REPLICA_COUNT" in yaml_file['steps']['env'].keys(): 
+            return yaml_file['steps']['env']['WORKER_REPLICA_COUNT']
+        elif "COMPUTE_NODE_REPLICAS" in yaml_file['steps']['env'].keys(): 
+            return yaml_file['steps']['env']['COMPUTE_NODE_REPLICAS']
+        elif "ARO_WORKER_COUNT" in yaml_file['steps']['env'].keys(): 
+            return yaml_file['steps']['env']['ARO_WORKER_COUNT']
     return "3"
 
 def get_multiaz(yaml_file):
-
-    if "MULTI_AZ" in yaml_file['steps']['env'].keys():
-        return yaml_file['steps']['env']['MULTI_AZ']
+    if "env" in yaml_file['steps'].keys(): 
+        if "MULTI_AZ" in yaml_file['steps']['env'].keys():
+            return yaml_file['steps']['env']['MULTI_AZ']
     return "true"
 
 
@@ -136,23 +137,23 @@ def get_cloud_type(yaml_file):
         return "Unset"
 
 def verify_channel(test):
-
-    if "CHANNEL_GROUP" in test['steps']['env'].keys(): 
-        return test['steps']['env']["CHANNEL_GROUP"]
+    if "env" in test['steps'].keys(): 
+        if "CHANNEL_GROUP" in test['steps']['env'].keys(): 
+            return test['steps']['env']["CHANNEL_GROUP"]
     return ""
 
 def get_master_type(test):
-
-    if "CHANNEL_GROUP" in test['steps']['env'].keys(): 
-        return test['steps']['env']["CHANNEL_GROUP"]
+    if "env" in test['steps'].keys(): 
+        if "CHANNEL_GROUP" in test['steps']['env'].keys(): 
+            return test['steps']['env']["CHANNEL_GROUP"]
     return ""
 
 def get_worker_type(test):
-
-    if "COMPUTE_MACHINE_TYPE" in test['steps']['env'].keys(): 
-        return test['steps']['env']["COMPUTE_MACHINE_TYPE"]
-    elif "COMPUTE_NODE_TYPE" in test['steps']['env'].keys():
-        return test['steps']['env']["COMPUTE_NODE_TYPE"]
+    if "env" in test['steps'].keys(): 
+        if "COMPUTE_MACHINE_TYPE" in test['steps']['env'].keys(): 
+            return test['steps']['env']["COMPUTE_MACHINE_TYPE"]
+        elif "COMPUTE_NODE_TYPE" in test['steps']['env'].keys():
+            return test['steps']['env']["COMPUTE_NODE_TYPE"]
     return "default"
 
 def get_job_history(file_name, test_name):
@@ -186,15 +187,15 @@ def get_cron(yaml_file):
     return False
 
 def get_arch_type(yaml_file):
-
-    if "OCP_ARCH" in yaml_file['steps']['env'].keys():
-        return yaml_file['steps']['env']['OCP_ARCH']
+    if "env" in yaml_file['steps'].keys(): 
+        if "OCP_ARCH" in yaml_file['steps']['env'].keys():
+            return yaml_file['steps']['env']['OCP_ARCH']
     return "x86"
 
 def get_profile_type(yaml_file):
-
-    if "PROFILE_TYPE" in yaml_file['steps']['env'].keys():
-        return yaml_file['steps']['env']['PROFILE_TYPE']
+    if "env" in yaml_file['steps'].keys(): 
+        if "PROFILE_TYPE" in yaml_file['steps']['env'].keys():
+            return yaml_file['steps']['env']['PROFILE_TYPE']
     return "none"
 
 def test_profile(folder_path, fileName):
