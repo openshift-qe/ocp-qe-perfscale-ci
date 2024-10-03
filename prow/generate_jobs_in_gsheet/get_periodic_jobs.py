@@ -127,14 +127,14 @@ def get_cloud_type(yaml_file):
             return "rosa"
         elif "aro" in yaml_file['steps']['workflow']:
             return "aro"
-    if "aws" in yaml_file['steps']['cluster_profile']:
-        return "aws"
-    elif "gcp" in yaml_file['steps']['cluster_profile']:
-        return "gcp"
-    elif "azure" in yaml_file['steps']['cluster_profile']:
-        return "azure"
-    else: 
-        return "Unset"
+    if "cluster_profile" in yaml_file['steps'].keys():
+        if "aws" in yaml_file['steps']['cluster_profile']:
+            return "aws"
+        elif "gcp" in yaml_file['steps']['cluster_profile']:
+            return "gcp"
+        elif "azure" in yaml_file['steps']['cluster_profile']:
+            return "azure"
+    return "Unset"
 
 def verify_channel(test):
     if "env" in test['steps'].keys(): 
