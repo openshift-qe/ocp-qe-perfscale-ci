@@ -105,12 +105,24 @@ deploy_lokistack() {
   echo "====> Creating openshift-operators-redhat Namespace and OperatorGroup"
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
 
+  echo "====> Check the OCP release version:"
+  oc_minor_version=$(oc get clusterversion --no-headers | awk '{ print $2 }' | cut -d'.' -f2 -)
+
+  if [[ $(($oc_minor_version)) -ge 14 ]];
+  then
+    loki_channel="stable-6.0" ; echo "=====> Deploying the Loki with stable-6.0 channel..."
+  else
+    loki_channel="stable" ; echo "=====> Deploying the Loki with the stable channel..."
+  fi
+
   echo "====> Creating netobserv-downstream-testing CatalogSource (if applicable) and Loki Operator Subscription"
   if [[ $LOKI_OPERATOR == "Released" ]]; then
-    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
+    oc process --ignore-unknown-parameters=true -f $SCRIPTS_DIR/loki/loki-subscription-template.yaml -p LOKI_CHANNEL=$loki_channel -p SOURCE=redhat-operators -o yaml > /tmp/loki-released-subscription.yaml
+    oc apply -f /tmp/loki-released-subscription.yaml -n openshift-operators-redhat
   elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
     deploy_downstream_catalogsource
-    oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
+    oc process --ignore-unknown-parameters=true -f $SCRIPTS_DIR/loki/loki-subscription-template.yaml -p LOKI_CHANNEL=$loki_channel -p SOURCE=netobserv-downstream-testing -o yaml > /tmp/loki-unreleased-subscription.yaml
+    oc apply -f /tmp/loki-unreleased-subscription.yaml -n openshift-operators-redhat
   else
     echo "====> No Loki Operator config was found - using 'Released'"
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
