@@ -135,7 +135,10 @@ deploy_lokistack() {
   echo "====> Creating S3 secret for Loki"
   $SCRIPTS_DIR/deploy-loki-aws-secret.sh $S3_BUCKET_NAME
   sleep 60
-  oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat
+  while :; do
+    oc wait --timeout=180s --for=condition=ready pod -l app.kubernetes.io/name=loki-operator -n openshift-operators-redhat && break
+    sleep 1
+  done
 
   echo "====> Determining LokiStack config"
   if [[ $LOKISTACK_SIZE == "1x.demo" ]]; then
