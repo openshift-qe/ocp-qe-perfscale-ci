@@ -888,7 +888,6 @@ pipeline {
                                     baselineReturnCode = sh(returnStatus: true, script: """
                                             source $WORKSPACE/ocp-qe-perfscale-ci/scripts/run_py_scripts.sh
                                             run_comparison
-                                        )
                                     """)
 
                                     if(fileExists("${BENCHMARK_COMP_LOG}")){
