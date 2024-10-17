@@ -118,6 +118,11 @@ def get_multiaz(yaml_file):
     return "true"
 
 
+def get_profile(yaml_file):
+    if "cluster_profile" in yaml_file['steps'].keys():      
+        return yaml_file['steps']['cluster_profile']
+    return "no profile"
+
 def get_cloud_type(yaml_file):
     
     if  "workflow" in yaml_file['steps'].keys(): 
@@ -220,7 +225,8 @@ def test_profile(folder_path, fileName):
 
             worker_size = get_worker_type(test)
             profile_set = get_profile_type(test)
-            row = [test['as'], type, arch_type, version, stream, worker_count, worker_size, profile_set, '"' + cron_cadence +'"', cron_in_words, job_url]
+            profile_name = get_profile(test)
+            row = [test['as'], profile_name, type, arch_type, version, stream, worker_count, worker_size, profile_set, '"' + cron_cadence +'"', cron_in_words, job_url]
             final_row.append(row)
     return final_row
 
@@ -249,6 +255,7 @@ invoke("mkdir release_master")
 invoke("cd release_master; git clone https://github.com/openshift/release.git --depth=1")
 jobs_folder_path=f"./release_master/release/ci-operator/config/{jobs_folder_location}"
 
+
 # Check if the folder exists
 if os.path.exists(jobs_folder_path) and os.path.isdir(jobs_folder_path):
     # Check if the folder is not empty
@@ -264,7 +271,7 @@ else:
 file_names = invoke("ls " + jobs_folder_path)
 
 all_rows = []
-all_rows.append(["Test Name", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", "Profile", 'Cron Cadence', "Cron In Words", "Job history Url"])
+all_rows.append(["Test Name", "Profile", "Cloud Type", "Arch Type", "Version", "Stream type", "Worker_count", "Worker Size", "Profile", 'Cron Cadence', "Cron In Words", "Job history Url"])
 for file_name in file_names.split():
     if file_name != "OWNERS":
         print("file name " + str(file_name))
