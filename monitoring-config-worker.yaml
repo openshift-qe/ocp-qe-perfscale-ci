@@ -3,34 +3,21 @@ kind: ConfigMap
 data:
   config.yaml: |
     prometheusOperator:
-      baseImage: quay.io/coreos/prometheus-operator
-      prometheusConfigReloaderBaseImage: quay.io/coreos/prometheus-config-reloader
-      configReloaderBaseImage: quay.io/coreos/configmap-reload
       nodeSelector:
         node-role.kubernetes.io/worker: ""
     prometheusK8s:
       retention: ${OPENSHIFT_PROMETHEUS_RETENTION_PERIOD}
-      baseImage: openshift/prometheus
       nodeSelector:
         node-role.kubernetes.io/worker: ""
     alertmanagerMain:
-      baseImage: openshift/prometheus-alertmanager
       nodeSelector:
         node-role.kubernetes.io/worker: ""
-    nodeExporter:
-      baseImage: openshift/prometheus-node-exporter
-    kubeRbacProxy:
-      baseImage: quay.io/coreos/kube-rbac-proxy
     kubeStateMetrics:
-      baseImage: quay.io/coreos/kube-state-metrics
       nodeSelector:
         node-role.kubernetes.io/worker: ""
     grafana:
-      baseImage: grafana/grafana
       nodeSelector:
         node-role.kubernetes.io/worker: ""
-    auth:
-      baseImage: openshift/oauth-proxy
     k8sPrometheusAdapter:
       nodeSelector:
         node-role.kubernetes.io/worker: ""

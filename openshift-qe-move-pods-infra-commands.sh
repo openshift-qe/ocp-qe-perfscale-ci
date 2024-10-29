@@ -225,7 +225,6 @@ metadata:
 data:
   config.yaml: |+
     alertmanagerMain:
-      baseImage: openshift/prometheus-alertmanager
       nodeSelector: 
         node-role.kubernetes.io/infra: ""
       tolerations:
@@ -236,7 +235,6 @@ data:
         value: reserved
         effect: NoExecute
     prometheusK8s:
-      baseImage: openshift/prometheus
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       tolerations:
@@ -247,9 +245,6 @@ data:
         value: reserved
         effect: NoExecute
     prometheusOperator:
-      baseImage: quay.io/coreos/prometheus-operator
-      prometheusConfigReloaderBaseImage: quay.io/coreos/prometheus-config-reloader
-      configReloaderBaseImage: quay.io/coreos/configmap-reload
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       tolerations:
@@ -259,14 +254,9 @@ data:
       - key: node-role.kubernetes.io/infra
         value: reserved
         effect: NoExecute
-    nodeExporter:
-      baseImage: openshift/prometheus-node-exporter
-    kubeRbacProxy:
-      baseImage: quay.io/coreos/kube-rbac-proxy
-    grafana:
-      baseImage: grafana/grafana
-    auth:
-      baseImage: openshift/oauth-proxy
+    metricsServer:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
     k8sPrometheusAdapter:
       nodeSelector:
         node-role.kubernetes.io/infra: ""
@@ -278,7 +268,6 @@ data:
         value: reserved
         effect: NoExecute
     kubeStateMetrics:
-      baseImage: quay.io/coreos/kube-state-metrics
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       tolerations:
@@ -332,7 +321,6 @@ metadata:
 data:
   config.yaml: |+
     alertmanagerMain:
-      baseImage: openshift/prometheus-alertmanager
       nodeSelector: 
         node-role.kubernetes.io/infra: ""
       volumeClaimTemplate:
@@ -350,7 +338,6 @@ data:
         effect: NoExecute
     prometheusK8s:
       retention: ${OPENSHIFT_PROMETHEUS_RETENTION_PERIOD}
-      baseImage: openshift/prometheus
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       volumeClaimTemplate:
@@ -367,9 +354,6 @@ data:
         value: reserved
         effect: NoExecute
     prometheusOperator:
-      baseImage: quay.io/coreos/prometheus-operator
-      prometheusConfigReloaderBaseImage: quay.io/coreos/prometheus-config-reloader
-      configReloaderBaseImage: quay.io/coreos/configmap-reload
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       tolerations:
@@ -379,14 +363,9 @@ data:
       - key: node-role.kubernetes.io/infra
         value: reserved
         effect: NoExecute
-    nodeExporter:
-      baseImage: openshift/prometheus-node-exporter
-    kubeRbacProxy:
-      baseImage: quay.io/coreos/kube-rbac-proxy
-    grafana:
-      baseImage: grafana/grafana
-    auth:
-      baseImage: openshift/oauth-proxy
+    metricsServer:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
     k8sPrometheusAdapter:
       nodeSelector:
         node-role.kubernetes.io/infra: ""
@@ -398,7 +377,6 @@ data:
         value: reserved
         effect: NoExecute
     kubeStateMetrics:
-      baseImage: quay.io/coreos/kube-state-metrics
       nodeSelector:
         node-role.kubernetes.io/infra: ""
       tolerations:
