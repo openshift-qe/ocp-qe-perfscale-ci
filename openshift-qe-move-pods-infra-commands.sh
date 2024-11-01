@@ -483,7 +483,7 @@ echo "Final check - Check if all pods to be settle"
 sleep 5
 max_retries=30
 retry_times=1
-while [[ $(oc get pods --no-headers -n openshift-monitoring | grep -Pv "(Completed|Running)" | wc -l) != "0" ]];
+while [[ $(oc get pods --no-headers -n openshift-monitoring | grep -Ev "(Completed|Running)" | wc -l | xargs) != "0" ]];
 do
     echo -n "." && sleep 5; 
     if [[ $retry_times -le $max_retries ]];then
