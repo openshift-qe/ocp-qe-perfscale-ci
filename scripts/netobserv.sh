@@ -6,9 +6,10 @@ export DEFAULT_SC=$(oc get storageclass -o=jsonpath='{.items[?(@.metadata.annota
 deploy_netobserv() {
   echo "====> Deploying NetObserv"
   if [[ -z $INSTALLATION_SOURCE ]]; then
-    echo "Please set INSTALLATION_SOURCE env variable to either 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function"
-    echo "Don't forget to source 'netobserv.sh' again after doing so!"
-    exit 1
+    echo "INSTALLATION_SOURCE env variable is unset. Either it can be set to 'Official', 'Internal', 'OperatorHub', or 'Source' if you intend to use the 'deploy_netobserv' function". Default is 'Internal'
+    echo "Using 'Internal' as INSTALLATION_SOURCE"
+    NOO_SUBSCRIPTION=netobserv-internal-subscription.yaml
+    deploy_downstream_catalogsource
   elif [[ $INSTALLATION_SOURCE == "Official" ]]; then
     echo "Using 'Official' as INSTALLATION_SOURCE"
     NOO_SUBSCRIPTION=netobserv-official-subscription.yaml
@@ -47,7 +48,6 @@ deploy_netobserv() {
 }
 
 createFlowCollector() {
-  set -x
   templateParams=$*
   echo "====> Creating Flow Collector"
   oc process --ignore-unknown-parameters=true -f "$SCRIPTS_DIR"/netobserv/flows_v1beta2_flowcollector.yaml $templateParams -n default -o yaml >/tmp/flowcollector.yaml
@@ -172,9 +172,11 @@ deploy_downstream_catalogsource() {
 
   echo "====> Determining CatalogSource config"
   if [[ -z $DOWNSTREAM_IMAGE ]]; then
-    echo "====> No image config was found - cannot create CatalogSource"
-    echo "====> To set config, set DOWNSTREAM_IMAGE variable to desired endpoint"
-    exit 1
+    CLUSTER_VERSION=$(oc get clusterversion/version -o jsonpath='{.spec.channel}' | cut -d'-' -f 2)
+    export CLUSTER_VERSION
+    echo "====> No image config was found; will use quay.io/openshift-qe-optional-operators/aosqe-index:v${CLUSTER_VERSION} as index image"
+    DOWNSTREAM_IMAGE="quay.io/openshift-qe-optional-operators/aosqe-index:v${CLUSTER_VERSION}"
+    export DOWNSTREAM_IMAGE
   else
     echo "====> Using image $DOWNSTREAM_IMAGE for CatalogSource"
   fi
