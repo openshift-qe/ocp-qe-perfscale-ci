@@ -486,7 +486,7 @@ retry_times=1
 while [[ $(oc get pods --no-headers -n openshift-monitoring | grep -Ev "(Completed|Running)" | wc -l | xargs) != "0" ]];
 do
     echo -n "." && sleep 5; 
-    if [[ $retry_times -le $max_retries ]];then
+    if [[ $retry_times -ge $max_retries ]];then
        echo "Some pods fail to startup in limit times, please check ..."
        exit 1
     fi
