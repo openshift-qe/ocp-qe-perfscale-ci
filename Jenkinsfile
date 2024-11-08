@@ -11,7 +11,7 @@ pipeline {
 
   parameters {
         string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number of job that has installed the cluster.')
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc48',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc417',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
  isn't stable<br>
@@ -23,6 +23,7 @@ pipeline {
         '''
         )
         booleanParam(name:'INFRA_NODES', defaultValue:true, description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
+        booleanParam(name:'IF_CREATE_WORKLOAD_NODE', defaultValue:true, description:'If set to true, creating workload machineset and nodes')
         booleanParam(name:'IF_MOVE_INGRESS', defaultValue:true, description:'If set to true, move ingress pod to infra nodes')
         booleanParam(name:'IF_MOVE_REGISTRY', defaultValue:true, description:'If set to true, move registry pod to infra nodes')
         booleanParam(name:'IF_MOVE_MONITORING', defaultValue:true, description:'If set to true, move monitoring pods to infra nodes')
