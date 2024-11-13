@@ -23,7 +23,7 @@ pipeline {
         '''
         )
         booleanParam(name:'INFRA_NODES', defaultValue:true, description:'If set to true, infra nodes machineset will be created, and options listed below will be used')
-        booleanParam(name:'IF_CREATE_WORKLOAD_NODE', defaultValue:true, description:'If set to true, creating workload machineset and nodes')
+        booleanParam(name:'IF_CREATE_WORKLOAD_NODE', defaultValue:false, description:'If set to true, creating workload machineset and nodes')
         booleanParam(name:'IF_MOVE_INGRESS', defaultValue:true, description:'If set to true, move ingress pod to infra nodes')
         booleanParam(name:'IF_MOVE_REGISTRY', defaultValue:true, description:'If set to true, move registry pod to infra nodes')
         booleanParam(name:'IF_MOVE_MONITORING', defaultValue:true, description:'If set to true, move monitoring pods to infra nodes')
@@ -41,27 +41,18 @@ pipeline {
                OPENSHIFT_INFRA_NODE_VOLUME_IOPS=0            <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=gp2          <br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100          <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_IOPS=0         <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2       <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500       <br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=gp2        <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=gp2      <br>
                e.g. <b>for Azure:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128                <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS        <br>
                OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3       <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500             <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS     <br>
-               OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3    <br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=managed-csi  <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=managed-csi<br>
                e.g.<b>for GCP:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100    <br>
                OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd <br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64 <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500 <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd <br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32 <br>
                GCP_PROJECT=openshift-qe <br>
                GCP_SERVICE_ACCOUNT_EMAIL=openshift-qe.iam.gserviceaccount.com <br>
                e.g. <b>for vSphere:</b><br>
@@ -71,30 +62,20 @@ pipeline {
                OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
                OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment<br>
                OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500<br>
-               OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=32<br>
-               OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072<br>
-               OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2<br>
-               OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment<br>
                e.g. <b>for Alicloud:</b><br>
                OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100 <br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ecs.g6.13xlarge <br>
-               OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500 <br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ecs.g6.8xlarge <br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=alicloud-disk <br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=alicloud-disk <br>
                e.g. <b>for Ibmcloud:</b><br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=bx2d-48x192<br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128<br>
                OPENSHIFT_PROMETHEUS_STORAGE_CLASS=ibmc-vpc-block-5iops-tier<br>
                OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier<br>
                e.g. <b>for OSP:</b><br>
                OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.cpu.xxxl<br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.cpu.xxl<br>
                e.g. <b>for Nutanix:</b><br>
                OPENSHIFT_INFRA_NODE_INSTANCE_VCPU=16<br>
                OPENSHIFT_INFRA_NODE_INSTANCE_MEMORYSIZE=64Gi<br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_VCPU=16<br>
-               OPENSHIFT_WORKLOAD_NODE_INSTANCE_MEMORYSIZE=64Gi<br>
                <b>And ALWAYS INCLUDE(except for vSphere provider or Nutanix install without storageclass) this part, for Prometheus AlertManager, it may look like</b>:<br>
                OPENSHIFT_PROMETHEUS_RETENTION_PERIOD=15d<br>
                OPENSHIFT_PROMETHEUS_STORAGE_SIZE=50Gi  <br>
