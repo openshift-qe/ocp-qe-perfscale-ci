@@ -16,6 +16,8 @@ pipeline {
         def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
         def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
         def templateParams = ''
+        def ingressWorkloadJob = ''
+        def kubeburnerWorkloadJob = ''
     }
 
     // job runs on specified agent
@@ -25,6 +27,7 @@ pipeline {
     options {
         timeout(time: 6, unit: 'HOURS')
         ansiColor('xterm')
+        parallelsAlwaysFailFast()
     }
 
     // job parameters
@@ -62,8 +65,8 @@ pipeline {
         )
         booleanParam(
             name: 'INFRA_WORKLOAD_INSTALL',
-            defaultValue: false,
-            description: 'Install workload and infrastructure nodes even if less than 50 nodes'
+            defaultValue: true,
+            description: 'Install workload and infrastructure nodes; required for ingress-perf. Uncheck if you already have infra nodes in your cluster'
         )
         booleanParam(
             name: 'INSTALL_DITTYBOPPER',
@@ -207,9 +210,9 @@ pipeline {
             defaultValue: '',
             description: '''
                 Replicas should be at least half the number of Kafka TOPIC_PARTITIONS and should not exceed number of TOPIC_PARTITIONS or number of nodes:<br/>
-                <b>Leave this empty if you're triggering standard perf-workloads, default of 6, 12 and 18 FLP_KAFKA_REPLICAS will be used for node-density-heavy, ingress-perf and cluster-density-v2 workloads respectively</b><br/>
+                <b>Leave this empty if you're triggering standard perf-workloads, default of 6 and 18 FLP_KAFKA_REPLICAS will be used for node-density-heavy and cluster-density-v2 workloads respectively</b><br/>
                 3 - for non-perf testing environments<br/>
-                <b>Use this field to overwrite default FLP_KAFKA_REPLICAS</b><br/>
+                <b>Use this field to overwrite default FLP_KAFKA_REPLICAS, for e.g. when triggering for ingress-perf workload</b><br/>
             '''
         )
         separator(
@@ -227,10 +230,15 @@ pipeline {
             description: '''
                 Workload to run on Netobserv-enabled cluster<br/>
                 "cluster-density-v2" and "node-density-heavy" options will trigger "kube-burner-ocp" job<br/>
-                "ingress-perf" will trigger "ingress-perf" job<br/>
+                "ingress-perf" will always run with node-density-heavy and cluster-density-v2 workloads. If only ingress-perf workload needs to be run, select that option.<br/>
                 "None" will run no workload<br/>
                 For additional guidance on configuring workloads, see <a href=https://docs.google.com/spreadsheets/d/1DdFiJkCMA4c35WQT2SWXbdiHeCCcAZYjnv6wNpsEhIA/edit?usp=sharing#gid=1506806462>here</a>
             '''
+        )
+        booleanParam(
+            name: 'RUN_INGRESS_PERF_IN_PARALLEL',
+            defaultValue: true,
+            description: 'Uncheck this box if you want to disable running ingress-perf workload in parallel to node-density-heavy or cluster-density-v2 workload'
         )
         string(
             name: 'VARIABLE',
@@ -511,15 +519,15 @@ pipeline {
                         if (params.OPERATOR_PREMERGE_OVERRIDE != '') {
                             env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
                             env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
-                            NOO_BUNDLE_VERSION="v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
+                            env.NOO_BUNDLE_VERSION="v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
                         }
                         else {
                             env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
                             env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
-                            NOO_BUNDLE_VERSION="v0.0.0-main"
+                            env.NOO_BUNDLE_VERSION="v0.0.0-main"
                         }
-                        println("Using NOO Bundle version: ${NOO_BUNDLE_VERSION}")
-                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
+                        println("Using NOO Bundle version: ${env.NOO_BUNDLE_VERSION}")
+                        currentBuild.description += "NetObserv Bundle Version: <b>${env.NOO_BUNDLE_VERSION}</b><br/>"
                     }
                     // attempt installation of Network Observability from selected source
                     println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")
@@ -601,12 +609,13 @@ pipeline {
                     sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
                 }
                 script {
-                    NOO_BUNDLE_VERSION=sh(returnStdout: true, script: """
+                    env.NOO_BUNDLE_VERSION=sh(returnStdout: true, script: """
                         $WORKSPACE/ocp-qe-perfscale-ci/scripts/build_info.sh
                         """).trim()
-                    if (NOO_BUNDLE_VERSION != '') {
-                        println("Found NOO Bundle version: ${NOO_BUNDLE_VERSION}")
-                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
+                    if (env.NOO_BUNDLE_VERSION != '') {
+                        println("Found NOO Bundle version: ${env.NOO_BUNDLE_VERSION}")
+
+                        currentBuild.description += "NetObserv Bundle Version: <b>${env.NOO_BUNDLE_VERSION}</b><br/>"
                     }
                     else {
                         println("Failed to find NOO_BUNDLE_VERSION :(, comparison may not have context and may use UUID")
@@ -688,79 +697,87 @@ pipeline {
                 }
             }
         }
-        stage('Run Workload') {
+        stage('Run kube-burner and ingress-perf workload parallel') {
             when {
                 expression { params.WORKLOAD != 'None' }
             }
-            steps {
-                script {
-                    // set build name and remove previous artifacts
-                    currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
-                    sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
-                    // build workload job based off selected workload
-                    if (params.WORKLOAD == 'ingress-perf') {
-                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
-                        workloadJob = build job: env.JENKINS_JOB, parameters: [
-                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
-                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
-                            booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
-                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
-                        ]
+            parallel {
+                stage('kube-burner workload'){
+                    when {
+                        expression { params.WORKLOAD != 'ingress-perf' }
                     }
-                    else {
-                        env.JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp'
-                        workloadJob = build job: env.JENKINS_JOB, parameters: [
-                            string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
-                            string(name: 'WORKLOAD', value: params.WORKLOAD),
-                            booleanParam(name: 'CLEANUP', value: true),
-                            booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
-                            booleanParam(name: 'MUST_GATHER', value: true),
-                            string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
-                            string(name: 'VARIABLE', value: params.VARIABLE), 
-                            string(name: 'NODE_COUNT', value: params.NODE_COUNT),
-                            booleanParam(name: 'GEN_CSV', value: false),
-                            string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
-                            string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
-                            string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
-                        ]
-                    }
-                    // fail pipeline if workload failed
-                    if (workloadJob.result != 'SUCCESS') {
-                        error('Workload job failed :(')
-                    }
-                    // otherwise continue and update build description with workload job link
-                    else {
-                        println("Successfully ran workload job :)")
-                        env.JENKINS_BUILD = "${workloadJob.getNumber()}"
-                        currentBuild.description += "Workload Job: <b><a href=${workloadJob.absoluteUrl}>${env.JENKINS_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
+                    steps {
+                        script {
+                            // set build name and remove previous artifacts
+                            currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
+                            sh(script: "rm -rf $WORKSPACE/workload-artifacts/*.json")
+                            env.WORKLOAD_JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/kube-burner-ocp'
+                            // remove this and have it true by default once 
+                            // CHURN is supported for node-density-heavy
+                            if (params.WORKLOAD == "cluster-density-v2") {
+                                env.CHURN = true
+                            }
+                            else {
+                                env.CHURN = false
+                            }
+                            kubeburnerWorkloadJob = build job: env.WORKLOAD_JENKINS_JOB, parameters: [
+                                string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                                string(name: 'WORKLOAD', value: params.WORKLOAD),
+                                booleanParam(name: 'CLEANUP', value: true),
+                                booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                                booleanParam(name: 'MUST_GATHER', value: true),
+                                string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                                booleanParam(name: 'CHURN', value: env.CHURN),
+                                string(name: 'VARIABLE', value: params.VARIABLE), 
+                                string(name: 'NODE_COUNT', value: params.NODE_COUNT),
+                                booleanParam(name: 'GEN_CSV', value: false),
+                                string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                                string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                                string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
+                            ]
+                        }
                     }
                 }
-                // copy artifacts from workload job
-                copyArtifacts(
-                    fingerprintArtifacts: true, 
-                    projectName: env.JENKINS_JOB,
-                    selector: specific(env.JENKINS_BUILD),
-                    target: 'workload-artifacts',
-                    flatten: true
-                )
+                stage('Ingress-perf workload'){
+                    when {
+                        expression { params.RUN_INGRESS_PERF_IN_PARALLEL == true || params.WORKLOAD == 'ingress-perf'}
+                    }
+                    steps {
+                        script {
+                            env.INGRESSPERF_JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
+                            // sleep 10 minutes after triggering kube-burner workload.
+                            if (params.WORKLOAD != 'ingress-perf') {
+                                sleep 600
+                            }
+                            else {
+                                // for nope tool
+                                env.WORKLOAD_JENKINS_JOB = env.INGRESSPERF_JENKINS_JOB
+                                currentBuild.displayName = "${currentBuild.displayName}-${params.WORKLOAD}"
+                            }
+                            env.INGRESSPERF_JENKINS_JOB = 'scale-ci/e2e-benchmarking-multibranch-pipeline/ingress-perf'
+                            ingressWorkloadJob = build job: env.INGRESSPERF_JENKINS_JOB, parameters: [
+                                string(name: 'BUILD_NUMBER', value: params.FLEXY_BUILD_NUMBER),
+                                booleanParam(name: 'CERBERUS_CHECK', value: params.CERBERUS_CHECK),
+                                booleanParam(name: 'MUST_GATHER', value: true),
+                                string(name: 'IMAGE', value: NETOBSERV_MUST_GATHER_IMAGE),
+                                string(name: 'JENKINS_AGENT_LABEL', value: params.JENKINS_AGENT_LABEL),
+                                booleanParam(name: 'GEN_CSV', value: false),
+                                string(name: 'E2E_BENCHMARKING_REPO', value: params.E2E_BENCHMARKING_REPO),
+                                string(name: 'E2E_BENCHMARKING_REPO_BRANCH', value: params.E2E_BENCHMARKING_REPO_BRANCH)
+                            ]
+                        }
+                    }
+                    
+                }
+            }
+        }
+        stage('Capture workload results'){
+            when {
+                expression { params.WORKLOAD != 'None'}
+            }
+            steps {
                 script {
-                    // set new env vars from workload 'index_data' JSON file and update build description fields
-                    workloadInfo = readJSON(file: "$WORKSPACE/workload-artifacts/index_data.json")
-                    workloadInfo.each { env.setProperty(it.key.toUpperCase(), it.value) }
-                    // UUID
-                    currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
-                    // STARTDATE is string rep of start time
-                    currentBuild.description += "<b>STARTDATE:</b> ${env.STARTDATE}<br/>"
-                    // ENDDATE is string rep of end time
-                    currentBuild.description += "<b>ENDDATE:</b> ${env.ENDDATE}<br/>"
-                    // STARTDATEUNIXTIMESTAMP is unix timestamp of start time
-                    currentBuild.description += "<b>STARTDATEUNIXTIMESTAMP:</b> ${env.STARTDATEUNIXTIMESTAMP}<br/>"
-                    // ENDDATEUNIXTIMESTAMP is unix timestamp of end time
-                    currentBuild.description += "<b>ENDDATEUNIXTIMESTAMP:</b> ${env.ENDDATEUNIXTIMESTAMP}<br/>"
+                    captureWorkloadResults()
                 }
             }
         }
@@ -771,12 +788,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'elasticsearch-perfscale-ocp-qe', usernameVariable: 'ES_USERNAME', passwordVariable: 'ES_PASSWORD')]) {
                     script {
-                        echo "NOO_BUNDLE_VERSION: ${NOO_BUNDLE_VERSION}"
-                        env.NOO_BUNDLE_VERSION=NOO_BUNDLE_VERSION
                         // construct arguments for NOPE tool and execute
-                        NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid ${env.UUID}"
-                        if (NOO_BUNDLE_VERSION != ''){
-                            NOPE_ARGS += " --noo-bundle-version ${NOO_BUNDLE_VERSION}"
+                        NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $WORKLOAD_JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid ${env.UUID}"
+                        if (env.NOO_BUNDLE_VERSION){
+                            echo "NOO_BUNDLE_VERSION: ${env.NOO_BUNDLE_VERSION}"
+                            NOPE_ARGS += " --noo-bundle-version ${env.NOO_BUNDLE_VERSION}"
                         }
                         if (params.NOPE_DUMP_ONLY == true) {
                             NOPE_ARGS += " --dump-only"
@@ -1055,9 +1071,6 @@ def setKafkaReplicas(){
         if (params.WORKLOAD == 'node-density-heavy') {
             env.FLP_KAFKA_REPLICAS = '6'
         }
-        else if (params.WORKLOAD == 'ingress-perf') {
-            env.FLP_KAFKA_REPLICAS = '12'
-        }
         else if (params.WORKLOAD == 'cluster-density-v2') {
             env.FLP_KAFKA_REPLICAS = '18'
         }
@@ -1086,4 +1099,91 @@ def setTemplateParams(){
         templateParams += "LokiEnable=false "
     }
     return templateParams
+}
+
+def captureWorkloadResults(){
+    def UUID = ''
+    def JENKINS_BUILD = ''
+
+    if (params.WORKLOAD != 'ingress-perf'){
+        // fail pipeline if workload failed
+        if (kubeburnerWorkloadJob.result != 'SUCCESS') {
+            unstable('kube-burner workload job failed :(')
+        }
+        else {
+            println("Successfully ran workload job :)")
+            env.KUBEBURNER_BUILD = "${kubeburnerWorkloadJob.getNumber()}"
+            currentBuild.description += "Kube-burner workload Job: <b><a href=${kubeburnerWorkloadJob.absoluteUrl}>${env.KUBEBURNER_BUILD}</a></b> (workload <b>${params.WORKLOAD}</b> was run)<br/>"
+        }
+        // copy artifacts from kube-burner-workload job
+        copyArtifacts fingerprintArtifacts: true, projectName: env.WORKLOAD_JENKINS_JOB, selector: specific(env.KUBEBURNER_BUILD), target: 'kube-burner-workload-artifacts', flatten: true
+
+        kubeburnerWorkloadInfo = readJSON(file: "$WORKSPACE/kube-burner-workload-artifacts/index_data.json")
+        kubeburnerStarttime = kubeburnerWorkloadInfo.startDateUnixTimestamp
+        kubeburnerEndtime = kubeburnerWorkloadInfo.endDateUnixTimestamp
+        UUID=kubeburnerWorkloadInfo.uuid
+        JENKINS_BUILD = "${kubeburnerWorkloadJob.getNumber()}"
+    }
+
+     // if ingress-perf was run at all.
+    if (params.RUN_INGRESS_PERF_IN_PARALLEL || params.WORKLOAD == 'ingress-perf'){
+            // fail pipeline if ingress-perf workload failed
+        if (ingressWorkloadJob.result != 'SUCCESS') {
+            unstable('ingress-perf workload job failed :(')
+        }
+        else {
+            // otherwise continue and update build description with workload job link
+            println("Successfully ran workload job :)")
+            env.INGRESSPERF_BUILD = "${ingressWorkloadJob.getNumber()}"
+            currentBuild.description += "Ingress perf workload Job: <b><a href=${ingressWorkloadJob.absoluteUrl}>${env.INGRESSPERF_BUILD}</a></b><br/>"
+        }
+        // copy artifacts from ingress-perf job
+        copyArtifacts fingerprintArtifacts: true, projectName: env.INGRESSPERF_JENKINS_JOB, selector: specific(env.INGRESSPERF_BUILD), target: 'ingressperf-workload-artifacts', flatten: true
+
+        ingressperfWorkloadInfo = readJSON(file: "$WORKSPACE/ingressperf-workload-artifacts/index_data.json")
+        ingressperfStarttime = ingressperfWorkloadInfo.startDateUnixTimestamp
+        ingressperfEndtime = ingressperfWorkloadInfo.endDateUnixTimestamp
+        if (params.WORKLOAD == 'ingress-perf'){
+            UUID=ingressperfWorkloadInfo.uuid
+            JENKINS_BUILD = "${ingressperfWorkloadInfo.getNumber()}"
+        }
+    }
+    
+    // evaluate workload start time and end times
+    def START_TIME = ''
+    def END_TIME = ''
+    if (params.RUN_INGRESS_PERF_IN_PARALLEL) {
+        // use earliest start time
+        if (ingressperfStarttime < kubeburnerStarttime) {
+            START_TIME = ingressperfStarttime
+        }
+        else {
+            START_TIME = kubeburnerStarttime
+        }
+        // use latest end time
+        if (ingressperfEndtime > kubeburnerEndtime){
+            END_TIME = ingressperfEndtime
+        }
+        else {
+            END_TIME = kubeburnerEndtime
+        }
+    }
+    else {
+        if (params.WORKLOAD == 'ingress-perf') {
+            START_TIME = ingressperfStarttime
+            END_TIME = ingressperfEndtime
+        }
+        else {
+            START_TIME = kubeburnerStarttime
+            END_TIME = kubeburnerEndtime
+        }
+    }
+
+    env.UUID = UUID
+    env.JENKINS_BUILD = JENKINS_BUILD
+    env.STARTDATEUNIXTIMESTAMP = START_TIME
+    env.ENDDATEUNIXTIMESTAMP = END_TIME
+    currentBuild.description += "<b>UUID:</b> ${env.UUID}<br/>"
+    currentBuild.description += "<b>STARTDATEUNIXTIMESTAMP:</b> ${env.STARTDATEUNIXTIMESTAMP}<br/>"
+    currentBuild.description += "<b>ENDDATEUNIXTIMESTAMP:</b> ${env.ENDDATEUNIXTIMESTAMP}<br/>"
 }
