@@ -12,7 +12,10 @@ if (userId) {
 
 pipeline {
     environment {
-        def NOO_BUNDLE_VERSION = ''
+        // environment variable declared here will retain its values  
+        // through all stages when accessesed as ${env.VAR} 
+        // If the env var values are updated during the stages it should be accessed as ${VAR}
+        NOO_BUNDLE_VERSION = null
         def BENCHMARK_CSV_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_csv.log"
         def BENCHMARK_COMP_LOG = "$WORKSPACE/e2e-benchmarking/benchmark_comp.log"
         def templateParams = ''
@@ -190,8 +193,8 @@ pipeline {
         )
         booleanParam(
             name: 'EBPF_PRIVILEGED',
-            defaultValue: false,
-            description: 'Check this box to run ebpf-agent in privileged mode'
+            defaultValue: true,
+            description: 'Uncheck this box to run ebpf-agent in unprivileged mode'
         )
         booleanParam(
             name: 'ENABLE_KAFKA',
@@ -519,15 +522,15 @@ pipeline {
                         if (params.OPERATOR_PREMERGE_OVERRIDE != '') {
                             env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
                             env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
-                            env.NOO_BUNDLE_VERSION="v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
+                            NOO_BUNDLE_VERSION="v0.0.0-${OPERATOR_PREMERGE_OVERRIDE}"
                         }
                         else {
                             env.UPSTREAM_IMAGE = "quay.io/netobserv/network-observability-operator-catalog:v0.0.0-main"
                             env.CATALOG_IMAGE=env.UPSTREAM_IMAGE
-                            env.NOO_BUNDLE_VERSION="v0.0.0-main"
+                            NOO_BUNDLE_VERSION="v0.0.0-main"
                         }
-                        println("Using NOO Bundle version: ${env.NOO_BUNDLE_VERSION}")
-                        currentBuild.description += "NetObserv Bundle Version: <b>${env.NOO_BUNDLE_VERSION}</b><br/>"
+                        println("Using NOO Bundle version: ${NOO_BUNDLE_VERSION}")
+                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
                     }
                     // attempt installation of Network Observability from selected source
                     println("Installing Network Observability from ${params.INSTALLATION_SOURCE}...")
@@ -609,13 +612,14 @@ pipeline {
                     sh 'podman login -u $REG_STAGE_USER -p $REG_STAGE_PASSWORD registry.stage.redhat.io'
                 }
                 script {
-                    env.NOO_BUNDLE_VERSION=sh(returnStdout: true, script: """
+                    BUNDLE_VERSION=sh(returnStdout: true, script: """
                         $WORKSPACE/ocp-qe-perfscale-ci/scripts/build_info.sh
                         """).trim()
-                    if (env.NOO_BUNDLE_VERSION != '') {
-                        println("Found NOO Bundle version: ${env.NOO_BUNDLE_VERSION}")
-
-                        currentBuild.description += "NetObserv Bundle Version: <b>${env.NOO_BUNDLE_VERSION}</b><br/>"
+                    if (BUNDLE_VERSION != '') {
+                        println("Found NOO Bundle version: ${BUNDLE_VERSION}")
+                        NOO_BUNDLE_VERSION = "${BUNDLE_VERSION}"
+        
+                        currentBuild.description += "NetObserv Bundle Version: <b>${NOO_BUNDLE_VERSION}</b><br/>"
                     }
                     else {
                         println("Failed to find NOO_BUNDLE_VERSION :(, comparison may not have context and may use UUID")
@@ -790,9 +794,9 @@ pipeline {
                     script {
                         // construct arguments for NOPE tool and execute
                         NOPE_ARGS = "--starttime $STARTDATEUNIXTIMESTAMP --endtime $ENDDATEUNIXTIMESTAMP --jenkins-job $WORKLOAD_JENKINS_JOB --jenkins-build $JENKINS_BUILD --uuid ${env.UUID}"
-                        if (env.NOO_BUNDLE_VERSION){
-                            echo "NOO_BUNDLE_VERSION: ${env.NOO_BUNDLE_VERSION}"
-                            NOPE_ARGS += " --noo-bundle-version ${env.NOO_BUNDLE_VERSION}"
+                        if ("${NOO_BUNDLE_VERSION}" != 'null'){
+                            echo "NOO_BUNDLE_VERSION: ${NOO_BUNDLE_VERSION}"
+                            NOPE_ARGS += " --noo-bundle-version ${NOO_BUNDLE_VERSION}"
                         }
                         if (params.NOPE_DUMP_ONLY == true) {
                             NOPE_ARGS += " --dump-only"
@@ -1086,7 +1090,7 @@ def setTemplateParams(){
         templateParams += "DeploymentModel=Direct "
     }
     templateParams += "KafkaConsumerReplicas=${env.FLP_KAFKA_REPLICAS} "
-    if (params.EBPF_PRIVILEGED == true){
+    if (params.EBPF_PRIVILEGED == false){
         templateParams += "EBPFPrivileged=${params.EBPF_PRIVILEGED} "
     }
     if (params.EBPF_SAMPLING_RATE != ""){
