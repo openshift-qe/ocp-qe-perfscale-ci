@@ -44,7 +44,7 @@ pipeline {
             name: 'IF_CREATE_WORKLOAD_NODE', 
             defaultValue: false, 
             description: 'If set to true, create workload nodes'
-        )        
+        )
         booleanParam(
             name: 'IF_MOVE_INGRESS',
             defaultValue: true,
