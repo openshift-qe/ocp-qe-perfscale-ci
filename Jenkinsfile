@@ -41,6 +41,11 @@ pipeline {
             description: 'Install workload and infrastructure nodes even if less than 50 nodes'
         )
         booleanParam(
+            name: 'IF_CREATE_WORKLOAD_NODE', 
+            defaultValue: false, 
+            description: 'If set to true, create workload nodes'
+        )
+        booleanParam(
             name: 'IF_MOVE_INGRESS',
             defaultValue: true,
             description: '''
@@ -178,12 +183,12 @@ OPENSHIFT_ALERTMANAGER_STORAGE_SIZE=20Gi'''
               if(env.VARIABLES_LOCATION.indexOf("aws") != -1){
                 if (architecture_type.contains("arm64")) {
                       ENV_VARS += '''
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m6g.12xlarge
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m6g.8xlarge'''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m6g.4xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m6g.xlarge'''
               } else {
                   ENV_VARS += '''
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=m5.12xlarge
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.8xlarge'''
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=r5.4xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=m5.xlarge'''
               }
                 build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
                 string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
@@ -208,6 +213,15 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=gp2
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
                   ''')]
             }else if(env.VARIABLES_LOCATION.indexOf("azure") != -1){
+                if (architecture_type.contains("arm64")) {
+                      ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D16ps_v5
+OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D4ps_v5'''
+              } else {
+                  ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D16s_v3
+OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D4s_v3'''
+              }
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
@@ -219,18 +233,24 @@ OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
               booleanParam(name: 'INSTALL_DITTYBOPPER', value: INSTALL_DITTYBOPPER),
               string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
               string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
-              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
+              string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),              
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=128
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=Premium_LRS
-OPENSHIFT_INFRA_NODE_VM_SIZE=Standard_D48s_v3
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=managed-csi
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=managed-csi
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
-OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=Premium_LRS
-OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
               ''')]
             }else if(env.VARIABLES_LOCATION.indexOf("gcp") != -1){
+              if (architecture_type.contains("arm64")) {
+                      ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_VM_SIZE=t2a-standard-16
+OPENSHIFT_WORKLOAD_NODE_VM_SIZE=t2a-standard-4'''
+              } else {
+                  ENV_VARS += '''
+OPENSHIFT_INFRA_NODE_VM_SIZE=n1-standard-16
+OPENSHIFT_WORKLOAD_NODE_VM_SIZE=n1-standard-4'''
+              }              
               build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
               string(name: 'BUILD_NUMBER', value: BUILD_NUMBER), booleanParam(name: 'HOST_NETWORK_CONFIGS', value:false),
               string(name: 'PROVISION_OR_TEARDOWN', value: 'PROVISION'),
@@ -246,12 +266,11 @@ OPENSHIFT_WORKLOAD_NODE_VM_SIZE=Standard_D32s_v3
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_INFRA_NODE_VOLUME_TYPE=pd-ssd
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=n1-standard-64
 GCP_PROJECT=openshift-qe
 GCP_SERVICE_ACCOUNT_EMAIL=openshift-qe.iam.gserviceaccount.com
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
 OPENSHIFT_WORKLOAD_NODE_VOLUME_TYPE=pd-ssd
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32''')
+''')
                   ]
                 } else if(env.VARIABLES_LOCATION.indexOf("vsphere") != -1){
                   build job: 'scale-ci/e2e-benchmarking-multibranch-pipeline/cluster-post-config', parameters: [
@@ -266,15 +285,15 @@ OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=n1-standard-32''')
                       string(name: 'DITTYBOPPER_REPO', value: DITTYBOPPER_REPO),
                       string(name: 'DITTYBOPPER_REPO_BRANCH', value: DITTYBOPPER_REPO_BRANCH),
                       string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
-                      text(name: 'ENV_VARS', value: ENV_VARS + '''
+                      text(name: 'ENV_VARS', value: ENV_VARS + '''                    
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=120
-OPENSHIFT_INFRA_NODE_CPU_COUNT=48
-OPENSHIFT_INFRA_NODE_MEMORY_SIZE=196608
+OPENSHIFT_INFRA_NODE_CPU_COUNT=16
+OPENSHIFT_INFRA_NODE_MEMORY_SIZE=65536
 OPENSHIFT_INFRA_NODE_CPU_CORE_PER_SOCKET_COUNT=2
 OPENSHIFT_INFRA_NODE_NETWORK_NAME=qe-segment
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
-OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=32
-OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=131072
+OPENSHIFT_WORKLOAD_NODE_CPU_COUNT=4
+OPENSHIFT_WORKLOAD_NODE_MEMORY_SIZE=16384
 OPENSHIFT_WORKLOAD_NODE_CPU_CORE_PER_SOCKET_COUNT=2
 OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment''')]
             } else if(env.VARIABLES_LOCATION.indexOf("alicloud") != -1){
@@ -294,7 +313,7 @@ OPENSHIFT_WORKLOAD_NODE_NETWORK_NAME=qe-segment''')]
 OPENSHIFT_INFRA_NODE_VOLUME_SIZE=100
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ecs.g6.13xlarge
 OPENSHIFT_WORKLOAD_NODE_VOLUME_SIZE=500
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ecs.g6.8xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ecs.g6.xlarge
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=alicloud-disk
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=alicloud-disk
               ''')]
@@ -313,7 +332,7 @@ OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=alicloud-disk
               string(name: 'DITTYBOPPER_PARAMS', value: DITTYBOPPER_PARAMS),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
 OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=bx2d-48x192
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-32x128
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=bx2-4x16
 OPENSHIFT_PROMETHEUS_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
 OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
               ''')]
@@ -327,8 +346,8 @@ OPENSHIFT_ALERTMANAGER_STORAGE_CLASS=ibmc-vpc-block-5iops-tier
               booleanParam(name: 'IF_MOVE_MONITORING', value: IF_MOVE_MONITORING),
               booleanParam(name: 'IF_MOVE_REGISTRY', value: IF_MOVE_REGISTRY),
               text(name: 'ENV_VARS', value: ENV_VARS + '''
-OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.m5.xlarge
-OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.m5.large
+OPENSHIFT_INFRA_NODE_INSTANCE_TYPE=ci.m1.xlarge
+OPENSHIFT_WORKLOAD_NODE_INSTANCE_TYPE=ci.m1.xlarge
               ''')]
             }else {
             echo "Cloud type is not set up yet"
