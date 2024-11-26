@@ -19,7 +19,7 @@
   metricName: nWorkloadFlowsProcessedPerMinuteTotals
 
 # total bytes processed from workload namespaces by netobserv
-- query: sum(rate(netobserv_workload_ingress_bytes_total{DstK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*",DstK8S_Type!="Service"}[1m])*60)
+- query: sum(rate(netobserv_workload_ingress_bytes_total{DstK8S_Namespace=~"node-density-heavy.*|ingress-perf|cluster-density.*",SrcK8S_Type!="Service",DstK8S_Type!="Service"}[1m])*60)
   metricName: nWorkloadBytesProcessedPerMinuteNetobserv
 
 # total bytes processed from workload namespaces by cadvisor / other means
