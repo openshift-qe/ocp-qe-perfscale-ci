@@ -176,15 +176,26 @@ function capture_failed_pods_after_upgrade(){
           cat /tmp/new-failed-pods.txt | awk '{print $1"\t"$2}' >/tmp/pods.lst
           total_lines=$(cat /tmp/pods.lst|wc -l)
           init_line=1
+
+          false_failure=0
           while [ $init_line -le $total_lines ]
           do
                   namespace=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $1}')
                   podname=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $2}')
                   echo "The detailed failed pods $podname information in $namespace:"
                   echo "------------------------------------------------------------------------------------" 
-                  oc describe pod $podname -n $namespace
+                  describe_out=$(oc describe pod $podname -n $namespace)
+                  # if we could no longer find pod in namespace, the pod went to proper state
+                  if [[ $describe_out =~ "Error from server (NotFound)" ]]; then
+                    false_failure=$(( $false_failure + 1 ))
+                  fi
                   init_line=$(( $init_line + 1 ))
           done
+          # If all pods got to proper state, don't fail the check
+          if [ $false_failure -eq $total_lines ]; then
+            exit 0
+          fi
+
           exit 1
   fi
 }
