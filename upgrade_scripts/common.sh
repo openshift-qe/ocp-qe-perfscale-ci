@@ -146,7 +146,7 @@ function capture_failed_pods_before_upgrade(){
   #Save the failed job before upgrade and make sure new failed job caused by upgrade,ignore installer, build error
   echo "Capture failed pods before upgrade OCP"
   echo "####################################################################################"
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
 }
 
 function capture_failed_pods_after_upgrade(){
@@ -154,14 +154,14 @@ function capture_failed_pods_after_upgrade(){
   echo "Capture failed pods after upgrade OCP, No messages means no errors"
   echo "####################################################################################"
   #Adding re-try steps to avoid temp failed pod
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
   cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
   init_retry=1
   max_retry=30
 
   while [[ $init_retry -le $max_retry && -s /tmp/new-failed-pods.txt ]]
   do
-     oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+     oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
      cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
      echo -n "."&&sleep 10
      init_retry=$(( $init_retry + 1 ))
@@ -185,6 +185,7 @@ function capture_failed_pods_after_upgrade(){
                   echo "The detailed failed pods $podname information in $namespace:"
                   echo "------------------------------------------------------------------------------------" 
                   describe_out=$(oc describe pod $podname -n $namespace)
+                  echo $describe_out
                   # if we could no longer find pod in namespace, the pod went to proper state
                   if [[ $describe_out =~ "Error from server (NotFound)" ]]; then
                     false_failure=$(( $false_failure + 1 ))
