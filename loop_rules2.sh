@@ -16,7 +16,7 @@ if [[ -n "$BASELINE_UUID" ]]; then
     elif [[ $WORKLOAD == "k8s-netperf" ]]; then
         echo "Need to fid grafana url"
     else
-        echo "grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/8wDGrVY4k/kube-burner-compare-update?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload=${WORKLOAD}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver&var-uuid=${UUID}&var-uuid=${BASELINE_UUID}${grafana_url_ending}"
+        echo "grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/g4dJlkBnz3/kube-burner-compare?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload=${WORKLOAD}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver&var-uuid=${UUID}&var-uuid=${BASELINE_UUID}${grafana_url_ending}"
 
     fi
 fi

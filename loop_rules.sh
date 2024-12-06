@@ -33,7 +33,7 @@ python csv_modifier.py -c ${COMPARISON_OUTPUT_LIST} -o results/final_output.csv
 cd ../../..
 
 
-echo "grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/8wDGrVY4k/kube-burner-compare-update?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload=${WORKLOAD}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver&var-uuid=${UUID}&var-uuid=${BASELINE_UUID}"
+echo "grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/g4dJlkBnz3/kube-burner-compare?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload=${WORKLOAD}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver&var-uuid=${UUID}&var-uuid=${BASELINE_UUID}"
 
 echo "failed comparisons: $failed_comparison"
 if [[ $failed_comparison -ne 0 ]]; then
