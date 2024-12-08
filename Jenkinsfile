@@ -57,7 +57,7 @@ pipeline {
                SOMEVARn='envn-test'<br>
                </p>'''
             )
-        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc411',description:
+        string(name:'JENKINS_AGENT_LABEL',defaultValue:'oc418',description:
         '''
         scale-ci-static: for static agent that is specific to scale-ci, useful when the jenkins dynamic agen
           isn't stable<br>
