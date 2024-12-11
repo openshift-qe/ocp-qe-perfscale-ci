@@ -55,6 +55,6 @@ def get_graphana():
     elif workload == "k8s-netperf" or workload == "network-perf-v2":
         print( "Need to find grafana url")
     else:
-        print( f"grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/8wDGrVY4k/kube-burner-compare-update?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload={workload}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver{uuid_str}{grafana_url_ending}")
+        print( f"grafana url https://grafana.rdu2.scalelab.redhat.com:3000/d/g4dJlkBnz3/kube-burner-compare?orgId=1&var-Datasource=QE%20kube-burner&var-sdn=OVNKubernetes&var-workload={workload}&var-worker_nodes=&var-latencyPercentile=P99&var-condition=Ready&var-component=kube-apiserver{uuid_str}{grafana_url_ending}")
 
 get_graphana()
