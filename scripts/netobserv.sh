@@ -218,6 +218,11 @@ deploy_kafka() {
   oc apply -f $SCRIPTS_DIR/amq-streams/amq-streams-subscription.yaml
   sleep 60
   oc wait --timeout=180s --for=condition=ready pod -l name=amq-streams-cluster-operator -n openshift-operators
+
+  # update AMQStreams operator memory limit to 1G as current limits of 384Mi is not enough for 250 nodes scenario
+  CSV_NAME=$(oc get csv -n openshift-operators -l operators.coreos.com/amq-streams.openshift-operators= -o jsonpath='{.items[].metadata.name}')
+  oc -n openshift-operators patch csv $CSV_NAME --type=json -p "[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/resources/limits/memory", "value": "1Gi"}]"
+  
   echo "====> Creating kafka-metrics ConfigMap and kafka-resources-metrics PodMonitor"
   oc apply -f "https://raw.githubusercontent.com/netobserv/documents/main/examples/kafka/metrics-config.yaml" -n netobserv
   echo "====> Creating kafka-cluster Kafka"
