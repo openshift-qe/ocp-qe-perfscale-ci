@@ -10,11 +10,6 @@ objects:
     spec:
       namespace: netobserv
       deploymentModel: "${DeploymentModel}"
-      features:
-      - PacketDrop
-      - DNSTracking
-      - FlowRTT
-      - NetworkEvents
       agent:
         type: eBPF
         ebpf:
@@ -24,6 +19,15 @@ objects:
           resources:
             limits:
               memory: ${EBPFMemoryLimit}
+          features:
+          - PacketDrop
+          - DNSTracking
+          - FlowRTT
+          - NetworkEvents
+          flowFilter:
+            action: Accept
+            cidr: 0.0.0.0/0
+            enable: true
       processor:
         resources:
           limits:
