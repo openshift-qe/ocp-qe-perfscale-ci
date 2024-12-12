@@ -10,6 +10,11 @@ objects:
     spec:
       namespace: netobserv
       deploymentModel: "${DeploymentModel}"
+      features:
+      - PacketDrop
+      - DNSTracking
+      - FlowRTT
+      - NetworkEvents
       agent:
         type: eBPF
         ebpf:
