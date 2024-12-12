@@ -1,0 +1,20 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: loki-subcription-template
+objects:
+- apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: loki-operator
+    namespace: openshift-operators-redhat
+  spec:
+    channel: "${{LOKI_CHANNEL}}"
+    name: loki-operator
+    source: "${{SOURCE}}"
+    sourceNamespace: openshift-marketplace
+parameters:
+  - name: LOKI_CHANNEL
+    value: "stable-6.0"
+  - name: SOURCE
+    value: "redhat-operators"
