@@ -125,7 +125,7 @@ deploy_lokistack() {
   else
     echo "====> No Loki Operator config was found - using 'Released'"
     echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
-    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
+    subscription=$SCRIPTS_DIR/loki/loki-released-subscription.yaml
   fi
   
   if [ -z "${LOKI_CHANNEL}" ]; then
