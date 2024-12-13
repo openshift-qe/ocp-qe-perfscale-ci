@@ -1102,6 +1102,11 @@ def setTemplateParams(){
     if (params.LOKI_OPERATOR == 'None') {
         templateParams += "LokiEnable=false "
     }
+    // increase ebpf memory limit to 1.5Gi for CD workload.
+    if (params.WORKLOAD == 'cluster-density-v2'){
+        templateParams += "EBPFMemoryLimit=1.5Gi "
+    }
+
     return templateParams
 }
 

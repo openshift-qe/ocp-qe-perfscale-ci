@@ -96,6 +96,16 @@ patch_netobserv() {
     exit 1
   fi
 }
+get_loki_channel() {
+  catalog_label=$1
+  channels=$(oc get packagemanifests -l catalog="$catalog_label" -n openshift-marketplace -o jsonpath='{.items[?(@.metadata.name=="loki-operator")].status.channels[*].name}')
+
+  # this works only on bash shell, read command options are different between zsh (commonly used for OSX) and bash shell
+  read -r -a channels_arr <<< $channels
+  len=${#channels_arr[@]}
+  # use the latest channel
+  echo "${channels_arr[$len-1]}"
+}
 
 deploy_lokistack() {
   echo "====> Deploying LokiStack"
@@ -106,16 +116,23 @@ deploy_lokistack() {
   oc apply -f $SCRIPTS_DIR/loki/loki-operatorgroup.yaml
 
   echo "====> Creating netobserv-downstream-testing CatalogSource (if applicable) and Loki Operator Subscription"
-  if [[ $LOKI_OPERATOR == "Released" ]]; then
-    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
-  elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
+  export LOKI_CHANNEL=''
+  export LOKI_SOURCE=''
+  if [[ $LOKI_OPERATOR == "Unreleased" ]]; then
     deploy_downstream_catalogsource
-    oc apply -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
+    LOKI_SOURCE="qe-app-registry"
   else
-    echo "====> No Loki Operator config was found - using 'Released'"
-    echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
-    oc apply -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
+    LOKI_SOURCE="redhat-operators"
   fi
+  
+  LOKI_CHANNEL=$(get_loki_channel $LOKI_SOURCE)
+  if [ -z "${LOKI_CHANNEL}" ]; then
+    echo "====> Could not determine loki-operator subscription channel, exiting!!!!"
+    return 1
+  fi
+
+  echo "====> Using Loki chanel ${LOKI_CHANNEL} to subscribe"
+  envsubst < $SCRIPTS_DIR/loki/loki-subscription.yaml | oc apply -f -
 
   echo "====> Generate S3_BUCKET_NAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 6 | head -n 1 || true)
@@ -298,8 +315,7 @@ delete_netobserv_operator() {
 
 delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
+  oc delete --ignore-not-found sub/loki-operator -n openshift-operators-redhat
   oc delete --ignore-not-found csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 
