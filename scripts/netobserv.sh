@@ -132,6 +132,7 @@ deploy_lokistack() {
     echo "====> Could not determine loki-operator subscription channel, exiting!!!!"
     exit 1
   fi
+  echo "====> Using Loki chanel ${LOKI_CHANNEL} to subscribe"
   envsubst < "$subscription" | oc apply -f -
 
   echo "====> Generate S3_BUCKET_NAME"
