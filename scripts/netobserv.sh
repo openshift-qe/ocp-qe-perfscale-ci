@@ -99,6 +99,8 @@ patch_netobserv() {
 get_loki_channel() {
   catalog_label=$1
   channels=$(oc get packagemanifests -l catalog="$catalog_label" -n openshift-marketplace -o jsonpath='{.items[?(@.metadata.name=="loki-operator")].status.channels[*].name}')
+
+  # this works only on bash shell, read command options are different between zsh (commonly used for OSX) and bash shell
   read -r -a channels_arr <<< $channels
   len=${#channels_arr[@]}
   # use the latest channel
@@ -115,22 +117,18 @@ deploy_lokistack() {
 
   echo "====> Creating netobserv-downstream-testing CatalogSource (if applicable) and Loki Operator Subscription"
   export LOKI_CHANNEL=''
-  if [[ $LOKI_OPERATOR == "Released" ]]; then
-    LOKI_CHANNEL=$(get_loki_channel redhat-operators)
-    subscription=SCRIPTS_DIR/loki/loki-released-subscription.yaml
-  elif [[ $LOKI_OPERATOR == "Unreleased" ]]; then
+  if [[ $LOKI_OPERATOR == "Unreleased" ]]; then
     deploy_downstream_catalogsource
     LOKI_CHANNEL=$(get_loki_channel qe-app-registry)
     subscription=$SCRIPTS_DIR/loki/loki-released-subscription.yaml
   else
-    echo "====> No Loki Operator config was found - using 'Released'"
-    echo "====> To set config, set LOKI_OPERATOR variable to either 'Released' or 'Unreleased'"
+    LOKI_CHANNEL=$(get_loki_channel redhat-operators)
     subscription=$SCRIPTS_DIR/loki/loki-released-subscription.yaml
   fi
   
   if [ -z "${LOKI_CHANNEL}" ]; then
     echo "====> Could not determine loki-operator subscription channel, exiting!!!!"
-    exit 1
+    return 1
   fi
   echo "====> Using Loki chanel ${LOKI_CHANNEL} to subscribe"
   envsubst < "$subscription" | oc apply -f -
