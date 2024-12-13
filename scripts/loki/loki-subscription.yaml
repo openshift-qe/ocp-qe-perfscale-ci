@@ -6,5 +6,5 @@ metadata:
 spec:
   channel: $LOKI_CHANNEL
   name: loki-operator
-  source: netobserv-downstream-testing
+  source: $LOKI_SOURCE
   sourceNamespace: openshift-marketplace

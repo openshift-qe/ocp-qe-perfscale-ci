@@ -117,21 +117,22 @@ deploy_lokistack() {
 
   echo "====> Creating netobserv-downstream-testing CatalogSource (if applicable) and Loki Operator Subscription"
   export LOKI_CHANNEL=''
+  export LOKI_SOURCE=''
   if [[ $LOKI_OPERATOR == "Unreleased" ]]; then
     deploy_downstream_catalogsource
-    LOKI_CHANNEL=$(get_loki_channel qe-app-registry)
-    subscription=$SCRIPTS_DIR/loki/loki-released-subscription.yaml
+    LOKI_SOURCE="qe-app-registry"
   else
-    LOKI_CHANNEL=$(get_loki_channel redhat-operators)
-    subscription=$SCRIPTS_DIR/loki/loki-released-subscription.yaml
+    LOKI_SOURCE="redhat-operators"
   fi
   
+  LOKI_CHANNEL=$(get_loki_channel $LOKI_SOURCE)
   if [ -z "${LOKI_CHANNEL}" ]; then
     echo "====> Could not determine loki-operator subscription channel, exiting!!!!"
     return 1
   fi
+  
   echo "====> Using Loki chanel ${LOKI_CHANNEL} to subscribe"
-  envsubst < "$subscription" | oc apply -f -
+  envsubst < $SCRIPTS_DIR/loki/loki-subscription.yaml | oc apply -f -
 
   echo "====> Generate S3_BUCKET_NAME"
   RAND_SUFFIX=$(tr </dev/urandom -dc 'a-z0-9' | fold -w 6 | head -n 1 || true)
