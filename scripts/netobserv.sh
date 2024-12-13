@@ -130,7 +130,7 @@ deploy_lokistack() {
     echo "====> Could not determine loki-operator subscription channel, exiting!!!!"
     return 1
   fi
-  
+
   echo "====> Using Loki chanel ${LOKI_CHANNEL} to subscribe"
   envsubst < $SCRIPTS_DIR/loki/loki-subscription.yaml | oc apply -f -
 
@@ -315,8 +315,7 @@ delete_netobserv_operator() {
 
 delete_loki_operator() {
   echo "====> Deleting Loki Operator Subscription and CSV"
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-released-subscription.yaml
-  oc delete --ignore-not-found -f $SCRIPTS_DIR/loki/loki-unreleased-subscription.yaml
+  oc delete --ignore-not-found sub/loki-operator -n openshift-operators-redhat
   oc delete --ignore-not-found csv -l operators.coreos.com/loki-operator.openshift-operators-redhat -n openshift-operators-redhat
 }
 
