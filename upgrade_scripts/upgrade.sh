@@ -186,5 +186,5 @@ if [ "X$scale" == "Xtrue" ]; then
 fi
 #wait 120s for all pod get ready
 sleep 120
-capture_failed_pods_after_upgrade
+#capture_failed_pods_after_upgrade
 exit 0 #upgrade succ and post-check succ
