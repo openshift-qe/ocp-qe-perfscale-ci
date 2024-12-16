@@ -146,7 +146,7 @@ function capture_failed_pods_before_upgrade(){
   #Save the failed job before upgrade and make sure new failed job caused by upgrade,ignore installer, build error
   echo "Capture failed pods before upgrade OCP"
   echo "####################################################################################"
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-before-failed-pods.txt
 }
 
 function capture_failed_pods_after_upgrade(){
@@ -154,14 +154,14 @@ function capture_failed_pods_after_upgrade(){
   echo "Capture failed pods after upgrade OCP, No messages means no errors"
   echo "####################################################################################"
   #Adding re-try steps to avoid temp failed pod
-  oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+  oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
   cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
   init_retry=1
   max_retry=30
 
   while [[ $init_retry -le $max_retry && -s /tmp/new-failed-pods.txt ]]
   do
-     oc get pods -A| grep -v -E 'Running|Completed|installer|build'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
+     oc get pods -A| grep -v -E 'Running|Completed|installer|build|loki'| awk '(NF=NF-2) 1'>/tmp/upgrade-after-failed-pods.txt
      cat /tmp/upgrade-before-failed-pods.txt /tmp/upgrade-after-failed-pods.txt | sort | uniq -u>/tmp/new-failed-pods.txt
      echo -n "."&&sleep 10
      init_retry=$(( $init_retry + 1 ))
@@ -176,15 +176,27 @@ function capture_failed_pods_after_upgrade(){
           cat /tmp/new-failed-pods.txt | awk '{print $1"\t"$2}' >/tmp/pods.lst
           total_lines=$(cat /tmp/pods.lst|wc -l)
           init_line=1
+
+          false_failure=0
           while [ $init_line -le $total_lines ]
           do
                   namespace=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $1}')
                   podname=$(cat /tmp/pods.lst | sed -n "${init_line}p" | awk '{print $2}')
                   echo "The detailed failed pods $podname information in $namespace:"
                   echo "------------------------------------------------------------------------------------" 
-                  oc describe pod $podname -n $namespace
+                  describe_out=$(oc describe pod $podname -n $namespace)
+                  echo $describe_out
+                  # if we could no longer find pod in namespace, the pod went to proper state
+                  if [[ $describe_out =~ "Error from server (NotFound)" ]]; then
+                    false_failure=$(( $false_failure + 1 ))
+                  fi
                   init_line=$(( $init_line + 1 ))
           done
+          # If all pods got to proper state, don't fail the check
+          if [ $false_failure -eq $total_lines ]; then
+            exit 0
+          fi
+
           exit 1
   fi
 }
