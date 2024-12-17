@@ -131,9 +131,7 @@ pipeline {
                 buildinfo.params.each { env.setProperty(it.key, it.value) }
             }
             script{
-                withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS'),
-                         file(credentialsId: 'eb22dcaa-555c-4ebe-bb39-5b25628cc6bb', variable: 'OCP_GCP'),
-                         file(credentialsId: 'ocp-azure', variable: 'OCP_AZURE')]) {
+                withCredentials([file(credentialsId: 'ocp-azure', variable: 'OCP_AZURE')]) {
                             
                             if(env.VARIABLES_LOCATION.indexOf("azure") != -1){
                                 if (params.WORKER_COUNT.toInteger() > 50 || params.UPDATE_OUTBOUND_PORTS == true ) {
