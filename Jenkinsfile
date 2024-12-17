@@ -144,12 +144,10 @@ pipeline {
                                     # Export those env vars so they could be used by CI Job
                                     set -a && source .env_override && set +a
                                     cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                                    oc config view
-                                    oc projects
-                                    ls -ls ~/.kube/
-                                    env
+
+                                    ls
                                     SECONDS=0
-                                    ./az_outbound_port.sh
+                                    ./az_outbound_ports.sh
                                     status=$?
                                     echo "final status $status"
                                     duration=$SECONDS
@@ -161,37 +159,37 @@ pipeline {
                          }
             }
 
-            script{
-                if (params.WORKER_COUNT.toInteger() > 0 ) {
-                    RETURNSTATUS = sh(returnStatus: true, script: '''
-                        mkdir -p ~/.kube
-                        # Get ENV VARS Supplied by the user to this job and store in .env_override
-                        echo "$ENV_VARS" > .env_override
-                        # Export those env vars so they could be used by CI Job
-                        set -a && source .env_override && set +a
-                        cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
-                        oc config view
-                        oc projects
-                        ls -ls ~/.kube/
-                        env
-                        SECONDS=0
-                        ./scaling.sh
-                        status=$?
-                        echo "final status $status"
-                        duration=$SECONDS
-                        echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
-                        exit $status
-                    '''
-                    )
-                
-                    if (RETURNSTATUS.toInteger() == 0) {
-                        status = "PASS"
-                    }
-                    else { 
-                        currentBuild.result = "FAILURE"
-                    }
+        script{
+            if (params.WORKER_COUNT.toInteger() > 0 ) {
+                RETURNSTATUS = sh(returnStatus: true, script: '''
+                    mkdir -p ~/.kube
+                    # Get ENV VARS Supplied by the user to this job and store in .env_override
+                    echo "$ENV_VARS" > .env_override
+                    # Export those env vars so they could be used by CI Job
+                    set -a && source .env_override && set +a
+                    cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                    oc config view
+                    oc projects
+                    ls -ls ~/.kube/
+                    env
+                    SECONDS=0
+                    ./scaling.sh
+                    status=$?
+                    echo "final status $status"
+                    duration=$SECONDS
+                    echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
+                    exit $status
+                '''
+                )
+            
+                if (RETURNSTATUS.toInteger() == 0) {
+                    status = "PASS"
+                }
+                else { 
+                    currentBuild.result = "FAILURE"
                 }
             }
+        }
         
         script{
           if (params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
