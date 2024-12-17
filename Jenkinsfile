@@ -36,6 +36,11 @@ pipeline {
             description:'Total Worker count desired in the cluster'
         )
         booleanParam(
+            name: 'UPDATE_OUTBOUND_PORTS', 
+            defaultValue: false, 
+            description: 'Updating the outbound port for over 55 nodes, https://issues.redhat.com/browse/OCPBUGS-42983'
+        )
+        booleanParam(
             name: 'INFRA_WORKLOAD_INSTALL', 
             defaultValue: false, 
             description: 'Install workload and infrastructure nodes even if less than 50 nodes'
@@ -126,6 +131,37 @@ pipeline {
                 buildinfo.params.each { env.setProperty(it.key, it.value) }
             }
             script{
+                withCredentials([file(credentialsId: 'b73d6ed3-99ff-4e06-b2d8-64eaaf69d1db', variable: 'OCP_AWS'),
+                         file(credentialsId: 'eb22dcaa-555c-4ebe-bb39-5b25628cc6bb', variable: 'OCP_GCP'),
+                         file(credentialsId: 'ocp-azure', variable: 'OCP_AZURE')]) {
+                            
+                            if(env.VARIABLES_LOCATION.indexOf("azure") != -1){
+                                if (params.WORKER_COUNT.toInteger() > 50 || params.UPDATE_OUTBOUND_PORTS == true ) {
+                                 RETURNSTATUS = sh(returnStatus: true, script: '''
+                                    mkdir -p ~/.kube
+                                    # Get ENV VARS Supplied by the user to this job and store in .env_override
+                                    echo "$ENV_VARS" > .env_override
+                                    # Export those env vars so they could be used by CI Job
+                                    set -a && source .env_override && set +a
+                                    cp $WORKSPACE/flexy-artifacts/workdir/install-dir/auth/kubeconfig ~/.kube/config
+                                    oc config view
+                                    oc projects
+                                    ls -ls ~/.kube/
+                                    env
+                                    SECONDS=0
+                                    ./az_outbound_port.sh
+                                    status=$?
+                                    echo "final status $status"
+                                    duration=$SECONDS
+                                    echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
+                                    exit $status
+                                ''')
+                                }
+                            }
+                         }
+            }
+
+            script{
                 if (params.WORKER_COUNT.toInteger() > 0 ) {
                     RETURNSTATUS = sh(returnStatus: true, script: '''
                         mkdir -p ~/.kube
@@ -156,6 +192,7 @@ pipeline {
                     }
                 }
             }
+        
         script{
           if (params.WORKER_COUNT.toInteger() > 50 || params.INFRA_WORKLOAD_INSTALL == true ) {
 
